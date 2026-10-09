@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+html, body {
+  background: #0B0F1A;
+  color: white;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* smooth UI feel */
+* {
+  transition: all 0.2s ease;
+}
