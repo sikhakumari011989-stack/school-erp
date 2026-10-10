@@ -1,124 +1,76 @@
-import { useContext } from "react";
-import { AppContext } from "../context/AppContext";
+import React from 'react';
 
 export default function Dashboard() {
-  const { students, classes, fees, attendance } = useContext(AppContext);
-
-  // Calculate stats
-  const totalStudents = students.length;
-  const totalClasses = classes.length;
-  const totalFees = fees.reduce((sum, f) => sum + parseFloat(f.amount || 0), 0);
-  const paidFees = fees.filter(f => f.status === "paid").reduce((sum, f) => sum + parseFloat(f.amount || 0), 0);
-  const pendingFees = totalFees - paidFees;
-
-  const StatCard = ({ icon, label, value, color }) => (
-    <div style={{
-      background: `linear-gradient(135deg, ${color}22 0%, ${color}11 100%)`,
-      border: `1px solid ${color}44`,
-      borderRadius: "8px",
-      padding: "20px",
-      marginBottom: "20px",
-      minWidth: "200px"
-    }}>
-      <div style={{ fontSize: "30px", marginBottom: "10px" }}>{icon}</div>
-      <p style={{ color: "#94A3B8", margin: "0 0 5px 0", fontSize: "13px" }}>{label}</p>
-      <h3 style={{ color, margin: "0", fontSize: "28px", fontWeight: "bold" }}>
-        {label.includes("₹") ? `₹${value}` : value}
-      </h3>
-    </div>
-  );
+  const kpis = [
+    { title: "Total Students", value: "850", icon: "👥", color: "text-blue-400" },
+    { title: "Today's Attendance", value: "94%", icon: "✓", color: "text-emerald-400" },
+    { title: "Fees Collected", value: "₹2.5L", icon: "💰", color: "text-purple-400" },
+    { title: "Pending Leaves", value: "5", icon: "🏖️", color: "text-orange-400" }
+  ];
 
   return (
-    <div style={{ color: "white" }}>
-      <h1>Dashboard Overview</h1>
-      
-      {/* STATS GRID */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: "15px",
-        marginBottom: "40px"
-      }}>
-        <StatCard icon="👥" label="Total Students" value={totalStudents} color="#3B82F6" />
-        <StatCard icon="🏫" label="Total Classes" value={totalClasses} color="#8B5CF6" />
-        <StatCard icon="💰" label="Total Fees" value={totalFees} color="#10B981" />
-        <StatCard icon="✓" label="Paid Fees" value={paidFees} color="#06B6D4" />
-        <StatCard icon="⏳" label="Pending Fees" value={pendingFees} color="#F59E0B" />
+    <div className="text-slate-200">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+        <p className="text-slate-400 mt-1">School Manager Overview</p>
       </div>
 
-      {/* RECENT ACTIVITY */}
-      <div style={{
-        background: "linear-gradient(135deg, #1E293B 0%, #0F172A 100%)",
-        border: "1px solid #334155",
-        borderRadius: "8px",
-        padding: "20px",
-        marginBottom: "20px"
-      }}>
-        <h2 style={{ color: "#F1F5F9", marginTop: "0" }}>Quick Stats</h2>
-        
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-          <div>
-            <p style={{ color: "#94A3B8", fontSize: "13px" }}>Students Status</p>
-            <p style={{ color: "#60A5FA", fontSize: "18px", fontWeight: "bold", margin: "10px 0" }}>
-              {totalStudents} total registered
-            </p>
-            <p style={{ color: "#CBD5E1", fontSize: "13px" }}>
-              Across {totalClasses} classes
-            </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {kpis.map((kpi, index) => (
+          <div key={index} className="bg-[#1E293B] border border-slate-700 rounded-xl p-6 shadow-lg flex items-center gap-4">
+            <div className={`text-3xl ${kpi.color} bg-[#0F172A] p-3 rounded-lg`}>{kpi.icon}</div>
+            <div>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">{kpi.title}</p>
+              <p className="text-2xl font-bold text-white">{kpi.value}</p>
+            </div>
           </div>
+        ))}
+      </div>
 
-          <div>
-            <p style={{ color: "#94A3B8", fontSize: "13px" }}>Fee Collection</p>
-            <p style={{ color: "#10B981", fontSize: "18px", fontWeight: "bold", margin: "10px 0" }}>
-              ₹{paidFees.toFixed(2)} collected
-            </p>
-            <p style={{ color: "#CBD5E1", fontSize: "13px" }}>
-              ₹{pendingFees.toFixed(2)} pending
-            </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-[#1E293B] border border-slate-700 rounded-xl p-6 shadow-lg">
+          <h2 className="text-lg font-bold text-white mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <button className="bg-[#0F172A] border border-slate-600 p-4 rounded-lg hover:bg-slate-800 transition-colors text-left">
+              <span className="text-2xl mb-2 block">✓</span>
+              <span className="font-semibold text-white">Mark Attendance</span>
+            </button>
+            <button className="bg-[#0F172A] border border-slate-600 p-4 rounded-lg hover:bg-slate-800 transition-colors text-left">
+              <span className="text-2xl mb-2 block">💰</span>
+              <span className="font-semibold text-white">Collect Fees</span>
+            </button>
+            <button className="bg-[#0F172A] border border-slate-600 p-4 rounded-lg hover:bg-slate-800 transition-colors text-left">
+              <span className="text-2xl mb-2 block">📢</span>
+              <span className="font-semibold text-white">Send Notice</span>
+            </button>
+            <button className="bg-[#0F172A] border border-slate-600 p-4 rounded-lg hover:bg-slate-800 transition-colors text-left">
+              <span className="text-2xl mb-2 block">📊</span>
+              <span className="font-semibold text-white">View Reports</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-[#1E293B] border border-slate-700 rounded-xl p-6 shadow-lg">
+          <h2 className="text-lg font-bold text-white mb-4">Recent Activity</h2>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 border-b border-slate-700 pb-3">
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+              <p className="text-sm text-slate-300">New student <strong>Raj Kumar</strong> enrolled in 10-A</p>
+              <span className="text-xs text-slate-500 ml-auto">10 mins ago</span>
+            </div>
+            <div className="flex items-center gap-3 border-b border-slate-700 pb-3">
+              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+              <p className="text-sm text-slate-300">Fee payment of ₹5,000 collected from <strong>Priya Singh</strong></p>
+              <span className="text-xs text-slate-500 ml-auto">1 hour ago</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+              <p className="text-sm text-slate-300">Notice sent to <strong>All Classes</strong> regarding Holiday</p>
+              <span className="text-xs text-slate-500 ml-auto">2 hours ago</span>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* RECENT FEES */}
-      {fees.length > 0 && (
-        <div style={{
-          background: "linear-gradient(135deg, #1E293B 0%, #0F172A 100%)",
-          border: "1px solid #334155",
-          borderRadius: "8px",
-          padding: "20px"
-        }}>
-          <h2 style={{ color: "#F1F5F9", marginTop: "0" }}>Recent Fee Records</h2>
-          <table style={{ borderCollapse: "collapse", width: "100%" }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid #334155" }}>
-                <th style={{ padding: "10px", textAlign: "left", color: "#94A3B8" }}>Amount</th>
-                <th style={{ padding: "10px", textAlign: "left", color: "#94A3B8" }}>Status</th>
-                <th style={{ padding: "10px", textAlign: "left", color: "#94A3B8" }}>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fees.slice(-5).reverse().map(fee => (
-                <tr key={fee.id} style={{ borderBottom: "1px solid #1E293B" }}>
-                  <td style={{ padding: "10px", color: "#E2E8F0" }}>₹{fee.amount}</td>
-                  <td style={{ padding: "10px" }}>
-                    <span style={{
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      background: fee.status === "paid" ? "#10B98133" : fee.status === "overdue" ? "#EF444433" : "#F59E0B33",
-                      color: fee.status === "paid" ? "#10B981" : fee.status === "overdue" ? "#EF4444" : "#F59E0B",
-                      fontSize: "12px",
-                      fontWeight: "bold"
-                    }}>
-                      {fee.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: "10px", color: "#CBD5E1" }}>{fee.date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 }

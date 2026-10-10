@@ -1,189 +1,170 @@
-import { useContext, useState } from "react";
-import { AppContext } from "../context/AppContext";
+import { useState } from "react";
 
 export default function Attendance() {
-  const { classes, students, markAttendance } = useContext(AppContext);
-  const [selectedClass, setSelectedClass] = useState("");
-  const [attendanceData, setAttendanceData] = useState({});
+  const [selectedClass, setSelectedClass] = useState("10-A");
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
-  const handleMarkAttendance = () => {
-    if (!selectedClass) {
-      alert("Select a class first");
-      return;
-    }
+  // Mock Student Attendance Data
+  const [attendance, setAttendance] = useState([
+    { id: 1, roll: "101", name: "Raj Kumar", status: "Present" },
+    { id: 2, roll: "102", name: "Priya Singh", status: "Present" },
+    { id: 3, roll: "105", name: "Aarush Verma", status: "Absent" },
+    { id: 4, roll: "106", name: "Satwik Sharma", status: "Present" },
+    { id: 5, roll: "108", name: "Astik Kumar", status: "Leave" },
+  ]);
 
-    const records = students
-      .filter(s => s.class_id === selectedClass)
-      .map(s => ({
-        student_id: s.id,
-        name: s.name,
-        status: attendanceData[s.id] || "present"
-      }));
-
-    const today = new Date().toISOString().split('T')[0];
-    markAttendance(today, selectedClass, records);
-    alert(`✅ Attendance saved to Cloud for class!`);
-    setAttendanceData({});
+  const handleStatusChange = (id, newStatus) => {
+    setAttendance(attendance.map(student => 
+      student.id === id ? { ...student, status: newStatus } : student
+    ));
   };
 
-  const classStudents = students.filter(s => s.class_id === selectedClass);
-  const presentCount = classStudents.filter(s => attendanceData[s.id] === "present" || (!attendanceData[s.id] && classStudents.length > 0)).length;
-  const absentCount = classStudents.filter(s => attendanceData[s.id] === "absent").length;
-  const leaveCount = classStudents.filter(s => attendanceData[s.id] === "leave").length;
+  const markAllPresent = () => {
+    setAttendance(attendance.map(student => ({ ...student, status: "Present" })));
+  };
 
-  const selectedClassName = classes.find(c => c.id === selectedClass);
+  // Calculate live stats
+  const total = attendance.length;
+  const present = attendance.filter(s => s.status === "Present").length;
+  const absent = attendance.filter(s => s.status === "Absent").length;
+  const onLeave = attendance.filter(s => s.status === "Leave").length;
+  const attendancePercentage = Math.round((present / total) * 100) || 0;
 
   return (
-    <div style={{ color: "white" }}>
-      <h1 style={{ fontSize: "28px", fontWeight: "bold", marginTop: "0" }}>
-        ✓ Attendance Management
-      </h1>
-
-      {/* CLASS SELECTOR */}
-      <div style={{
-        background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
-        borderRadius: "12px", padding: "25px", marginBottom: "30px",
-        boxShadow: "0 10px 30px rgba(16, 185, 129, 0.2)"
-      }}>
-        <h2 style={{ marginTop: "0", fontSize: "18px" }}>Select Class</h2>
-        <select 
-          value={selectedClass} 
-          onChange={(e) => setSelectedClass(e.target.value)}
-          style={{
-            width: "100%", padding: "12px 15px", borderRadius: "8px", border: "none",
-            background: "rgba(255, 255, 255, 0.15)", color: "white", cursor: "pointer",
-            fontSize: "15px", fontWeight: "500", backdropFilter: "blur(10px)"
-          }}
-        >
-          <option value="" style={{ color: "black" }}>-- Choose Class --</option>
-          {classes.map(cls => (
-            <option key={cls.id} value={cls.id} style={{ color: "black" }}>
-              {cls.name} {cls.section}
-            </option>
-          ))}
-        </select>
+    <div className="text-slate-200">
+      
+      {/* HEADER */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Attendance Management</h1>
+          <p className="text-slate-400 mt-1">Track daily attendance and generate reports</p>
+        </div>
+        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-bold text-sm transition-all shadow-lg shadow-blue-600/20">
+          Save Attendance
+        </button>
       </div>
 
-      {/* ATTENDANCE MARKING */}
-      {selectedClass && classStudents.length > 0 && (
-        <div>
-          {/* STATS */}
-          <div style={{
-            display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "15px", marginBottom: "30px"
-          }}>
-            <div style={{
-              background: "linear-gradient(135deg, #10B98133 0%, #06B6D433 100%)",
-              border: "1px solid #10B98166", borderRadius: "10px", padding: "20px", textAlign: "center"
-            }}>
-              <p style={{ color: "#86EFAC", fontSize: "12px", margin: "0 0 8px 0", textTransform: "uppercase", fontWeight: "500" }}>Present</p>
-              <h3 style={{ color: "#10B981", margin: "0", fontSize: "28px", fontWeight: "bold" }}>{presentCount}</h3>
-            </div>
+      {/* CONTROLS & LIVE STATS */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        
+        {/* Date & Class Selector */}
+        <div className="bg-[#1E293B] border border-slate-700 rounded-xl p-5 shadow-lg flex flex-col justify-center gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Select Class</label>
+            <select 
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="w-full bg-[#0F172A] border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 transition-all text-sm font-semibold"
+            >
+              <option value="9-B">Class 9-B</option>
+              <option value="10-A">Class 10-A</option>
+              <option value="11-Sci">Class 11-Science</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Date</label>
+            <input 
+              type="date" 
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full bg-[#0F172A] border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 transition-all text-sm custom-calendar-icon"
+            />
+          </div>
+        </div>
 
-            <div style={{
-              background: "linear-gradient(135deg, #EF444433 0%, #DC262633 100%)",
-              border: "1px solid #EF444466", borderRadius: "10px", padding: "20px", textAlign: "center"
-            }}>
-              <p style={{ color: "#FCA5A5", fontSize: "12px", margin: "0 0 8px 0", textTransform: "uppercase", fontWeight: "500" }}>Absent</p>
-              <h3 style={{ color: "#EF4444", margin: "0", fontSize: "28px", fontWeight: "bold" }}>{absentCount}</h3>
+        {/* Live Attendance Report Summary */}
+        <div className="lg:col-span-2 bg-[#1E293B] border border-slate-700 rounded-xl p-5 shadow-lg flex items-center justify-between">
+          <div className="flex gap-8 w-full">
+            <div className="flex-1 text-center border-r border-slate-700">
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total</p>
+              <p className="text-3xl font-bold text-white">{total}</p>
             </div>
-
-            <div style={{
-              background: "linear-gradient(135deg, #F59E0B33 0%, #FBBF2433 100%)",
-              border: "1px solid #F59E0B66", borderRadius: "10px", padding: "20px", textAlign: "center"
-            }}>
-              <p style={{ color: "#FCD34D", fontSize: "12px", margin: "0 0 8px 0", textTransform: "uppercase", fontWeight: "500" }}>Leave</p>
-              <h3 style={{ color: "#F59E0B", margin: "0", fontSize: "28px", fontWeight: "bold" }}>{leaveCount}</h3>
+            <div className="flex-1 text-center border-r border-slate-700">
+              <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">Present</p>
+              <p className="text-3xl font-bold text-white">{present}</p>
+            </div>
+            <div className="flex-1 text-center border-r border-slate-700">
+              <p className="text-red-400 text-xs font-bold uppercase tracking-wider mb-1">Absent</p>
+              <p className="text-3xl font-bold text-white">{absent}</p>
+            </div>
+            <div className="flex-1 text-center">
+              <p className="text-blue-400 text-xs font-bold uppercase tracking-wider mb-1">Rate</p>
+              <p className="text-3xl font-bold text-white">{attendancePercentage}%</p>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* ATTENDANCE TABLE */}
-          <div style={{
-            background: "linear-gradient(135deg, #1E293B 0%, #0F172A 100%)",
-            border: "1px solid #334155", borderRadius: "12px", padding: "25px", marginBottom: "25px"
-          }}>
-            <h2 style={{ marginTop: "0", fontSize: "18px" }}>
-              Mark Attendance - {selectedClassName?.name} {selectedClassName?.section}
-            </h2>
-
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ borderCollapse: "collapse", width: "100%" }}>
-                <thead>
-                  <tr style={{ borderBottom: "2px solid #334155" }}>
-                    <th style={{ padding: "15px", textAlign: "left", color: "#94A3B8", fontWeight: "600" }}>Roll No.</th>
-                    <th style={{ padding: "15px", textAlign: "left", color: "#94A3B8", fontWeight: "600" }}>Student Name</th>
-                    <th style={{ padding: "15px", textAlign: "left", color: "#94A3B8", fontWeight: "600" }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {classStudents.map((student, idx) => (
-                    <tr key={student.id} style={{ borderBottom: "1px solid #1E293B" }}>
-                      <td style={{ padding: "15px", color: "#CBD5E1", fontWeight: "500" }}>
-                        {student.roll_number || idx + 1}
-                      </td>
-                      <td style={{ padding: "15px", color: "#E2E8F0", fontWeight: "500" }}>
-                        {student.name}
-                      </td>
-                      <td style={{ padding: "15px" }}>
-                        <select 
-                          value={attendanceData[student.id] || "present"}
-                          onChange={(e) => setAttendanceData({
-                            ...attendanceData,
-                            [student.id]: e.target.value
-                          })}
-                          style={{
-                            padding: "8px 12px", borderRadius: "6px",
-                            background: attendanceData[student.id] === "absent" ? "#EF444422" :
-                                        attendanceData[student.id] === "leave" ? "#F59E0B22" : "#10B98122",
-                            color: attendanceData[student.id] === "absent" ? "#EF4444" :
-                                   attendanceData[student.id] === "leave" ? "#F59E0B" : "#10B981",
-                            border: "1px solid currentColor", cursor: "pointer",
-                            fontWeight: "600", fontSize: "13px"
-                          }}
-                        >
-                          <option value="present">✓ Present</option>
-                          <option value="absent">✗ Absent</option>
-                          <option value="leave">📋 Leave</option>
-                        </select>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
+      {/* MARK ATTENDANCE TABLE */}
+      <div className="bg-[#1E293B] border border-slate-700 rounded-xl shadow-lg overflow-hidden">
+        <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-800/30">
+          <h2 className="text-sm font-bold text-white">Student Roster - {selectedClass}</h2>
           <button 
-            onClick={handleMarkAttendance}
-            style={{
-              padding: "14px 40px", background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
-              color: "white", border: "none", cursor: "pointer", borderRadius: "8px",
-              fontWeight: "bold", fontSize: "15px", transition: "all 0.3s ease",
-              boxShadow: "0 5px 15px rgba(16, 185, 129, 0.3)"
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = "translateY(-2px)";
-              e.target.style.boxShadow = "0 8px 25px rgba(16, 185, 129, 0.4)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 5px 15px rgba(16, 185, 129, 0.3)";
-            }}
+            onClick={markAllPresent}
+            className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors"
           >
-            ✓ Save Attendance
+            ✓ Mark All Present
           </button>
         </div>
-      )}
 
-      {selectedClass && classStudents.length === 0 && (
-        <div style={{
-          background: "linear-gradient(135deg, #1E293B 0%, #0F172A 100%)",
-          border: "2px dashed #334155", borderRadius: "12px", padding: "40px", textAlign: "center"
-        }}>
-          <p style={{ color: "#94A3B8", fontSize: "18px" }}>📭 No students in {selectedClassName?.name} {selectedClassName?.section}</p>
-          <p style={{ color: "#64748B", fontSize: "14px" }}>Add students to this class first</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-800/50 border-b border-slate-700 text-slate-300 text-xs uppercase tracking-wider">
+                <th className="p-4 font-semibold w-24">Roll No</th>
+                <th className="p-4 font-semibold">Student Name</th>
+                <th className="p-4 font-semibold text-right">Attendance Status</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm">
+              {attendance.map((student) => (
+                <tr key={student.id} className="border-b border-slate-700/50 hover:bg-slate-800/20 transition-colors">
+                  <td className="p-4 font-mono text-slate-400 font-semibold">{student.roll}</td>
+                  <td className="p-4 font-bold text-white">{student.name}</td>
+                  <td className="p-4 text-right">
+                    
+                    {/* Status Toggle Buttons */}
+                    <div className="inline-flex bg-[#0F172A] border border-slate-600 rounded-lg p-1 gap-1">
+                      <button 
+                        onClick={() => handleStatusChange(student.id, "Present")}
+                        className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
+                          student.status === "Present" 
+                            ? "bg-emerald-500 text-white shadow-md" 
+                            : "text-slate-400 hover:text-white hover:bg-slate-700"
+                        }`}
+                      >
+                        Present
+                      </button>
+                      <button 
+                        onClick={() => handleStatusChange(student.id, "Absent")}
+                        className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
+                          student.status === "Absent" 
+                            ? "bg-red-500 text-white shadow-md" 
+                            : "text-slate-400 hover:text-white hover:bg-slate-700"
+                        }`}
+                      >
+                        Absent
+                      </button>
+                      <button 
+                        onClick={() => handleStatusChange(student.id, "Leave")}
+                        className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
+                          student.status === "Leave" 
+                            ? "bg-blue-500 text-white shadow-md" 
+                            : "text-slate-400 hover:text-white hover:bg-slate-700"
+                        }`}
+                      >
+                        Leave
+                      </button>
+                    </div>
+
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
+
     </div>
   );
 }

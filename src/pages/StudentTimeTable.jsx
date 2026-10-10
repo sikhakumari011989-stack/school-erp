@@ -1,58 +1,47 @@
-import { useState, useContext } from "react";
-import { AppContext } from "../context/AppContext";
+import React from "react";
 
 export default function StudentTimeTable() {
-  const { user, timetable } = useContext(AppContext);
-  const [selectedDay, setSelectedDay] = useState("Monday");
-
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-  // Filter for the student's specific class, for the selected day!
-  const todaysPeriods = timetable
-    .filter(t => t.class_id === user?.class_id && t.day === selectedDay)
-    .sort((a, b) => a.start_time.localeCompare(b.start_time));
+  const schedule = [
+    { time: "08:00 AM", subject: "Mathematics", teacher: "Mr. Sharma", room: "Room 401" },
+    { time: "09:00 AM", subject: "Physics", teacher: "Dr. Verma", room: "Lab 2" },
+    { time: "10:00 AM", subject: "Break", teacher: "-", room: "-" },
+    { time: "10:30 AM", subject: "English", teacher: "Mrs. Davis", room: "Room 401" },
+    { time: "11:30 AM", subject: "Computer App", teacher: "Mr. Gupta", room: "Computer Lab" },
+  ];
 
   return (
-    <div style={{ color: "white" }}>
-      <div style={{ marginBottom: "30px" }}>
-        <h1 style={{ fontSize: "28px", fontWeight: "bold", margin: "0 0 10px 0", color: "#F1F5F9" }}>⏰ My Timetable</h1>
+    <div className="text-slate-200">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">My Timetable</h1>
+        <p className="text-slate-400 mt-1">Today's Class Schedule (Class 10-A)</p>
       </div>
 
-      <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "15px", marginBottom: "20px" }}>
-        {days.map(day => (
-          <button key={day} onClick={() => setSelectedDay(day)} style={{
-            background: selectedDay === day ? "linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%)" : "rgba(30, 41, 59, 0.4)",
-            border: selectedDay === day ? "1px solid rgba(245, 158, 11, 0.5)" : "1px solid rgba(51, 65, 85, 0.5)",
-            color: selectedDay === day ? "#F59E0B" : "#94A3B8", padding: "10px 24px", borderRadius: "30px", cursor: "pointer", fontWeight: "bold"
-          }}>
-            {day}
+      <div className="bg-[#1E293B] border border-slate-700 rounded-xl shadow-lg overflow-hidden">
+        <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-800/30">
+          <h2 className="font-bold text-white">Friday Schedule</h2>
+          <button className="text-sm text-slate-400 border border-slate-600 px-3 py-1 rounded hover:text-white transition-colors">
+            View Full Week
           </button>
-        ))}
-      </div>
-
-      <div style={{ background: "linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%)", border: "1px solid rgba(51, 65, 85, 0.8)", borderRadius: "12px", padding: "25px" }}>
-        <h2 style={{ marginTop: "0", fontSize: "18px", color: "#F1F5F9", borderBottom: "1px solid rgba(51, 65, 85, 0.5)", paddingBottom: "15px", marginBottom: "20px" }}>
-          Schedule for {selectedDay}
-        </h2>
+        </div>
         
-        {todaysPeriods.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 0" }}>
-            <p style={{ color: "#94A3B8" }}>No periods scheduled for {selectedDay}.</p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-            {todaysPeriods.map((period) => (
-              <div key={period.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(15, 23, 42, 0.6)", border: "1px solid rgba(51, 65, 85, 0.5)", borderRadius: "10px", padding: "15px 20px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                  <div style={{ color: "#F1F5F9", fontWeight: "bold", fontSize: "16px" }}>{period.subject}</div>
-                </div>
-                <div style={{ color: "#60A5FA", fontWeight: "600", fontSize: "14px", background: "rgba(96, 165, 250, 0.1)", padding: "6px 12px", borderRadius: "6px" }}>
-                  {period.start_time} - {period.end_time}
-                </div>
+        <div className="divide-y divide-slate-700">
+          {schedule.map((session, index) => (
+            <div key={index} className="p-5 flex items-center gap-6 hover:bg-slate-800/20 transition-colors">
+              <div className="text-slate-400 text-sm font-bold w-20 shrink-0">{session.time}</div>
+              
+              <div className={`w-1.5 h-12 rounded-full ${session.subject === 'Break' ? 'bg-slate-600' : 'bg-blue-500'}`}></div>
+              
+              <div className="flex-1">
+                <h3 className={`font-bold text-lg ${session.subject === 'Break' ? 'text-slate-500' : 'text-white'}`}>
+                  {session.subject}
+                </h3>
+                <p className="text-slate-400 text-sm mt-0.5">
+                  {session.teacher !== "-" ? `Teacher: ${session.teacher} • ${session.room}` : "Snack Break"}
+                </p>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

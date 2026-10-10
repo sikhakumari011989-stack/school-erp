@@ -1,229 +1,173 @@
-import { useContext, useState } from "react";
-import { AppContext } from "../context/AppContext";
+import { useState } from "react";
 
 export default function Fees() {
-  const { students, fees, updateFees } = useContext(AppContext);
-  const [feeData, setFeeData] = useState({
-    student_id: "",
-    amount: "",
-    status: "pending"
-  });
-
-  const handleAddFee = () => {
-    if (!feeData.student_id || !feeData.amount) {
-      alert("Fill all fields");
-      return;
-    }
-
-    // Send directly to AppContext in database format
-    updateFees(feeData);
-
-    alert("✅ Fee record added to Cloud!");
-    setFeeData({ student_id: "", amount: "", status: "pending" });
-  };
-
-  const studentName = (id) => students.find(s => s.id === id)?.name || "Unknown";
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("All");
   
-  const totalFees = fees.reduce((sum, f) => sum + parseFloat(f.amount || 0), 0);
-  const paidFees = fees.filter(f => f.status === "paid").reduce((sum, f) => sum + parseFloat(f.amount || 0), 0);
-  const pendingFees = totalFees - paidFees;
+  // Mock Fee Data
+  const [fees, setFees] = useState([
+    { id: 1, receipt: "REC-1001", student: "Raj Kumar", class: "10-A", amount: "₹5,000", dueDate: "2026-10-15", status: "Paid", datePaid: "2026-10-01" },
+    { id: 2, receipt: "REC-1002", student: "Priya Singh", class: "10-A", amount: "₹5,000", dueDate: "2026-10-15", status: "Pending", datePaid: "-" },
+    { id: 3, receipt: "REC-1003", student: "Amit Patel", class: "9-B", amount: "₹4,500", dueDate: "2026-09-30", status: "Overdue", datePaid: "-" },
+    { id: 4, receipt: "REC-1004", student: "Neha Sharma", class: "11-Sci", amount: "₹8,000", dueDate: "2026-10-20", status: "Paid", datePaid: "2026-10-05" },
+    { id: 5, receipt: "REC-1005", student: "Aarush Verma", class: "10-A", amount: "₹5,000", dueDate: "2026-10-15", status: "Pending", datePaid: "-" },
+  ]);
+
+  const filteredFees = filterStatus === "All" ? fees : fees.filter(fee => fee.status === filterStatus);
+
+  // Stats calculation
+  const totalCollected = fees.filter(f => f.status === "Paid").length * 5000; // Simplified mock calc
+  const pendingCount = fees.filter(f => f.status === "Pending").length;
+  const overdueCount = fees.filter(f => f.status === "Overdue").length;
 
   return (
-    <div style={{ color: "white" }}>
-      <h1 style={{ fontSize: "28px", fontWeight: "bold", marginTop: "0" }}>
-        💰 Fees Management
-      </h1>
-
-      {/* STATS */}
-      <div style={{
-        display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: "15px", marginBottom: "30px"
-      }}>
-        <div style={{
-          background: "linear-gradient(135deg, #06B6D433 0%, #0891B233 100%)",
-          border: "1px solid #06B6D466", borderRadius: "10px", padding: "20px", textAlign: "center"
-        }}>
-          <p style={{ color: "#67E8F9", fontSize: "12px", margin: "0 0 8px 0", textTransform: "uppercase", fontWeight: "500" }}>
-            Total Fees
-          </p>
-          <h3 style={{ color: "#06B6D4", margin: "0", fontSize: "28px", fontWeight: "bold" }}>
-            ₹{totalFees.toFixed(0)}
-          </h3>
+    <div className="text-slate-200 relative">
+      
+      {/* HEADER */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Fee Management</h1>
+          <p className="text-slate-400 mt-1">Track payments, issue invoices, and manage dues</p>
         </div>
-
-        <div style={{
-          background: "linear-gradient(135deg, #10B98133 0%, #059669 100%)",
-          border: "1px solid #10B98166", borderRadius: "10px", padding: "20px", textAlign: "center"
-        }}>
-          <p style={{ color: "#86EFAC", fontSize: "12px", margin: "0 0 8px 0", textTransform: "uppercase", fontWeight: "500" }}>
-            Paid
-          </p>
-          <h3 style={{ color: "#10B981", margin: "0", fontSize: "28px", fontWeight: "bold" }}>
-            ₹{paidFees.toFixed(0)}
-          </h3>
-        </div>
-
-        <div style={{
-          background: "linear-gradient(135deg, #F59E0B33 0%, #FBBF2433 100%)",
-          border: "1px solid #F59E0B66", borderRadius: "10px", padding: "20px", textAlign: "center"
-        }}>
-          <p style={{ color: "#FCD34D", fontSize: "12px", margin: "0 0 8px 0", textTransform: "uppercase", fontWeight: "500" }}>
-            Pending
-          </p>
-          <h3 style={{ color: "#F59E0B", margin: "0", fontSize: "28px", fontWeight: "bold" }}>
-            ₹{pendingFees.toFixed(0)}
-          </h3>
-        </div>
-      </div>
-
-      {/* ADD FEE FORM */}
-      <div style={{
-        background: "linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)",
-        borderRadius: "12px", padding: "30px", marginBottom: "30px",
-        boxShadow: "0 10px 30px rgba(6, 182, 212, 0.2)"
-      }}>
-        <h2 style={{ marginTop: "0", fontSize: "20px" }}>Add Fee Record</h2>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "15px" }}>
-          <div>
-            <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>
-              Student
-            </label>
-            <select 
-              value={feeData.student_id}
-              onChange={(e) => setFeeData({...feeData, student_id: e.target.value})}
-              style={{
-                width: "100%", padding: "12px 15px", background: "rgba(255, 255, 255, 0.1)",
-                color: "white", border: "1px solid rgba(255, 255, 255, 0.2)",
-                borderRadius: "8px", boxSizing: "border-box", fontSize: "14px",
-                cursor: "pointer", backdropFilter: "blur(10px)"
-              }}
-            >
-              <option value="" style={{ color: "black" }}>-- Select Student --</option>
-              {students.map(s => (
-                <option key={s.id} value={s.id} style={{ color: "black" }}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>
-              Amount (₹)
-            </label>
-            <input 
-              type="number"
-              value={feeData.amount}
-              onChange={(e) => setFeeData({...feeData, amount: e.target.value})}
-              placeholder="Enter amount"
-              style={{
-                width: "100%", padding: "12px 15px", background: "rgba(255, 255, 255, 0.1)",
-                color: "white", border: "1px solid rgba(255, 255, 255, 0.2)",
-                borderRadius: "8px", boxSizing: "border-box", fontSize: "14px",
-                backdropFilter: "blur(10px)"
-              }}
-            />
-          </div>
-        </div>
-
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>
-            Status
-          </label>
-          <select 
-            value={feeData.status}
-            onChange={(e) => setFeeData({...feeData, status: e.target.value})}
-            style={{
-              width: "100%", padding: "12px 15px", background: "rgba(255, 255, 255, 0.1)",
-              color: "white", border: "1px solid rgba(255, 255, 255, 0.2)",
-              borderRadius: "8px", boxSizing: "border-box", fontSize: "14px",
-              cursor: "pointer", backdropFilter: "blur(10px)"
-            }}
-          >
-            <option value="pending" style={{ color: "black" }}>⏳ Pending</option>
-            <option value="paid" style={{ color: "black" }}>✓ Paid</option>
-            <option value="overdue" style={{ color: "black" }}>⚠️ Overdue</option>
-          </select>
-        </div>
-
         <button 
-          onClick={handleAddFee}
-          style={{
-            padding: "12px 30px", background: "#FFFFFF", color: "#0891B2",
-            border: "none", cursor: "pointer", borderRadius: "8px",
-            fontWeight: "bold", fontSize: "15px", transition: "all 0.3s ease",
-            boxShadow: "0 5px 15px rgba(0, 0, 0, 0.2)"
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.transform = "translateY(-2px)";
-            e.target.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.3)";
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = "translateY(0)";
-            e.target.style.boxShadow = "0 5px 15px rgba(0, 0, 0, 0.2)";
-          }}
+          onClick={() => setIsModalOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm transition-all shadow-lg shadow-blue-600/20"
         >
-          ➕ Add Fee
+          + Create Fee Record
         </button>
       </div>
 
-      {/* FEES LIST */}
-      <h2 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "20px" }}>
-        {fees.length} Fee Record{fees.length !== 1 ? "s" : ""}
-      </h2>
-
-      {fees.length === 0 ? (
-        <div style={{
-          background: "linear-gradient(135deg, #1E293B 0%, #0F172A 100%)",
-          border: "2px dashed #334155", borderRadius: "12px",
-          padding: "40px", textAlign: "center"
-        }}>
-          <p style={{ color: "#94A3B8", fontSize: "18px" }}>📭 No fee records yet</p>
-          <p style={{ color: "#64748B", fontSize: "14px" }}>Add your first fee record to get started</p>
+      {/* QUICK STATS */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+        <div className="bg-[#1E293B] border border-slate-700 rounded-xl p-5 shadow-lg border-l-4 border-l-emerald-500">
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Collected (Oct)</p>
+          <p className="text-2xl font-bold text-white">₹13,000</p>
         </div>
-      ) : (
-        <div style={{
-          background: "linear-gradient(135deg, #1E293B 0%, #0F172A 100%)",
-          border: "1px solid #334155", borderRadius: "12px",
-          padding: "25px", overflowX: "auto"
-        }}>
-          <table style={{ borderCollapse: "collapse", width: "100%" }}>
+        <div className="bg-[#1E293B] border border-slate-700 rounded-xl p-5 shadow-lg border-l-4 border-l-blue-500">
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Pending Invoices</p>
+          <p className="text-2xl font-bold text-white">{pendingCount}</p>
+        </div>
+        <div className="bg-[#1E293B] border border-slate-700 rounded-xl p-5 shadow-lg border-l-4 border-l-red-500">
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Overdue Accounts</p>
+          <p className="text-2xl font-bold text-white">{overdueCount}</p>
+        </div>
+      </div>
+
+      {/* CONTROLS */}
+      <div className="bg-[#1E293B] border border-slate-700 rounded-xl p-4 shadow-lg mb-6 flex justify-between items-center">
+        <div className="flex gap-2">
+          {["All", "Paid", "Pending", "Overdue"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                filterStatus === status 
+                  ? "bg-slate-700 text-white shadow-md" 
+                  : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+              }`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+        <button className="text-sm font-semibold text-slate-300 bg-[#0F172A] border border-slate-600 px-4 py-1.5 rounded-lg hover:bg-slate-800 transition-all">
+          📥 Export Excel
+        </button>
+      </div>
+
+      {/* FEE TABLE */}
+      <div className="bg-[#1E293B] border border-slate-700 rounded-xl shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr style={{ borderBottom: "2px solid #334155" }}>
-                <th style={{ padding: "15px", textAlign: "left", color: "#94A3B8", fontWeight: "600" }}>Student</th>
-                <th style={{ padding: "15px", textAlign: "left", color: "#94A3B8", fontWeight: "600" }}>Amount</th>
-                <th style={{ padding: "15px", textAlign: "left", color: "#94A3B8", fontWeight: "600" }}>Status</th>
-                <th style={{ padding: "15px", textAlign: "left", color: "#94A3B8", fontWeight: "600" }}>Date</th>
+              <tr className="bg-slate-800/50 border-b border-slate-700 text-slate-300 text-sm">
+                <th className="p-4 font-semibold">Receipt No</th>
+                <th className="p-4 font-semibold">Student Name</th>
+                <th className="p-4 font-semibold">Amount</th>
+                <th className="p-4 font-semibold">Due Date</th>
+                <th className="p-4 font-semibold">Status</th>
+                <th className="p-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {fees.map(fee => (
-                <tr key={fee.id} style={{ borderBottom: "1px solid #1E293B" }}>
-                  <td style={{ padding: "15px", color: "#E2E8F0" }}>
-                    {studentName(fee.student_id)}
+            <tbody className="text-sm">
+              {filteredFees.map((fee) => (
+                <tr key={fee.id} className="border-b border-slate-700/50 hover:bg-slate-800/20 transition-colors">
+                  <td className="p-4 font-mono text-slate-400 text-xs">{fee.receipt}</td>
+                  <td className="p-4 font-bold text-white">
+                    {fee.student} <span className="block text-xs font-normal text-slate-500">{fee.class}</span>
                   </td>
-                  <td style={{ padding: "15px", color: "#E2E8F0", fontWeight: "bold" }}>
-                    ₹{fee.amount}
-                  </td>
-                  <td style={{ padding: "15px" }}>
-                    <span style={{
-                      padding: "6px 12px", borderRadius: "6px",
-                      background: fee.status === "paid" ? "#10B98133" : 
-                                 fee.status === "overdue" ? "#EF444433" : "#F59E0B33",
-                      color: fee.status === "paid" ? "#10B981" : 
-                             fee.status === "overdue" ? "#EF4444" : "#F59E0B",
-                      fontSize: "12px", fontWeight: "bold"
-                    }}>
-                      {fee.status === "paid" ? "✓ Paid" : 
-                       fee.status === "overdue" ? "⚠️ Overdue" : "⏳ Pending"}
+                  <td className="p-4 font-mono font-semibold text-slate-200">{fee.amount}</td>
+                  <td className="p-4 text-slate-400">{fee.dueDate}</td>
+                  <td className="p-4">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                      fee.status === 'Paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+                      fee.status === 'Pending' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 
+                      'bg-red-500/10 text-red-400 border border-red-500/20'
+                    }`}>
+                      {fee.status}
                     </span>
                   </td>
-                  <td style={{ padding: "15px", color: "#CBD5E1" }}>
-                    {fee.date}
+                  <td className="p-4 text-right">
+                    <button className="text-slate-400 hover:text-white px-2 py-1 text-xs border border-slate-600 rounded mr-2 transition-colors">View</button>
+                    {fee.status !== 'Paid' && (
+                      <button className="bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border border-emerald-500/30 px-2 py-1 text-xs rounded font-semibold transition-colors">
+                        Collect
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* CREATE FEE MODAL (OVERLAY) */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1E293B] border border-slate-600 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-fade-in-up">
+            <div className="flex justify-between items-center p-6 border-b border-slate-700 bg-slate-800/50">
+              <h2 className="text-lg font-bold text-white">Create Fee Invoice</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white transition-colors">✕</button>
+            </div>
+            
+            <form className="p-6 space-y-4" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Target</label>
+                <select className="w-full bg-[#0F172A] border border-slate-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                  <option>Entire Class: 10-A</option>
+                  <option>Entire Class: 9-B</option>
+                  <option>Specific Student...</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Fee Type</label>
+                <select className="w-full bg-[#0F172A] border border-slate-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                  <option>Term 2 Tuition Fee</option>
+                  <option>Transport Fee</option>
+                  <option>Library Fine</option>
+                  <option>Annual Sports Fee</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Amount (₹)</label>
+                  <input type="number" required placeholder="5000" className="w-full bg-[#0F172A] border border-slate-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Due Date</label>
+                  <input type="date" required className="w-full bg-[#0F172A] border border-slate-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 custom-calendar-icon" />
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 rounded-lg border border-slate-600 transition-colors">Cancel</button>
+                <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg shadow-lg shadow-blue-600/20 transition-colors">Generate Invoices</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
