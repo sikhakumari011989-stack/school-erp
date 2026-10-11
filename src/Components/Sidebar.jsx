@@ -14,7 +14,12 @@ export default function Sidebar() {
     if (user.role === 'admin') {
       return [
         { name: 'Dashboard', path: '/admin/dashboard', icon: '🛡️' },
-        { name: 'Principal Suite', path: '/principal/dashboard', icon: '🏛️' } // NEW LINK FOR TESTING
+        { name: 'Principal Suite', path: '/principal/dashboard', icon: '🏛️' },
+        { name: 'Accountant Suite', path: '/accountant/dashboard', icon: '💰' } // ADDED FOR ADMIN PREVIEW
+      ];
+    } else if (user.role === 'accountant') {
+      return [
+        { name: 'Dashboard', path: '/accountant/dashboard', icon: '💰' }
       ];
     } else if (user.role === 'teacher') {
       return [

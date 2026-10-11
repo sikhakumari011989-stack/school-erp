@@ -6,12 +6,13 @@ import { AppProvider } from './context/AppContext';
 import Sidebar from './Components/Sidebar';
 import Login from './pages/Login';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import PrincipalDashboard from './pages/PrincipalDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherHomework from './pages/TeacherHomework';
 import TeacherAttendance from './pages/TeacherAttendance';
 import StudentDashboard from './pages/StudentDashboard';
 import StudentLMS from './pages/StudentLMS';
-import PrincipalDashboard from './pages/PrincipalDashboard'; // NEW IMPORT
+import AccountantDashboard from './pages/AccountantDashboard'; // NEW IMPORT
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
@@ -36,7 +37,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           
           <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
-          <Route path="/principal/dashboard" element={<PrincipalDashboard />} /> {/* NEW ROUTE */}
+          <Route path="/principal/dashboard" element={<PrincipalDashboard />} />
+          <Route path="/accountant/dashboard" element={<AccountantDashboard />} /> {/* NEW ROUTE */}
           
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/homework" element={<TeacherHomework />} />

@@ -17,7 +17,11 @@ export default function Login() {
   // Auto-redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate(`/${user.role}/dashboard`);
+      if (user.role === 'accountant') {
+        navigate('/accountant/dashboard');
+      } else {
+        navigate(`/${user.role}/dashboard`);
+      }
     }
   }, [user, navigate]);
 
@@ -26,9 +30,6 @@ export default function Login() {
     setLoading(true);
     setError('');
 
-    // MVP SIMULATION LOGIC: 
-    // In a full production build, this queries Supabase. 
-    // For your 24-hour MVP demo, we are using smart routing based on the Personal Code prefix.
     setTimeout(() => {
       const code2 = formData.personalCode.toLowerCase();
       const code1 = formData.institutionCode.toUpperCase();
@@ -44,17 +45,22 @@ export default function Login() {
         login({ id: "admin-123", name: "Super Admin", role: "admin", school_id: code1 });
         navigate('/admin/dashboard');
       } 
-      // 2. TEACHER LOGIN
+      // 2. ACCOUNTANT LOGIN
+      else if (code2.includes('acc')) {
+        login({ id: "acc-123", name: "Chief Accountant", role: "accountant", school_id: code1 });
+        navigate('/accountant/dashboard');
+      }
+      // 3. TEACHER LOGIN
       else if (code2.includes('tch')) {
         login({ id: "teacher-123", name: "Faculty Member", role: "teacher", school_id: code1 });
         navigate('/teacher/dashboard');
       } 
-      // 3. STUDENT LOGIN
+      // 4. STUDENT LOGIN
       else {
         login({ id: "student-123", name: "Student", role: "student", school_id: code1 });
         navigate('/student/dashboard');
       }
-    }, 800); // Slight delay for realistic loading effect
+    }, 800);
   };
 
   return (
@@ -103,13 +109,13 @@ export default function Login() {
           {/* TIER 2: PERSONAL CODE */}
           <div>
             <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2 ml-1">
-              Code 2: Personal ID
+              Code 2: Personal ID (e.g. admin, acc, tch, or student)
             </label>
             <div className="relative">
               <span className="absolute left-4 top-3.5 text-slate-500">👤</span>
               <input 
                 type="text" 
-                placeholder="e.g., STU-1024 or TCH-50" 
+                placeholder="e.g., ACC-01 or STU-1024" 
                 className="w-full bg-slate-900/50 border border-slate-700 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono uppercase tracking-wider"
                 value={formData.personalCode}
                 onChange={(e) => setFormData({...formData, personalCode: e.target.value})}
