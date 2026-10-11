@@ -38,11 +38,12 @@ export default function Sidebar() {
         { name: 'Attendance', path: '/teacher/attendance', icon: '✅' },
         { name: 'Homework', path: '/teacher/homework', icon: '📚' },
         { name: 'Analytics & Papers', path: '/teacher/analytics', icon: '📊' },
-        { name: 'Planner & Tasks', path: '/teacher/planner', icon: '📝' } // NEW LINK
+        { name: 'Planner & Tasks', path: '/teacher/planner', icon: '📝' }
       ];
     } else if (user.role === 'student') {
       return [
         { name: 'Dashboard', path: '/student/dashboard', icon: '🎓' },
+        { name: 'Fee Ledger & Reports', path: '/student/fees', icon: '💳' }, // NEW LINK
         { name: 'LMS & Quizzes', path: '/student/lms', icon: '📖' },
         { name: 'Certificates', path: '/student/certificates', icon: '📜' },
         { name: 'School Calendar', path: '/student/calendar', icon: '📅' },

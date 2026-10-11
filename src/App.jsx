@@ -15,13 +15,14 @@ import TeacherHomework from './pages/TeacherHomework';
 import TeacherAttendance from './pages/TeacherAttendance';
 import TeacherClasses from './pages/TeacherClasses';
 import TeacherAnalytics from './pages/TeacherAnalytics';
-import TeacherPlanner from './pages/TeacherPlanner'; // NEW IMPORT
+import TeacherPlanner from './pages/TeacherPlanner';
 import StudentDashboard from './pages/StudentDashboard';
 import StudentLMS from './pages/StudentLMS';
 import CertificateGenerator from './pages/CertificateGenerator';
 import StudentCalendar from './pages/StudentCalendar';
 import StudentGallery from './pages/StudentGallery';
 import StudentConduct from './pages/StudentConduct';
+import StudentFees from './pages/StudentFees'; // NEW IMPORT
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
@@ -56,7 +57,7 @@ export default function App() {
           <Route path="/teacher/attendance" element={<TeacherAttendance />} />
           <Route path="/teacher/classes" element={<TeacherClasses />} />
           <Route path="/teacher/analytics" element={<TeacherAnalytics />} />
-          <Route path="/teacher/planner" element={<TeacherPlanner />} /> {/* NEW ROUTE */}
+          <Route path="/teacher/planner" element={<TeacherPlanner />} />
           
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/lms" element={<StudentLMS />} />
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/student/calendar" element={<StudentCalendar />} />
           <Route path="/student/gallery" element={<StudentGallery />} />
           <Route path="/student/conduct" element={<StudentConduct />} />
+          <Route path="/student/fees" element={<StudentFees />} /> {/* NEW ROUTE */}
           
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
