@@ -43,12 +43,13 @@ export default function Sidebar() {
     } else if (user.role === 'student') {
       return [
         { name: 'Dashboard', path: '/student/dashboard', icon: '🎓' },
-        { name: 'Fee Ledger & Reports', path: '/student/fees', icon: '💳' }, // NEW LINK
+        { name: 'Fee Ledger & Reports', path: '/student/fees', icon: '💳' },
         { name: 'LMS & Quizzes', path: '/student/lms', icon: '📖' },
         { name: 'Certificates', path: '/student/certificates', icon: '📜' },
         { name: 'School Calendar', path: '/student/calendar', icon: '📅' },
         { name: 'Campus Gallery', path: '/student/gallery', icon: '📸' },
-        { name: 'Conduct & Discipline', path: '/student/conduct', icon: '⚖️' }
+        { name: 'Conduct & Discipline', path: '/student/conduct', icon: '⚖️' },
+        { name: 'Transport Fleet', path: '/student/transport', icon: '🚌' } // NEW LINK
       ];
     }
     return [];
