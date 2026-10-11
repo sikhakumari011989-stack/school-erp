@@ -5,14 +5,14 @@ import { AppContext } from "../context/AppContext";
 export default function StudentDashboard() {
   const { user } = useContext(AppContext) || { user: { name: "Anshika" } };
 
-  // Upgraded Quick Actions with rich gradients instead of flat colors
+  // Upgraded Quick Actions with correct routing paths (slashes instead of hyphens)
   const quickActions = [
-    { name: "Attendance", icon: "📅", gradient: "from-emerald-500/20 to-teal-500/10 text-emerald-400 border-emerald-500/30", path: "/student-attendance" },
-    { name: "Homework", icon: "📝", gradient: "from-orange-500/20 to-amber-500/10 text-orange-400 border-orange-500/30", path: "/student-homework" },
-    { name: "Marks", icon: "📊", gradient: "from-blue-500/20 to-cyan-500/10 text-blue-400 border-blue-500/30", path: "/student-marks" },
-    { name: "Diary", icon: "📖", gradient: "from-purple-500/20 to-fuchsia-500/10 text-purple-400 border-purple-500/30", path: "/student-diary" },
+    { name: "Attendance", icon: "📅", gradient: "from-emerald-500/20 to-teal-500/10 text-emerald-400 border-emerald-500/30", path: "/student/attendance" },
+    { name: "Homework", icon: "📝", gradient: "from-orange-500/20 to-amber-500/10 text-orange-400 border-orange-500/30", path: "/student/homework" },
+    { name: "Marks", icon: "📊", gradient: "from-blue-500/20 to-cyan-500/10 text-blue-400 border-blue-500/30", path: "/student/marks" },
+    { name: "Diary", icon: "📖", gradient: "from-purple-500/20 to-fuchsia-500/10 text-purple-400 border-purple-500/30", path: "/student/diary" },
     { name: "Chat", icon: "💬", gradient: "from-pink-500/20 to-rose-500/10 text-pink-400 border-pink-500/30", path: "/chat" },
-    { name: "Fees", icon: "💰", gradient: "from-green-500/20 to-emerald-500/10 text-green-400 border-green-500/30", path: "/student-fees" },
+    { name: "Fees", icon: "💰", gradient: "from-green-500/20 to-emerald-500/10 text-green-400 border-green-500/30", path: "/student/fees" },
     { name: "Request Cert", icon: "📜", gradient: "from-cyan-500/20 to-sky-500/10 text-cyan-400 border-cyan-500/30", path: "/request-cert" },
     { name: "Certificates", icon: "🏆", gradient: "from-yellow-500/20 to-amber-500/10 text-yellow-400 border-yellow-500/30", path: "/certificates" },
     { name: "Online Exam", icon: "💻", gradient: "from-red-500/20 to-rose-500/10 text-red-400 border-red-500/30", path: "/online-exam" },
