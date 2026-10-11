@@ -41,7 +41,8 @@ export default function Sidebar() {
       return [
         { name: 'Dashboard', path: '/student/dashboard', icon: '🎓' },
         { name: 'LMS & Quizzes', path: '/student/lms', icon: '📖' },
-        { name: 'Certificates', path: '/student/certificates', icon: '📜' } // NEW LINK
+        { name: 'Certificates', path: '/student/certificates', icon: '📜' },
+        { name: 'School Calendar', path: '/student/calendar', icon: '📅' } // NEW LINK
       ];
     }
     return [];

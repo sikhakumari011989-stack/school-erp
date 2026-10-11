@@ -15,7 +15,8 @@ import TeacherHomework from './pages/TeacherHomework';
 import TeacherAttendance from './pages/TeacherAttendance';
 import StudentDashboard from './pages/StudentDashboard';
 import StudentLMS from './pages/StudentLMS';
-import CertificateGenerator from './pages/CertificateGenerator'; // IMPORTED
+import CertificateGenerator from './pages/CertificateGenerator';
+import StudentCalendar from './pages/StudentCalendar'; // NEW IMPORT
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
@@ -51,7 +52,8 @@ export default function App() {
           
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/lms" element={<StudentLMS />} />
-          <Route path="/student/certificates" element={<CertificateGenerator />} /> {/* NEW ROUTE */}
+          <Route path="/student/certificates" element={<CertificateGenerator />} />
+          <Route path="/student/calendar" element={<StudentCalendar />} /> {/* NEW ROUTE */}
           
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
