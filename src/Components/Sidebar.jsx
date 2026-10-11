@@ -43,7 +43,8 @@ export default function Sidebar() {
         { name: 'LMS & Quizzes', path: '/student/lms', icon: '📖' },
         { name: 'Certificates', path: '/student/certificates', icon: '📜' },
         { name: 'School Calendar', path: '/student/calendar', icon: '📅' },
-        { name: 'Campus Gallery', path: '/student/gallery', icon: '📸' } // NEW LINK
+        { name: 'Campus Gallery', path: '/student/gallery', icon: '📸' },
+        { name: 'Conduct & Discipline', path: '/student/conduct', icon: '⚖️' } // NEW LINK
       ];
     }
     return [];

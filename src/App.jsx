@@ -17,7 +17,8 @@ import StudentDashboard from './pages/StudentDashboard';
 import StudentLMS from './pages/StudentLMS';
 import CertificateGenerator from './pages/CertificateGenerator';
 import StudentCalendar from './pages/StudentCalendar';
-import StudentGallery from './pages/StudentGallery'; // NEW IMPORT
+import StudentGallery from './pages/StudentGallery';
+import StudentConduct from './pages/StudentConduct'; // NEW IMPORT
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
@@ -55,7 +56,8 @@ export default function App() {
           <Route path="/student/lms" element={<StudentLMS />} />
           <Route path="/student/certificates" element={<CertificateGenerator />} />
           <Route path="/student/calendar" element={<StudentCalendar />} />
-          <Route path="/student/gallery" element={<StudentGallery />} /> {/* NEW ROUTE */}
+          <Route path="/student/gallery" element={<StudentGallery />} />
+          <Route path="/student/conduct" element={<StudentConduct />} /> {/* NEW ROUTE */}
           
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
