@@ -37,7 +37,8 @@ export default function Sidebar() {
         { name: 'My Classes', path: '/teacher/classes', icon: '🏫' },
         { name: 'Attendance', path: '/teacher/attendance', icon: '✅' },
         { name: 'Homework', path: '/teacher/homework', icon: '📚' },
-        { name: 'Analytics & Papers', path: '/teacher/analytics', icon: '📊' } // NEW LINK
+        { name: 'Analytics & Papers', path: '/teacher/analytics', icon: '📊' },
+        { name: 'Planner & Tasks', path: '/teacher/planner', icon: '📝' } // NEW LINK
       ];
     } else if (user.role === 'student') {
       return [
