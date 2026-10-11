@@ -15,7 +15,12 @@ export default function Sidebar() {
       return [
         { name: 'Dashboard', path: '/admin/dashboard', icon: '🛡️' },
         { name: 'Principal Suite', path: '/principal/dashboard', icon: '🏛️' },
-        { name: 'Accountant Suite', path: '/accountant/dashboard', icon: '💰' } // ADDED FOR ADMIN PREVIEW
+        { name: 'Accountant Suite', path: '/accountant/dashboard', icon: '💰' },
+        { name: 'Trustee Audit', path: '/trustee/dashboard', icon: '📈' } // ADDED FOR TESTING
+      ];
+    } else if (user.role === 'trustee') {
+      return [
+        { name: 'Dashboard', path: '/trustee/dashboard', icon: '📈' }
       ];
     } else if (user.role === 'accountant') {
       return [

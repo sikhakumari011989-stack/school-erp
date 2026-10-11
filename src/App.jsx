@@ -7,12 +7,13 @@ import Sidebar from './Components/Sidebar';
 import Login from './pages/Login';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import PrincipalDashboard from './pages/PrincipalDashboard';
+import AccountantDashboard from './pages/AccountantDashboard';
+import TrusteeDashboard from './pages/TrusteeDashboard'; // NEW IMPORT
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherHomework from './pages/TeacherHomework';
 import TeacherAttendance from './pages/TeacherAttendance';
 import StudentDashboard from './pages/StudentDashboard';
 import StudentLMS from './pages/StudentLMS';
-import AccountantDashboard from './pages/AccountantDashboard'; // NEW IMPORT
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
@@ -38,7 +39,8 @@ export default function App() {
           
           <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
           <Route path="/principal/dashboard" element={<PrincipalDashboard />} />
-          <Route path="/accountant/dashboard" element={<AccountantDashboard />} /> {/* NEW ROUTE */}
+          <Route path="/accountant/dashboard" element={<AccountantDashboard />} />
+          <Route path="/trustee/dashboard" element={<TrusteeDashboard />} /> {/* NEW ROUTE */}
           
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/homework" element={<TeacherHomework />} />
