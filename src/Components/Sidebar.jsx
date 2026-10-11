@@ -18,12 +18,13 @@ export default function Sidebar() {
     } else if (user.role === 'teacher') {
       return [
         { name: 'Dashboard', path: '/teacher/dashboard', icon: '👨‍🏫' },
-        { name: 'Attendance', path: '/teacher/attendance', icon: '✅' }, // NEW LINK
+        { name: 'Attendance', path: '/teacher/attendance', icon: '✅' },
         { name: 'Homework', path: '/teacher/homework', icon: '📚' }
       ];
     } else if (user.role === 'student') {
       return [
-        { name: 'Dashboard', path: '/student/dashboard', icon: '🎓' }
+        { name: 'Dashboard', path: '/student/dashboard', icon: '🎓' },
+        { name: 'LMS & Quizzes', path: '/student/lms', icon: '📖' } // NEW LINK
       ];
     }
     return [];

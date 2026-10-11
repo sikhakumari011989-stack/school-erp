@@ -8,8 +8,9 @@ import Login from './pages/Login';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherHomework from './pages/TeacherHomework';
-import TeacherAttendance from './pages/TeacherAttendance'; // NEW IMPORT
+import TeacherAttendance from './pages/TeacherAttendance';
 import StudentDashboard from './pages/StudentDashboard';
+import StudentLMS from './pages/StudentLMS'; // NEW IMPORT
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
@@ -37,9 +38,10 @@ export default function App() {
           
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/homework" element={<TeacherHomework />} />
-          <Route path="/teacher/attendance" element={<TeacherAttendance />} /> {/* NEW ROUTE */}
+          <Route path="/teacher/attendance" element={<TeacherAttendance />} />
           
           <Route path="/student/dashboard" element={<StudentDashboard />} />
+          <Route path="/student/lms" element={<StudentLMS />} /> {/* NEW ROUTE */}
           
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
