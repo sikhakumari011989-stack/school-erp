@@ -34,9 +34,10 @@ export default function Sidebar() {
     } else if (user.role === 'teacher') {
       return [
         { name: 'Dashboard', path: '/teacher/dashboard', icon: '👨‍🏫' },
-        { name: 'My Classes', path: '/teacher/classes', icon: '🏫' }, // NEW LINK
+        { name: 'My Classes', path: '/teacher/classes', icon: '🏫' },
         { name: 'Attendance', path: '/teacher/attendance', icon: '✅' },
-        { name: 'Homework', path: '/teacher/homework', icon: '📚' }
+        { name: 'Homework', path: '/teacher/homework', icon: '📚' },
+        { name: 'Analytics & Papers', path: '/teacher/analytics', icon: '📊' } // NEW LINK
       ];
     } else if (user.role === 'student') {
       return [

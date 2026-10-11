@@ -13,7 +13,8 @@ import StaffDashboard from './pages/StaffDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherHomework from './pages/TeacherHomework';
 import TeacherAttendance from './pages/TeacherAttendance';
-import TeacherClasses from './pages/TeacherClasses'; // NEW IMPORT
+import TeacherClasses from './pages/TeacherClasses';
+import TeacherAnalytics from './pages/TeacherAnalytics'; // NEW IMPORT
 import StudentDashboard from './pages/StudentDashboard';
 import StudentLMS from './pages/StudentLMS';
 import CertificateGenerator from './pages/CertificateGenerator';
@@ -52,7 +53,8 @@ export default function App() {
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/homework" element={<TeacherHomework />} />
           <Route path="/teacher/attendance" element={<TeacherAttendance />} />
-          <Route path="/teacher/classes" element={<TeacherClasses />} /> {/* NEW ROUTE */}
+          <Route path="/teacher/classes" element={<TeacherClasses />} />
+          <Route path="/teacher/analytics" element={<TeacherAnalytics />} /> {/* NEW ROUTE */}
           
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/lms" element={<StudentLMS />} />
