@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 export default function StudentCalendar() {
-  const [selectedMonth, setSelectedMonth] = useState("October 2026");
+  const [selectedMonth] = useState("October 2026");
 
   const events = [
     { date: "Oct 15, 2026", title: "Mid-Term Examination Begins", type: "Exam", status: "Working Day" },
