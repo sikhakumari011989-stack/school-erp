@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherHomework from './pages/TeacherHomework';
+import TeacherAttendance from './pages/TeacherAttendance'; // NEW IMPORT
 import StudentDashboard from './pages/StudentDashboard';
 
 const AppLayout = ({ children }) => {
@@ -33,8 +34,11 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           
           <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
+          
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/homework" element={<TeacherHomework />} />
+          <Route path="/teacher/attendance" element={<TeacherAttendance />} /> {/* NEW ROUTE */}
+          
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           
           <Route path="*" element={<Navigate to="/login" replace />} />

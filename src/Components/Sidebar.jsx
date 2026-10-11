@@ -18,6 +18,7 @@ export default function Sidebar() {
     } else if (user.role === 'teacher') {
       return [
         { name: 'Dashboard', path: '/teacher/dashboard', icon: '👨‍🏫' },
+        { name: 'Attendance', path: '/teacher/attendance', icon: '✅' }, // NEW LINK
         { name: 'Homework', path: '/teacher/homework', icon: '📚' }
       ];
     } else if (user.role === 'student') {
