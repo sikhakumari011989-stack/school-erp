@@ -1,83 +1,71 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-// Standard Vite/Tailwind icons. If you use different icons, swap these out.
-import { LayoutDashboard, Users, BookOpen, FileText, PieChart, CreditCard, Bell, LogOut } from 'lucide-react';
+import React, { useContext } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { AppContext } from '../context/AppContext';
 
-export default function Sidebar({ role, handleLogout }) {
-  // 1. ADMIN TIER LINKS (Includes Homework, Reports, and Analytics)
-  const adminLinks = [
-    { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Students', path: '/admin/students', icon: Users },
-    { name: 'Homework', path: '/admin/homework', icon: BookOpen },
-    { name: 'Reports', path: '/admin/reports', icon: FileText },
-    { name: 'Analytics', path: '/admin/analytics', icon: PieChart },
-    { name: 'Notices', path: '/admin/notices', icon: Bell },
-  ];
+export default function Sidebar() {
+  const { user, logout } = useContext(AppContext);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // 2. TEACHER TIER LINKS
-  const teacherLinks = [
-    { name: 'Dashboard', path: '/teacher/dashboard', icon: LayoutDashboard },
-    { name: 'Homework', path: '/teacher/homework', icon: BookOpen },
-    { name: 'Reports', path: '/teacher/reports', icon: FileText },
-    { name: 'Notices', path: '/teacher/notices', icon: Bell },
-  ];
+  if (!user) return null;
 
-  // 3. STUDENT TIER LINKS
-  const studentLinks = [
-    { name: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
-    { name: 'Homework', path: '/student/homework', icon: BookOpen },
-    { name: 'Fees', path: '/student/fees', icon: CreditCard },
-    { name: 'Notices', path: '/student/notices', icon: Bell },
-  ];
-
-  // Determine which links to render based on the active user role
+  // Define links based on user role
   const getLinks = () => {
-    if (role === 'admin' || role === 'super_admin') return adminLinks;
-    if (role === 'teacher') return teacherLinks;
-    return studentLinks; // Default fallback to student
+    if (user.role === 'admin') {
+      return [
+        { name: 'Dashboard', path: '/admin/dashboard', icon: '🛡️' }
+      ];
+    } else if (user.role === 'teacher') {
+      return [
+        { name: 'Dashboard', path: '/teacher/dashboard', icon: '👨‍🏫' },
+        { name: 'Homework', path: '/teacher/homework', icon: '📚' }
+      ];
+    } else if (user.role === 'student') {
+      return [
+        { name: 'Dashboard', path: '/student/dashboard', icon: '🎓' }
+      ];
+    }
+    return [];
   };
 
-  const activeLinks = getLinks();
-
   return (
-    <div className="w-64 bg-[#1E293B] border-r border-slate-700 flex flex-col justify-between h-screen sticky top-0">
-      {/* Top Section: Logo & Links */}
-      <div>
-        <div className="flex items-center justify-center h-20 border-b border-slate-700">
-          <h1 className="text-2xl font-bold text-white tracking-wider">School ERP</h1>
-        </div>
-
-        <nav className="mt-6 px-4 space-y-2">
-          {activeLinks.map((link) => {
-            const Icon = link.icon;
-            return (
-              <NavLink
-                key={link.name}
-                to={link.path}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`
-                }
-              >
-                <Icon className="w-5 h-5" />
-                <span className="font-medium">{link.name}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
+    <div className="w-64 bg-[#1E293B] border-r border-slate-800 h-screen flex flex-col z-50 relative">
+      <div className="p-6 border-b border-slate-800">
+        <h2 className="text-2xl font-black text-white flex items-center gap-2">
+          <span className="text-blue-500">🏫</span> ERP
+        </h2>
+        <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest font-bold">
+          {user.school_id}
+        </p>
       </div>
 
-      {/* Bottom Section: Logout */}
-      <div className="p-4 border-t border-slate-700">
+      <div className="flex-1 py-6 px-4 space-y-2">
+        {getLinks().map((link, idx) => (
+          <button
+            key={idx}
+            onClick={() => navigate(link.path)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${
+              location.pathname === link.path
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <span>{link.icon}</span>
+            {link.name}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-4 border-t border-slate-800">
+        <div className="bg-slate-900 rounded-xl p-4 mb-4">
+          <p className="text-sm font-bold text-white truncate">{user.name}</p>
+          <p className="text-xs text-slate-400 uppercase">{user.role}</p>
+        </div>
         <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-4 py-3 text-red-400 rounded-lg hover:bg-red-500/10 hover:text-red-300 transition-all duration-200"
+          onClick={logout}
+          className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold py-3 px-4 rounded-xl transition-all border border-red-500/20 flex items-center justify-center gap-2"
         >
-          <LogOut className="w-5 h-5" />
-          <span className="font-medium">Logout</span>
+          <span>🚪</span> Logout
         </button>
       </div>
     </div>
