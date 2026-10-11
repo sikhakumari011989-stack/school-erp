@@ -9,12 +9,13 @@ import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import PrincipalDashboard from './pages/PrincipalDashboard';
 import AccountantDashboard from './pages/AccountantDashboard';
 import TrusteeDashboard from './pages/TrusteeDashboard';
-import StaffDashboard from './pages/StaffDashboard'; // NEW IMPORT
+import StaffDashboard from './pages/StaffDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherHomework from './pages/TeacherHomework';
 import TeacherAttendance from './pages/TeacherAttendance';
 import StudentDashboard from './pages/StudentDashboard';
 import StudentLMS from './pages/StudentLMS';
+import CertificateGenerator from './pages/CertificateGenerator'; // IMPORTED
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
@@ -42,7 +43,7 @@ export default function App() {
           <Route path="/principal/dashboard" element={<PrincipalDashboard />} />
           <Route path="/accountant/dashboard" element={<AccountantDashboard />} />
           <Route path="/trustee/dashboard" element={<TrusteeDashboard />} />
-          <Route path="/staff/dashboard" element={<StaffDashboard />} /> {/* NEW ROUTE */}
+          <Route path="/staff/dashboard" element={<StaffDashboard />} />
           
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/homework" element={<TeacherHomework />} />
@@ -50,6 +51,7 @@ export default function App() {
           
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/lms" element={<StudentLMS />} />
+          <Route path="/student/certificates" element={<CertificateGenerator />} /> {/* NEW ROUTE */}
           
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

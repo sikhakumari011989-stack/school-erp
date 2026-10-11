@@ -17,7 +17,7 @@ export default function Sidebar() {
         { name: 'Principal Suite', path: '/principal/dashboard', icon: '🏛️' },
         { name: 'Accountant Suite', path: '/accountant/dashboard', icon: '💰' },
         { name: 'Trustee Audit', path: '/trustee/dashboard', icon: '📈' },
-        { name: 'Staff Portal', path: '/staff/dashboard', icon: '🛠️' } // ADDED FOR TESTING
+        { name: 'Staff Portal', path: '/staff/dashboard', icon: '🛠️' }
       ];
     } else if (user.role === 'staff') {
       return [
@@ -40,7 +40,8 @@ export default function Sidebar() {
     } else if (user.role === 'student') {
       return [
         { name: 'Dashboard', path: '/student/dashboard', icon: '🎓' },
-        { name: 'LMS & Quizzes', path: '/student/lms', icon: '📖' }
+        { name: 'LMS & Quizzes', path: '/student/lms', icon: '📖' },
+        { name: 'Certificates', path: '/student/certificates', icon: '📜' } // NEW LINK
       ];
     }
     return [];
