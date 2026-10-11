@@ -42,7 +42,8 @@ export default function Sidebar() {
         { name: 'Dashboard', path: '/student/dashboard', icon: '🎓' },
         { name: 'LMS & Quizzes', path: '/student/lms', icon: '📖' },
         { name: 'Certificates', path: '/student/certificates', icon: '📜' },
-        { name: 'School Calendar', path: '/student/calendar', icon: '📅' } // NEW LINK
+        { name: 'School Calendar', path: '/student/calendar', icon: '📅' },
+        { name: 'Campus Gallery', path: '/student/gallery', icon: '📸' } // NEW LINK
       ];
     }
     return [];
