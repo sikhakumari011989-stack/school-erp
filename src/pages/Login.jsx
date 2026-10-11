@@ -21,6 +21,8 @@ export default function Login() {
         navigate('/accountant/dashboard');
       } else if (user.role === 'trustee') {
         navigate('/trustee/dashboard');
+      } else if (user.role === 'staff') {
+        navigate('/staff/dashboard');
       } else {
         navigate(`/${user.role}/dashboard`);
       }
@@ -57,12 +59,17 @@ export default function Login() {
         login({ id: "acc-123", name: "Chief Accountant", role: "accountant", school_id: code1 });
         navigate('/accountant/dashboard');
       }
-      // 4. TEACHER LOGIN
+      // 4. NON-TEACHING STAFF LOGIN (NEW)
+      else if (code2.includes('stf') || code2.includes('staff')) {
+        login({ id: "stf-123", name: "Operations Staff", role: "staff", school_id: code1 });
+        navigate('/staff/dashboard');
+      }
+      // 5. TEACHER LOGIN
       else if (code2.includes('tch')) {
         login({ id: "teacher-123", name: "Faculty Member", role: "teacher", school_id: code1 });
         navigate('/teacher/dashboard');
       } 
-      // 5. STUDENT LOGIN
+      // 6. STUDENT LOGIN
       else {
         login({ id: "student-123", name: "Student", role: "student", school_id: code1 });
         navigate('/student/dashboard');
@@ -116,13 +123,13 @@ export default function Login() {
           {/* TIER 2: PERSONAL CODE */}
           <div>
             <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2 ml-1">
-              Code 2: Personal ID (admin, tru, acc, tch, or student)
+              Code 2: Personal ID (admin, tru, acc, stf, tch, student)
             </label>
             <div className="relative">
               <span className="absolute left-4 top-3.5 text-slate-500">👤</span>
               <input 
                 type="text" 
-                placeholder="e.g., TRU-01 or STU-1024" 
+                placeholder="e.g., STF-01 or STU-1024" 
                 className="w-full bg-slate-900/50 border border-slate-700 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono uppercase tracking-wider"
                 value={formData.personalCode}
                 onChange={(e) => setFormData({...formData, personalCode: e.target.value})}

@@ -8,7 +8,8 @@ import Login from './pages/Login';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import PrincipalDashboard from './pages/PrincipalDashboard';
 import AccountantDashboard from './pages/AccountantDashboard';
-import TrusteeDashboard from './pages/TrusteeDashboard'; // NEW IMPORT
+import TrusteeDashboard from './pages/TrusteeDashboard';
+import StaffDashboard from './pages/StaffDashboard'; // NEW IMPORT
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherHomework from './pages/TeacherHomework';
 import TeacherAttendance from './pages/TeacherAttendance';
@@ -40,7 +41,8 @@ export default function App() {
           <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
           <Route path="/principal/dashboard" element={<PrincipalDashboard />} />
           <Route path="/accountant/dashboard" element={<AccountantDashboard />} />
-          <Route path="/trustee/dashboard" element={<TrusteeDashboard />} /> {/* NEW ROUTE */}
+          <Route path="/trustee/dashboard" element={<TrusteeDashboard />} />
+          <Route path="/staff/dashboard" element={<StaffDashboard />} /> {/* NEW ROUTE */}
           
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/homework" element={<TeacherHomework />} />
