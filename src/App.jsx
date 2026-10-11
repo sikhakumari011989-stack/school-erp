@@ -1,8 +1,9 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useContext } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
-// Importing your specific AppContext
-import { AppProvider } from './context/AppContext'; 
+// Providers and Components
+import { AppProvider, AppContext } from './context/AppContext'; 
+import Sidebar from './components/Sidebar'; 
 
 // Import your pages
 import Login from './pages/Login';
@@ -14,11 +15,22 @@ import Homework from './pages/Homework';
 import Reports from './pages/Reports';
 import Analytics from './pages/Analytics';
 
-export default function App() {
+// We put the layout inside a child component so it can access the user data from Context
+function AppContent() {
+  const { user, logout } = useContext(AppContext);
+  const location = useLocation();
+  
+  // We don't want the sidebar showing on the Login page
+  const isLoginPage = location.pathname === '/login' || location.pathname === '/';
+
   return (
-    <AppProvider>
-      <div className="min-h-screen bg-[#0F172A]">
-        {/* Do not add <BrowserRouter> here. main.jsx handles it. */}
+    <div className="flex h-screen bg-[#0F172A] overflow-hidden">
+      
+      {/* 1. SIDEBAR RESTORED HERE */}
+      {!isLoginPage && <Sidebar role={user?.role || 'student'} handleLogout={logout} />}
+      
+      {/* 2. MAIN CONTENT AREA (This flex-1 constraint stops the zoomed-in look) */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 relative w-full">
         <Routes>
           {/* Default Route */}
           <Route path="/" element={<Navigate to="/login" replace />} />
@@ -43,6 +55,15 @@ export default function App() {
           <Route path="/student/homework" element={<Homework />} />
         </Routes>
       </div>
+
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AppProvider>
+      <AppContent />
     </AppProvider>
   );
 }
