@@ -10,7 +10,8 @@ import PrincipalDashboard from './pages/PrincipalDashboard';
 import AccountantDashboard from './pages/AccountantDashboard';
 import TrusteeDashboard from './pages/TrusteeDashboard';
 import StaffDashboard from './pages/StaffDashboard';
-import SystemAudit from './pages/SystemAudit'; // NEW IMPORT
+import SystemAudit from './pages/SystemAudit';
+import InstitutionalDirectory from './pages/InstitutionalDirectory'; // NEW IMPORT
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherHomework from './pages/TeacherHomework';
 import TeacherAttendance from './pages/TeacherAttendance';
@@ -54,7 +55,8 @@ export default function App() {
           <Route path="/accountant/dashboard" element={<AccountantDashboard />} />
           <Route path="/trustee/dashboard" element={<TrusteeDashboard />} />
           <Route path="/staff/dashboard" element={<StaffDashboard />} />
-          <Route path="/admin/audit" element={<SystemAudit />} /> {/* NEW ROUTE */}
+          <Route path="/admin/audit" element={<SystemAudit />} />
+          <Route path="/admin/directory" element={<InstitutionalDirectory />} /> {/* NEW ROUTE */}
           
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/homework" element={<TeacherHomework />} />

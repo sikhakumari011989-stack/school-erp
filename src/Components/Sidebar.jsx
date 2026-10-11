@@ -18,7 +18,8 @@ export default function Sidebar() {
         { name: 'Accountant Suite', path: '/accountant/dashboard', icon: '💰' },
         { name: 'Trustee Audit', path: '/trustee/dashboard', icon: '📈' },
         { name: 'Staff Portal', path: '/staff/dashboard', icon: '🛠️' },
-        { name: 'Security Audit', path: '/admin/audit', icon: '⚙️' } // NEW LINK
+        { name: 'Security Audit', path: '/admin/audit', icon: '⚙️' },
+        { name: 'Directory & Comms', path: '/admin/directory', icon: '📞' } // NEW LINK
       ];
     } else if (user.role === 'staff') {
       return [
