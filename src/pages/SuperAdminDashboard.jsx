@@ -3,6 +3,7 @@ import { AppContext } from "../context/AppContext";
 import { supabase } from "../supabaseClient";
 import CreateClassModal from "../Components/CreateClassModal";
 import AddStudentModal from "../Components/AddStudentModal";
+import AddTeacherModal from "../Components/AddTeacherModal"; // NEW IMPORT
 
 export default function SuperAdminDashboard() {
   const { user } = useContext(AppContext);
@@ -111,6 +112,12 @@ export default function SuperAdminDashboard() {
       
       <AddStudentModal 
         isOpen={activeModal === 'student'} 
+        onClose={() => setActiveModal(null)} 
+        onRefresh={fetchAdminStats}
+      />
+
+      <AddTeacherModal 
+        isOpen={activeModal === 'teacher'} 
         onClose={() => setActiveModal(null)} 
         onRefresh={fetchAdminStats}
       />
