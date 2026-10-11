@@ -35,46 +35,51 @@ export const AppProvider = ({ children }) => {
   }, [user]);
 
   const fetchAllData = async () => {
-    const schoolId = user.school_id;
-    
-    const [
-      { data: classesData }, 
-      { data: studentsData }, 
-      { data: feesData },
-      { data: attendanceData }, 
-      { data: timetableData }, 
-      { data: noticesData },
-      { data: marksData },
-      { data: teachersData },
-      { data: leavesData },
-      { data: homeworkData },
-      { data: notificationsData }
-    ] = await Promise.all([
-      supabase.from("classes").select("*").eq("school_id", schoolId),
-      supabase.from("students").select("*").eq("school_id", schoolId),
-      supabase.from("fees").select("*").eq("school_id", schoolId),
-      supabase.from("attendance").select("*").eq("school_id", schoolId),
-      supabase.from("timetable").select("*").eq("school_id", schoolId),
-      supabase.from("notices").select("*").eq("school_id", schoolId).order("date", { ascending: false }),
-      supabase.from("marks").select("*").eq("school_id", schoolId),
-      supabase.from("teachers").select("*").eq("school_id", schoolId),
-      supabase.from("leaves").select("*").eq("school_id", schoolId),
-      supabase.from("homework").select("*").eq("school_id", schoolId).order("created_at", { ascending: false }),
-      supabase.from("notifications").select("*").eq("school_id", schoolId).order("created_at", { ascending: false })
-    ]);
+    try {
+      const schoolId = user.school_id;
+      
+      const [
+        { data: classesData }, 
+        { data: studentsData }, 
+        { data: feesData },
+        { data: attendanceData }, 
+        { data: timetableData }, 
+        { data: noticesData },
+        { data: marksData },
+        { data: teachersData },
+        { data: leavesData },
+        { data: homeworkData },
+        { data: notificationsData }
+      ] = await Promise.all([
+        supabase.from("classes").select("*").eq("school_id", schoolId),
+        supabase.from("students").select("*").eq("school_id", schoolId),
+        supabase.from("fees").select("*").eq("school_id", schoolId),
+        supabase.from("attendance").select("*").eq("school_id", schoolId),
+        supabase.from("timetable").select("*").eq("school_id", schoolId),
+        supabase.from("notices").select("*").eq("school_id", schoolId).order("date", { ascending: false }),
+        supabase.from("marks").select("*").eq("school_id", schoolId),
+        supabase.from("teachers").select("*").eq("school_id", schoolId),
+        supabase.from("leaves").select("*").eq("school_id", schoolId),
+        supabase.from("homework").select("*").eq("school_id", schoolId).order("created_at", { ascending: false }),
+        supabase.from("notifications").select("*").eq("school_id", schoolId).order("created_at", { ascending: false })
+      ]);
 
-    if (classesData) setClasses(classesData);
-    if (studentsData) setStudents(studentsData);
-    if (feesData) setFees(feesData);
-    if (attendanceData) setAttendance(attendanceData);
-    if (timetableData) setTimetable(timetableData);
-    if (noticesData) setNotices(noticesData);
-    if (marksData) setMarks(marksData);
-    if (teachersData) setTeachers(teachersData);
-    if (leavesData) setLeaves(leavesData);
-    if (homeworkData) setHomework(homeworkData);
-    if (notificationsData) setNotifications(notificationsData);
+      if (classesData) setClasses(classesData);
+      if (studentsData) setStudents(studentsData);
+      if (feesData) setFees(feesData);
+      if (attendanceData) setAttendance(attendanceData);
+      if (timetableData) setTimetable(timetableData);
+      if (noticesData) setNotices(noticesData);
+      if (marksData) setMarks(marksData);
+      if (teachersData) setTeachers(teachersData);
+      if (leavesData) setLeaves(leavesData);
+      if (homeworkData) setHomework(homeworkData);
+      if (notificationsData) setNotifications(notificationsData);
+    } catch (error) {
+      console.error("Supabase Database Error: You are missing tables or columns.", error);
+    }
   };
+    
 
   const addClass = async (newClass) => {
     const payload = { 

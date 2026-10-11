@@ -36,7 +36,7 @@ export default function Login() {
           role: "admin",
           school_id: "school-demo-01",
         });
-        navigate("/admin-dashboard");
+        navigate("/admin/dashboard");
       }
     } catch (err) {
       setError("Connection failed. Use test buttons below.");
@@ -70,7 +70,7 @@ export default function Login() {
 
     const user = testUsers[role];
     login(user);
-    navigate(`/${role}-dashboard`);
+    navigate(`/${role}/dashboard`);
   };
 
   return (
