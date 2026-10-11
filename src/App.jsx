@@ -10,6 +10,7 @@ import PrincipalDashboard from './pages/PrincipalDashboard';
 import AccountantDashboard from './pages/AccountantDashboard';
 import TrusteeDashboard from './pages/TrusteeDashboard';
 import StaffDashboard from './pages/StaffDashboard';
+import SystemAudit from './pages/SystemAudit'; // NEW IMPORT
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherHomework from './pages/TeacherHomework';
 import TeacherAttendance from './pages/TeacherAttendance';
@@ -24,7 +25,7 @@ import StudentGallery from './pages/StudentGallery';
 import StudentConduct from './pages/StudentConduct';
 import StudentFees from './pages/StudentFees';
 import StudentTransport from './pages/StudentTransport';
-import StudentRazorpayCheckout from './pages/StudentRazorpayCheckout'; // NEW IMPORT
+import StudentRazorpayCheckout from './pages/StudentRazorpayCheckout';
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="/accountant/dashboard" element={<AccountantDashboard />} />
           <Route path="/trustee/dashboard" element={<TrusteeDashboard />} />
           <Route path="/staff/dashboard" element={<StaffDashboard />} />
+          <Route path="/admin/audit" element={<SystemAudit />} /> {/* NEW ROUTE */}
           
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/homework" element={<TeacherHomework />} />
@@ -69,7 +71,7 @@ export default function App() {
           <Route path="/student/conduct" element={<StudentConduct />} />
           <Route path="/student/fees" element={<StudentFees />} />
           <Route path="/student/transport" element={<StudentTransport />} />
-          <Route path="/student/pay" element={<StudentRazorpayCheckout />} /> {/* NEW ROUTE */}
+          <Route path="/student/pay" element={<StudentRazorpayCheckout />} />
           
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

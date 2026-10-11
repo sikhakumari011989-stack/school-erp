@@ -17,7 +17,8 @@ export default function Sidebar() {
         { name: 'Principal Suite', path: '/principal/dashboard', icon: '🏛️' },
         { name: 'Accountant Suite', path: '/accountant/dashboard', icon: '💰' },
         { name: 'Trustee Audit', path: '/trustee/dashboard', icon: '📈' },
-        { name: 'Staff Portal', path: '/staff/dashboard', icon: '🛠️' }
+        { name: 'Staff Portal', path: '/staff/dashboard', icon: '🛠️' },
+        { name: 'Security Audit', path: '/admin/audit', icon: '⚙️' } // NEW LINK
       ];
     } else if (user.role === 'staff') {
       return [
@@ -44,7 +45,7 @@ export default function Sidebar() {
       return [
         { name: 'Dashboard', path: '/student/dashboard', icon: '🎓' },
         { name: 'Fee Ledger & Reports', path: '/student/fees', icon: '💳' },
-        { name: 'Pay Dues (Razorpay)', path: '/student/pay', icon: '⚡' }, // NEW LINK
+        { name: 'Pay Dues (Razorpay)', path: '/student/pay', icon: '⚡' },
         { name: 'LMS & Quizzes', path: '/student/lms', icon: '📖' },
         { name: 'Certificates', path: '/student/certificates', icon: '📜' },
         { name: 'School Calendar', path: '/student/calendar', icon: '📅' },
