@@ -34,6 +34,7 @@ export default function Sidebar() {
     } else if (user.role === 'teacher') {
       return [
         { name: 'Dashboard', path: '/teacher/dashboard', icon: '👨‍🏫' },
+        { name: 'My Classes', path: '/teacher/classes', icon: '🏫' }, // NEW LINK
         { name: 'Attendance', path: '/teacher/attendance', icon: '✅' },
         { name: 'Homework', path: '/teacher/homework', icon: '📚' }
       ];
@@ -44,7 +45,7 @@ export default function Sidebar() {
         { name: 'Certificates', path: '/student/certificates', icon: '📜' },
         { name: 'School Calendar', path: '/student/calendar', icon: '📅' },
         { name: 'Campus Gallery', path: '/student/gallery', icon: '📸' },
-        { name: 'Conduct & Discipline', path: '/student/conduct', icon: '⚖️' } // NEW LINK
+        { name: 'Conduct & Discipline', path: '/student/conduct', icon: '⚖️' }
       ];
     }
     return [];
