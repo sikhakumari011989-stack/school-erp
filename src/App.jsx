@@ -4,6 +4,7 @@ import { AppProvider } from './context/AppContext';
 
 // Import Components & Pages
 import Sidebar from './Components/Sidebar';
+import LandingPage from './pages/LandingPage'; // NEW LANDING PAGE
 import Login from './pages/Login';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import PrincipalDashboard from './pages/PrincipalDashboard';
@@ -11,7 +12,7 @@ import AccountantDashboard from './pages/AccountantDashboard';
 import TrusteeDashboard from './pages/TrusteeDashboard';
 import StaffDashboard from './pages/StaffDashboard';
 import SystemAudit from './pages/SystemAudit';
-import InstitutionalDirectory from './pages/InstitutionalDirectory'; // NEW IMPORT
+import InstitutionalDirectory from './pages/InstitutionalDirectory';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherHomework from './pages/TeacherHomework';
 import TeacherAttendance from './pages/TeacherAttendance';
@@ -30,12 +31,12 @@ import StudentRazorpayCheckout from './pages/StudentRazorpayCheckout';
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
-  const isLoginPage = location.pathname === '/login';
+  const isPublicPage = location.pathname === '/' || location.pathname === '/login';
 
   return (
-    <div className="flex min-h-screen bg-[#0F172A] font-sans">
-      {!isLoginPage && <Sidebar />}
-      <main className="flex-1 w-full p-8 overflow-y-auto">
+    <div className="flex min-h-screen bg-[#0F172A] font-sans w-full">
+      {!isPublicPage && <Sidebar />}
+      <main className="flex-1 w-full overflow-y-auto">
         {children}
       </main>
     </div>
@@ -47,7 +48,7 @@ export default function App() {
     <AppProvider>
       <AppLayout>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<LandingPage />} /> {/* LANDING PAGE ROOT */}
           <Route path="/login" element={<Login />} />
           
           <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
@@ -56,7 +57,7 @@ export default function App() {
           <Route path="/trustee/dashboard" element={<TrusteeDashboard />} />
           <Route path="/staff/dashboard" element={<StaffDashboard />} />
           <Route path="/admin/audit" element={<SystemAudit />} />
-          <Route path="/admin/directory" element={<InstitutionalDirectory />} /> {/* NEW ROUTE */}
+          <Route path="/admin/directory" element={<InstitutionalDirectory />} />
           
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/homework" element={<TeacherHomework />} />
@@ -75,7 +76,7 @@ export default function App() {
           <Route path="/student/transport" element={<StudentTransport />} />
           <Route path="/student/pay" element={<StudentRazorpayCheckout />} />
           
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppLayout>
     </AppProvider>
