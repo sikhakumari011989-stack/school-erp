@@ -1,128 +1,126 @@
-import React from 'react';
+import React, { useState, useEffect, useContext } from "react";
+import { AppContext } from "../context/AppContext";
+import { supabase } from "../supabaseClient";
 
 export default function SuperAdminDashboard() {
-  // Mock Data
-  const kpis = [
-    { title: "Total Students", value: "2,845", trend: "+12% this year", icon: "🎓", color: "text-blue-400", bg: "bg-blue-400/10" },
-    { title: "Active Staff", value: "142", trend: "+3% this year", icon: "👨‍🏫", color: "text-emerald-400", bg: "bg-emerald-400/10" },
-    { title: "Total Revenue", value: "₹45.2L", trend: "+8% this month", icon: "💵", color: "text-purple-400", bg: "bg-purple-400/10" },
-    { title: "Pending Fees", value: "₹3.8L", trend: "-2% this month", icon: "⚠️", color: "text-orange-400", bg: "bg-orange-400/10" }
-  ];
+  const { user } = useContext(AppContext);
+  const [stats, setStats] = useState({ students: 0, teachers: 0, classes: 0, revenue: 0 });
+  const [loading, setLoading] = useState(true);
 
-  const monthlyRevenue = [
-    { month: 'Apr', height: '60%' },
-    { month: 'May', height: '80%' },
-    { month: 'Jun', height: '40%' },
-    { month: 'Jul', height: '90%' },
-    { month: 'Aug', height: '75%' },
-    { month: 'Sep', height: '85%' },
+  useEffect(() => {
+    fetchAdminStats();
+  }, []);
+
+  const fetchAdminStats = async () => {
+    try {
+      // Fetch all database counts simultaneously for maximum speed
+      const [studentRes, teacherRes, classRes, feeRes] = await Promise.all([
+        supabase.from('students').select('*', { count: 'exact', head: true }),
+        supabase.from('teachers').select('*', { count: 'exact', head: true }),
+        supabase.from('classes').select('*', { count: 'exact', head: true }),
+        supabase.from('fees').select('amount').eq('status', 'paid')
+      ]);
+
+      // Calculate total revenue from the fetched fee records
+      const totalRevenue = feeRes.data 
+        ? feeRes.data.reduce((sum, fee) => sum + Number(fee.amount), 0) 
+        : 0;
+
+      setStats({
+        students: studentRes.count || 0,
+        teachers: teacherRes.count || 0,
+        classes: classRes.count || 0,
+        revenue: totalRevenue
+      });
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const adminActions = [
+    { name: "Add Student", icon: "👨‍🎓", color: "from-blue-500/20 to-cyan-500/10 text-blue-400 border-blue-500/30" },
+    { name: "Add Teacher", icon: "👨‍🏫", color: "from-purple-500/20 to-fuchsia-500/10 text-purple-400 border-purple-500/30" },
+    { name: "Create Class", icon: "🏫", color: "from-emerald-500/20 to-teal-500/10 text-emerald-400 border-emerald-500/30" },
+    { name: "Global Notice", icon: "📢", color: "from-orange-500/20 to-amber-500/10 text-orange-400 border-orange-500/30" },
+    { name: "Manage Fees", icon: "💰", color: "from-green-500/20 to-emerald-500/10 text-green-400 border-green-500/30" },
+    { name: "System Logs", icon: "⚙️", color: "from-slate-500/20 to-gray-500/10 text-slate-400 border-slate-500/30" },
   ];
 
   return (
-    <div className="text-slate-200">
-      <div className="mb-8 flex justify-between items-end">
-        <div>
-          <h1 className="text-2xl font-bold text-white">HQ Overview</h1>
-          <p className="text-slate-400 mt-1">Super Admin Global Dashboard</p>
-        </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all shadow-lg shadow-blue-600/20">
-          Download Report
-        </button>
-      </div>
+    <div className="relative text-slate-200 min-h-full pb-10">
+      
+      {/* GLOWING AMBIENT BACKGROUND ORBS */}
+      <div className="fixed top-0 left-10 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="fixed bottom-0 right-10 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-      {/* KPI CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {kpis.map((kpi, index) => (
-          <div key={index} className="bg-[#1E293B] border border-slate-700 rounded-xl p-6 shadow-lg">
-            <div className="flex justify-between items-start mb-4">
-              <div className={`w-12 h-12 rounded-lg ${kpi.bg} flex items-center justify-center text-2xl`}>
-                {kpi.icon}
+      <div className="relative z-10">
+        {/* HERO HEADER */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl mb-8 relative overflow-hidden flex justify-between items-center">
+          <div>
+            <p className="text-blue-300 text-sm font-semibold mb-1 uppercase tracking-widest">System Overview</p>
+            <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
+              Super Admin Control 👋
+            </h1>
+          </div>
+          <button 
+            onClick={fetchAdminStats}
+            className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2"
+          >
+            {loading ? "Syncing..." : "🔄 Refresh Data"}
+          </button>
+        </div>
+
+        {/* LIVE STATS ROW */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          {[
+            { label: "Total Students", value: stats.students, icon: "👥", color: "text-blue-400" },
+            { label: "Total Teachers", value: stats.teachers, icon: "🎓", color: "text-purple-400" },
+            { label: "Active Classes", value: stats.classes, icon: "🏫", color: "text-orange-400" },
+            { label: "Total Revenue", value: `₹${stats.revenue.toLocaleString()}`, icon: "📈", color: "text-emerald-400" }
+          ].map((stat, i) => (
+            <div key={i} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-xl flex items-center gap-4 group hover:border-white/20 transition-all">
+              <div className="w-14 h-14 rounded-xl bg-slate-800/50 flex items-center justify-center text-2xl border border-slate-700/50 group-hover:scale-110 transition-transform">
+                {stat.icon}
               </div>
-              <span className="text-xs font-semibold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-full">
-                {kpi.trend}
+              <div>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">{stat.label}</p>
+                <p className={`text-2xl font-extrabold ${stat.color}`}>
+                  {loading ? "..." : stat.value}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* QUICK ACTIONS */}
+        <h2 className="text-xl font-bold text-white tracking-tight mb-6">Database Management</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-10">
+          {adminActions.map((action, idx) => (
+            <button key={idx} className="group relative flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 hover:border-white/30 hover:-translate-y-2 hover:shadow-[0_10px_40px_-10px_rgba(255,255,255,0.1)] transition-all duration-300 ease-out w-full">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl bg-gradient-to-br ${action.color} border group-hover:scale-110 transition-transform duration-300 shadow-inner`}>
+                {action.icon}
+              </div>
+              <span className="text-[11px] font-bold text-slate-400 group-hover:text-white text-center transition-colors">
+                {action.name}
               </span>
-            </div>
-            <h3 className="text-slate-400 text-sm font-semibold mb-1">{kpi.title}</h3>
-            <p className="text-3xl font-bold text-white">{kpi.value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* REVENUE GRAPH */}
-        <div className="lg:col-span-2 bg-[#1E293B] border border-slate-700 rounded-xl p-6 shadow-lg">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-white">Monthly Fee Collection</h2>
-            <select className="bg-[#0F172A] border border-slate-600 text-sm rounded-lg px-3 py-1 text-slate-300 outline-none">
-              <option>2026-2027</option>
-              <option>2025-2026</option>
-            </select>
-          </div>
-          
-          <div className="h-64 flex items-end justify-between gap-4 pt-4 border-b border-slate-700 pb-2">
-            {monthlyRevenue.map((data, index) => (
-              <div key={index} className="w-full flex flex-col items-center gap-2 group">
-                <div className="w-full bg-[#0F172A] rounded-t-sm h-full flex items-end relative">
-                  {/* Tooltip on hover */}
-                  <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-xs px-2 py-1 rounded border border-slate-600 transition-opacity whitespace-nowrap z-10">
-                    {data.height} Target
-                  </div>
-                  {/* Bar */}
-                  <div 
-                    className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-md transition-all duration-500 group-hover:brightness-110" 
-                    style={{ height: data.height }}
-                  ></div>
-                </div>
-                <span className="text-xs font-semibold text-slate-400">{data.month}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* QUICK STATS / HEALTH OVERVIEW */}
-        <div className="bg-[#1E293B] border border-slate-700 rounded-xl p-6 shadow-lg">
-          <h2 className="text-lg font-bold text-white mb-6">School Health</h2>
-          
-          <div className="space-y-6">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-slate-300 font-semibold">Today's Attendance</span>
-                <span className="text-emerald-400 font-bold">92%</span>
-              </div>
-              <div className="w-full bg-[#0F172A] rounded-full h-2.5 border border-slate-700">
-                <div className="bg-emerald-500 h-2.5 rounded-full" style={{ width: '92%' }}></div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-slate-300 font-semibold">Fee Collection Target</span>
-                <span className="text-blue-400 font-bold">78%</span>
-              </div>
-              <div className="w-full bg-[#0F172A] rounded-full h-2.5 border border-slate-700">
-                <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: '78%' }}></div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-slate-300 font-semibold">Staff Present</span>
-                <span className="text-orange-400 font-bold">135 / 142</span>
-              </div>
-              <div className="w-full bg-[#0F172A] rounded-full h-2.5 border border-slate-700">
-                <div className="bg-orange-500 h-2.5 rounded-full" style={{ width: '95%' }}></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-slate-700">
-            <button className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-semibold py-2 rounded-lg transition-all text-sm">
-              View Detailed Analytics
             </button>
+          ))}
+        </div>
+
+        {/* RECENT ACTIVITY LOG (Placeholder for MVP) */}
+        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 shadow-xl">
+          <h3 className="text-sm font-bold text-white mb-6 uppercase tracking-wider flex items-center gap-2">
+            <span>⚡</span> Recent System Activity
+          </h3>
+          <div className="flex flex-col items-center justify-center h-32 opacity-50">
+            <span className="text-4xl mb-3">🔍</span>
+            <p className="text-slate-200 font-bold">Activity logs are empty</p>
+            <p className="text-slate-500 text-xs mt-1">Start adding students to generate logs</p>
           </div>
         </div>
-        
+
       </div>
     </div>
   );
