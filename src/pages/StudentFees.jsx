@@ -1,11 +1,59 @@
 import React from "react";
 
+// Dynamically loads the Razorpay checkout script
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function StudentFees() {
+  // Added 'amountValue' (pure numbers) for the payment gateway math
   const feeRecords = [
-    { id: "INV-2026-001", term: "Term 2 Tuition Fee", amount: "₹5,000", due: "15 Oct 2026", status: "Due" },
-    { id: "INV-2026-002", term: "Term 1 Tuition Fee", amount: "₹5,000", due: "15 Jul 2026", status: "Paid" },
-    { id: "INV-2026-003", term: "Annual Sports Fee", amount: "₹1,500", due: "10 Jun 2026", status: "Paid" },
+    { id: "INV-2026-001", term: "Term 2 Tuition Fee", amount: "₹5,000", amountValue: 5000, due: "15 Oct 2026", status: "Due" },
+    { id: "INV-2026-002", term: "Term 1 Tuition Fee", amount: "₹5,000", amountValue: 5000, due: "15 Jul 2026", status: "Paid" },
+    { id: "INV-2026-003", term: "Annual Sports Fee", amount: "₹1,500", amountValue: 1500, due: "10 Jun 2026", status: "Paid" },
   ];
+
+  const handlePayment = async (amount, description) => {
+    const isLoaded = await loadRazorpayScript();
+
+    if (!isLoaded) {
+      alert("Razorpay SDK failed to load. Check your internet connection.");
+      return;
+    }
+
+    // Razorpay requires amounts in paise (multiply INR by 100)
+    const amountInPaise = amount * 100;
+
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID, 
+      amount: amountInPaise,
+      currency: "INR",
+      name: "School ERP",
+      description: `Payment for ${description}`,
+      handler: function (response) {
+        // This runs when payment is successful
+        console.log("Payment Success ID:", response.razorpay_payment_id);
+        alert(`Payment Successful! Transaction ID: ${response.razorpay_payment_id}`);
+        // Future Step: Update Supabase DB here to mark invoice as Paid
+      },
+      prefill: {
+        name: "Student Name",
+        email: "student@demo.com",
+      },
+      theme: {
+        color: "#2563EB", // Matches Tailwind bg-blue-600
+      },
+    };
+
+    const paymentObject = new window.Razorpay(options);
+    paymentObject.open();
+  };
 
   return (
     <div className="text-slate-200">
@@ -21,7 +69,10 @@ export default function StudentFees() {
           <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Outstanding Due</p>
           <p className="text-3xl font-bold text-white">₹5,000</p>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg shadow-blue-600/20">
+        <button 
+          onClick={() => handlePayment(5000, "Total Outstanding Due")}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg shadow-blue-600/20"
+        >
           Pay Now
         </button>
       </div>
@@ -56,7 +107,12 @@ export default function StudentFees() {
                   {fee.status === 'Paid' ? (
                     <button className="text-blue-400 hover:text-blue-300 text-xs border border-blue-500/30 px-3 py-1 rounded">Download Receipt</button>
                   ) : (
-                    <button className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 text-xs rounded font-bold">Pay</button>
+                    <button 
+                      onClick={() => handlePayment(fee.amountValue, fee.term)}
+                      className="bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border border-emerald-500/30 px-3 py-1 text-xs rounded font-bold transition-all"
+                    >
+                      Pay
+                    </button>
                   )}
                 </td>
               </tr>
