@@ -13,7 +13,8 @@ export default function Sidebar() {
   const getLinks = () => {
     if (user.role === 'admin') {
       return [
-        { name: 'Dashboard', path: '/admin/dashboard', icon: '🛡️' }
+        { name: 'Dashboard', path: '/admin/dashboard', icon: '🛡️' },
+        { name: 'Principal Suite', path: '/principal/dashboard', icon: '🏛️' } // NEW LINK FOR TESTING
       ];
     } else if (user.role === 'teacher') {
       return [
@@ -24,7 +25,7 @@ export default function Sidebar() {
     } else if (user.role === 'student') {
       return [
         { name: 'Dashboard', path: '/student/dashboard', icon: '🎓' },
-        { name: 'LMS & Quizzes', path: '/student/lms', icon: '📖' } // NEW LINK
+        { name: 'LMS & Quizzes', path: '/student/lms', icon: '📖' }
       ];
     }
     return [];
