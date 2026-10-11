@@ -1,9 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js'
 
-// Copy this exact URL (I grabbed it from your video)
-const supabaseUrl = 'https://lkcnausuvgdiwnsppakp.supabase.co';
+// This tells the app to actually use the keys from your .env file
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Copy that super long SUPABASE_PUBLISHABLE_KEY from your screen and paste it here
-const supabaseAnonKey = 'sb_publishable_3B6NQwFGujc7kYpyh6OG0Q_VxcDvxmm';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseKey)
