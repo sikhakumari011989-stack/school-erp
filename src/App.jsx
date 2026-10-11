@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 // Providers and Components
 import { AppProvider, AppContext } from './context/AppContext'; 
-import Sidebar from './components/Sidebar'; 
+import Sidebar from './Components/Sidebar'; 
 
 // Import your pages
 import Login from './pages/Login';
