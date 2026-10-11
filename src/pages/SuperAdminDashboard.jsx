@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { supabase } from "../supabaseClient";
-import CreateClassModal from "../Components/CreateClassModal"; // NEW IMPORT
+import CreateClassModal from "../Components/CreateClassModal";
+import AddStudentModal from "../Components/AddStudentModal";
 
 export default function SuperAdminDashboard() {
   const { user } = useContext(AppContext);
   const [stats, setStats] = useState({ students: 0, teachers: 0, classes: 0, revenue: 0 });
   const [loading, setLoading] = useState(true);
-  
-  // NEW STATE FOR MODAL
   const [activeModal, setActiveModal] = useState(null); 
 
   useEffect(() => {
@@ -90,7 +89,7 @@ export default function SuperAdminDashboard() {
           {adminActions.map((action) => (
             <button 
               key={action.id} 
-              onClick={() => setActiveModal(action.id)} // OPENS MODAL
+              onClick={() => setActiveModal(action.id)}
               className="group relative flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 hover:-translate-y-2 transition-all w-full"
             >
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl bg-gradient-to-br ${action.color} border group-hover:scale-110 transition-transform shadow-inner`}>
@@ -104,9 +103,14 @@ export default function SuperAdminDashboard() {
         </div>
       </div>
 
-      {/* RENDER MODAL HERE */}
       <CreateClassModal 
         isOpen={activeModal === 'class'} 
+        onClose={() => setActiveModal(null)} 
+        onRefresh={fetchAdminStats}
+      />
+      
+      <AddStudentModal 
+        isOpen={activeModal === 'student'} 
         onClose={() => setActiveModal(null)} 
         onRefresh={fetchAdminStats}
       />
