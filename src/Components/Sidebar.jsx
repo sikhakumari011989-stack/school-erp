@@ -44,12 +44,13 @@ export default function Sidebar() {
       return [
         { name: 'Dashboard', path: '/student/dashboard', icon: '🎓' },
         { name: 'Fee Ledger & Reports', path: '/student/fees', icon: '💳' },
+        { name: 'Pay Dues (Razorpay)', path: '/student/pay', icon: '⚡' }, // NEW LINK
         { name: 'LMS & Quizzes', path: '/student/lms', icon: '📖' },
         { name: 'Certificates', path: '/student/certificates', icon: '📜' },
         { name: 'School Calendar', path: '/student/calendar', icon: '📅' },
         { name: 'Campus Gallery', path: '/student/gallery', icon: '📸' },
         { name: 'Conduct & Discipline', path: '/student/conduct', icon: '⚖️' },
-        { name: 'Transport Fleet', path: '/student/transport', icon: '🚌' } // NEW LINK
+        { name: 'Transport Fleet', path: '/student/transport', icon: '🚌' }
       ];
     }
     return [];

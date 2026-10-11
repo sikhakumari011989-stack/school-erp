@@ -23,7 +23,8 @@ import StudentCalendar from './pages/StudentCalendar';
 import StudentGallery from './pages/StudentGallery';
 import StudentConduct from './pages/StudentConduct';
 import StudentFees from './pages/StudentFees';
-import StudentTransport from './pages/StudentTransport'; // NEW IMPORT
+import StudentTransport from './pages/StudentTransport';
+import StudentRazorpayCheckout from './pages/StudentRazorpayCheckout'; // NEW IMPORT
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
@@ -67,7 +68,8 @@ export default function App() {
           <Route path="/student/gallery" element={<StudentGallery />} />
           <Route path="/student/conduct" element={<StudentConduct />} />
           <Route path="/student/fees" element={<StudentFees />} />
-          <Route path="/student/transport" element={<StudentTransport />} /> {/* NEW ROUTE */}
+          <Route path="/student/transport" element={<StudentTransport />} />
+          <Route path="/student/pay" element={<StudentRazorpayCheckout />} /> {/* NEW ROUTE */}
           
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
