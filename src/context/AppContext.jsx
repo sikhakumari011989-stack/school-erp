@@ -1,62 +1,200 @@
-import React, { createContext, useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import React, { createContext, useState, useEffect } from "react";
+import { supabase } from "../supabaseClient";
 
 export const AppContext = createContext();
 
+/**
+ * Resolves active tenant from subdomain, query params (?tenant=...), or storage
+ */
+function resolveTenantCode() {
+  if (typeof window === "undefined") return "OASIS-TUTORIALS";
+
+  try {
+    // 1. Check URL search param (?tenant=OASIS-TUTORIALS or ?institution=...)
+    const params = new URLSearchParams(window.location.search);
+    const paramTenant = params.get("tenant") || params.get("institution");
+    if (paramTenant) {
+      const clean = paramTenant.trim().toUpperCase();
+      localStorage.setItem("erp_active_tenant", clean);
+      return clean;
+    }
+
+    // 2. Check Subdomain (e.g. oasis.domain.com or apex.localhost)
+    const host = window.location.hostname;
+    const parts = host.split(".");
+    if (parts.length > 2 && parts[0] !== "www" && parts[0] !== "app") {
+      return parts[0].toUpperCase();
+    }
+
+    // 3. Check LocalStorage
+    const saved = localStorage.getItem("erp_active_tenant");
+    if (saved) return saved.trim().toUpperCase();
+  } catch (err) {
+    console.warn("Tenant resolution check:", err);
+  }
+
+  // 4. Fallback Default
+  return "OASIS-TUTORIALS";
+}
+
 export const AppProvider = ({ children }) => {
+  const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Reads the logged-in person's profile (school + role)
-  const loadProfile = async (session) => {
-    if (!session) {
+  const [tenant, setTenant] = useState({
+    id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+    name: "Apex International Academy",
+    code: "OASIS-TUTORIALS",
+    city: "Mumbai",
+    state: "Maharashtra",
+    primaryColor: "#3B82F6",
+    accentColor: "#8B5CF6",
+    logoUrl: null,
+    tagline: "Premier Multi-Tenant Academic Institution",
+  });
+
+  // Dynamic White-Labeling: Load active institution branding
+  const loadTenantDetails = async (tenantCode) => {
+    const code = tenantCode || resolveTenantCode();
+    try {
+      const { data } = await supabase
+        .from("schools")
+        .select("*")
+        .ilike("code", code)
+        .maybeSingle();
+
+      if (data) {
+        const resolved = {
+          id: data.id,
+          name: data.name || "Apex International Academy",
+          code: data.code || code,
+          city: data.city || "Mumbai",
+          state: data.state || "Maharashtra",
+          primaryColor: data.primary_color || "#3B82F6",
+          accentColor: data.accent_color || "#8B5CF6",
+          logoUrl: data.logo_url || null,
+          tagline: data.tagline || "Enterprise Multi-Tenant Node",
+        };
+        setTenant(resolved);
+        document.title = `${resolved.name} | Multi-Tenant Tuition ERP`;
+        document.documentElement.style.setProperty("--tenant-primary", resolved.primaryColor);
+        document.documentElement.style.setProperty("--tenant-accent", resolved.accentColor);
+      }
+    } catch (err) {
+      console.warn("Failed to load custom tenant branding:", err);
+    }
+  };
+
+  // Reads the authenticated user's profile strictly from Supabase
+  const loadProfile = async (currentSession) => {
+    if (!currentSession?.user) {
+      setSession(null);
       setUser(null);
       setLoading(false);
       return;
     }
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, role, role_code, full_name, school_id, schools ( code )')
-      .eq('id', session.user.id)
-      .single();
+    setSession(currentSession);
 
-    if (error || !data) {
-      await supabase.auth.signOut();
+    try {
+      // 1. Fetch user profile from Supabase profiles table
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("id, role, role_code, full_name, school_id, schools ( code, name )")
+        .eq("id", currentSession.user.id)
+        .maybeSingle();
+
+      if (profile && !error) {
+        const userObj = {
+          id: profile.id,
+          name: profile.full_name || currentSession.user.email?.split("@")[0] || "User",
+          role: profile.role || "student",
+          role_code: profile.role_code || "STU",
+          school_id: profile.school_id || "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+          institution_code: profile.schools?.code || "OASIS-TUTORIALS",
+          institution_name: profile.schools?.name || "Apex International Academy",
+          email: currentSession.user.email,
+          authUid: currentSession.user.id,
+        };
+        setUser(userObj);
+
+        if (profile.schools?.code) {
+          loadTenantDetails(profile.schools.code);
+        }
+      } else {
+        // Fallback: Check metadata on Supabase Auth user
+        const meta = currentSession.user.user_metadata || {};
+        const userObj = {
+          id: currentSession.user.id,
+          name: meta.full_name || currentSession.user.email?.split("@")[0] || "Authenticated Member",
+          role: meta.role || "student",
+          role_code: meta.role_code || "MEMBER",
+          school_id: meta.school_id || "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+          institution_code: meta.institution_code || "OASIS-TUTORIALS",
+          institution_name: meta.institution_name || "Apex International Academy",
+          email: currentSession.user.email,
+          authUid: currentSession.user.id,
+        };
+        setUser(userObj);
+      }
+    } catch (err) {
+      console.error("Error loading Supabase profile:", err);
       setUser(null);
-    } else {
-      setUser({
-        id: data.id,
-        name: data.full_name,
-        role: data.role,
-        role_code: data.role_code,
-        school_id: data.school_id,
-        institution_code: data.schools?.code,
-      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    // Check for an existing session when the app opens
-    supabase.auth.getSession().then(({ data }) => loadProfile(data.session));
+    // 1. Initial tenant resolution and branding
+    loadTenantDetails();
 
-    // Keep user in sync when logging in or out
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      loadProfile(session);
+    // 2. Fetch active Supabase Auth session
+    supabase.auth.getSession().then(({ data }) => {
+      loadProfile(data?.session);
     });
 
-    return () => listener.subscription.unsubscribe();
+    // 3. Listen to live Supabase Auth state changes (SIGN_IN, SIGN_OUT, TOKEN_REFRESH)
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      loadProfile(currentSession);
+    });
+
+    return () => {
+      listener?.subscription?.unsubscribe();
+    };
   }, []);
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.warn("Supabase sign out error:", e);
+    }
+    setSession(null);
     setUser(null);
-    window.location.href = '/login';
+    window.location.href = "/login";
+  };
+
+  const switchTenant = (code) => {
+    if (!code) return;
+    const clean = code.trim().toUpperCase();
+    localStorage.setItem("erp_active_tenant", clean);
+    loadTenantDetails(clean);
   };
 
   return (
-    <AppContext.Provider value={{ user, loading, logout }}>
+    <AppContext.Provider
+      value={{
+        session,
+        user,
+        tenant,
+        loading,
+        logout,
+        loadProfile,
+        switchTenant,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
