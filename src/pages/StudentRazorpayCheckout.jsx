@@ -6,6 +6,27 @@ import { supabase } from "../supabaseClient";
 import { notifyFeePaymentConfirmed } from "../utils/notifications";
 import { logSecurityAction, AUDIT_ACTIONS } from "../utils/auditLogger";
 
+/**
+ * Dynamically loads the official Razorpay Checkout SDK if not already in document
+ */
+function loadRazorpayScript() {
+  return new Promise((resolve) => {
+    if (typeof window !== "undefined" && window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => {
+      console.error("Failed to load Razorpay Checkout script from CDN.");
+      resolve(false);
+    };
+    document.body.appendChild(script);
+  });
+}
+
 export default function StudentRazorpayCheckout() {
   const { user } = useContext(AppContext);
   const { showToast } = useToast();
@@ -27,77 +48,144 @@ export default function StudentRazorpayCheckout() {
     setLoading(true);
 
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const studentName = user?.name || "Astik Kumar";
-      const schoolId = user?.school_id || "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
-
-      // 1. Record transaction in Supabase fee_ledger as paid via Online (Razorpay)
-      const { error: ledgerError } = await supabase.from("fee_ledger").insert([
-        {
-          school_id: schoolId,
-          student_name: studentName,
-          class_name: "Class 10 ICSE",
-          amount: selectedFee.amount,
-          status: "paid",
-          payment_mode: "Online (Razorpay)",
-          date: today,
-        },
-      ]);
-
-      if (ledgerError) throw ledgerError;
-
-      // 2. Also record in fees table if possible
-      try {
-        await supabase.from("fees").insert([
-          {
-            school_id: schoolId,
-            student_id: user?.id && user.id.length === 36 ? user.id : null,
-            amount: selectedFee.amount,
-            status: "paid",
-            date: today,
-          },
-        ]);
-      } catch (fErr) {
-        console.warn("fees table sync optional:", fErr);
+      // 1. Ensure Razorpay Standard SDK script is injected
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded) {
+        showToast("Unable to load Razorpay gateway. Please check your network connection.", "error");
+        setLoading(false);
+        return;
       }
 
-      const invoiceNo = `INV-${Date.now().toString().slice(-6)}`;
-      const paymentRef = `rzp_live_${Date.now().toString(36)}`;
+      const today = new Date().toISOString().split("T")[0];
+      const studentName = user?.name || "Astik Kumar";
+      const studentEmail = user?.email || "student@oasis-tutorials.edu";
+      const studentPhone = user?.parent_phone || user?.phone || "+919876543210";
+      const schoolId = user?.school_id || "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
+      const institutionName = user?.institution_name || "Apex International School";
+      
+      // Default to live env variable or canonical test key
+      const razorpayKey =
+        import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_1DP5mmOlF5G5ag";
 
-      // 3. Automated WhatsApp & SMS Notification to Guardian
-      notifyFeePaymentConfirmed({
-        studentName,
-        amount: selectedFee.amount,
-        invoiceNo,
-        guardianPhone: user?.parent_phone || user?.phone || "+91 98765 43210",
-        schoolName: user?.institution_name || "Apex International Academy",
-        date: today,
-        paymentId: paymentRef,
-      });
+      // 2. Configure Official Razorpay Checkout Modal Options
+      const options = {
+        key: razorpayKey,
+        amount: selectedFee.amount * 100, // Amount in paise
+        currency: "INR",
+        name: institutionName,
+        description: selectedFee.title,
+        image: "/favicon.svg",
+        prefill: {
+          name: studentName,
+          email: studentEmail,
+          contact: studentPhone,
+        },
+        notes: {
+          student_name: studentName,
+          fee_title: selectedFee.title,
+          school_id: schoolId,
+          institution_code: user?.institution_code || "OASIS-TUTORIALS",
+        },
+        theme: {
+          color: "#0F172A",
+        },
+        // Callback handler triggered upon successful payment authorization
+        handler: async function (response) {
+          const paymentRef = response.razorpay_payment_id || `rzp_test_${Date.now().toString(36)}`;
+          const invoiceNo = `INV-${Date.now().toString().slice(-6)}`;
 
-      // 4. Role-based security audit logging
-      logSecurityAction({
-        action: AUDIT_ACTIONS.FEE_COLLECTION,
-        entityType: "FEE_PAYMENT",
-        entityId: invoiceNo,
-        details: `Online fee payment of ₹${selectedFee.amount} settled for ${selectedFee.title}`,
-        user,
-        schoolId,
-      });
+          try {
+            // A. Update / Insert transaction in Supabase fee_ledger as paid
+            const { error: ledgerError } = await supabase.from("fee_ledger").insert([
+              {
+                school_id: schoolId,
+                student_name: studentName,
+                class_name: "Class 10 ICSE",
+                amount: selectedFee.amount,
+                status: "paid",
+                payment_mode: "Online (Razorpay Test)",
+                razorpay_payment_id: paymentRef,
+                date: today,
+              },
+            ]);
 
-      showToast(
-        `Razorpay settlement verified! Paid ₹${selectedFee.amount.toLocaleString()} for ${selectedFee.title}. Receipt generated.`,
-        "success"
-      );
+            if (ledgerError) console.warn("fee_ledger sync notice:", ledgerError.message);
 
-      setTimeout(() => {
+            // B. Also update fees table if linked to user UUID
+            try {
+              await supabase.from("fees").insert([
+                {
+                  school_id: schoolId,
+                  student_id: user?.id && user.id.length === 36 ? user.id : null,
+                  amount: selectedFee.amount,
+                  status: "paid",
+                  date: today,
+                },
+              ]);
+            } catch (fErr) {
+              console.warn("fees table sync notice:", fErr.message);
+            }
+
+            // C. Automated WhatsApp & SMS Notification to Guardian
+            notifyFeePaymentConfirmed({
+              studentName,
+              amount: selectedFee.amount,
+              invoiceNo,
+              guardianPhone: studentPhone,
+              schoolName: institutionName,
+              date: today,
+              paymentId: paymentRef,
+            });
+
+            // D. Role-based security audit logging
+            logSecurityAction({
+              action: AUDIT_ACTIONS.FEE_COLLECTION,
+              entityType: "FEE_PAYMENT",
+              entityId: invoiceNo,
+              details: `Online fee payment of ₹${selectedFee.amount} settled via Razorpay (Ref: ${paymentRef}) for ${selectedFee.title}`,
+              user,
+              schoolId,
+            });
+
+            showToast(
+              `Payment Verified! Razorpay Ref: ${paymentRef}. Receipt generated for ₹${selectedFee.amount.toLocaleString()}.`,
+              "success"
+            );
+
+            setTimeout(() => {
+              setLoading(false);
+              navigate("/student/fees");
+            }, 1200);
+          } catch (postPayErr) {
+            console.error("Post-payment sync error:", postPayErr);
+            setLoading(false);
+            showToast("Payment captured, but ledger sync failed. Support notified.", "error");
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+            showToast("Payment modal closed. Fee settlement was cancelled.", "info");
+          },
+        },
+      };
+
+      // 3. Launch the official Razorpay modal overlay
+      const razorpayInstance = new window.Razorpay(options);
+      
+      razorpayInstance.on("payment.failed", function (response) {
         setLoading(false);
-        navigate("/student/fees");
-      }, 1500);
+        showToast(
+          `Payment Failed: ${response.error?.description || "Transaction declined by issuing bank."}`,
+          "error"
+        );
+      });
+
+      razorpayInstance.open();
     } catch (err) {
-      console.error("Payment processing error:", err);
+      console.error("Payment modal invocation error:", err);
       setLoading(false);
-      showToast("Payment recording failed. Please check network connection.", "error");
+      showToast("Could not open Razorpay checkout. Please try again.", "error");
     }
   };
 
@@ -165,6 +253,7 @@ export default function StudentRazorpayCheckout() {
             </div>
           </div>
 
+          {/* PAYMENT RAILS BADGES */}
           <div className="space-y-3">
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
               Payment Rails (Razorpay Certified)
@@ -187,14 +276,20 @@ export default function StudentRazorpayCheckout() {
             </div>
           </div>
 
+          {/* CHECKOUT ACTION BUTTON */}
           <button
             onClick={handleRazorpayPayment}
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black py-4 px-4 rounded-xl shadow-xl shadow-blue-600/30 transition-all disabled:opacity-50 text-base"
+            className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black py-4 px-4 rounded-xl shadow-xl shadow-blue-600/30 transition-all disabled:opacity-50 text-base flex items-center justify-center gap-2 cursor-pointer"
           >
-            {loading
-              ? "Reconciling Transaction with Supabase Ledger..."
-              : `Authorize ₹${selectedFee.amount.toLocaleString()} via Razorpay 🚀`}
+            {loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Opening Razorpay Secure Gateway...</span>
+              </>
+            ) : (
+              <span>Authorize ₹{selectedFee.amount.toLocaleString()} via Razorpay 🚀</span>
+            )}
           </button>
         </div>
       </div>

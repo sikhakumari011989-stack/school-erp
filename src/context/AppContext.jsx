@@ -39,7 +39,14 @@ function resolveTenantCode() {
 
 export const AppProvider = ({ children }) => {
   const [session, setSession] = useState(null);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem("erp_demo_session");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
 
   const [tenant, setTenant] = useState({
@@ -90,7 +97,16 @@ export const AppProvider = ({ children }) => {
   const loadProfile = async (currentSession) => {
     if (!currentSession?.user) {
       setSession(null);
-      setUser(null);
+      const saved = localStorage.getItem("erp_demo_session");
+      if (saved) {
+        try {
+          setUser(JSON.parse(saved));
+        } catch {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
       setLoading(false);
       return;
     }
@@ -118,6 +134,7 @@ export const AppProvider = ({ children }) => {
           authUid: currentSession.user.id,
         };
         setUser(userObj);
+        localStorage.removeItem("erp_demo_session");
 
         if (profile.schools?.code) {
           loadTenantDetails(profile.schools.code);
@@ -165,12 +182,25 @@ export const AppProvider = ({ children }) => {
     };
   }, []);
 
+  const login = (userData) => {
+    setUser(userData);
+    try {
+      localStorage.setItem("erp_demo_session", JSON.stringify(userData));
+      if (userData?.institution_code) {
+        loadTenantDetails(userData.institution_code);
+      }
+    } catch (e) {
+      console.warn("Storage error:", e);
+    }
+  };
+
   const logout = async () => {
     try {
       await supabase.auth.signOut();
     } catch (e) {
       console.warn("Supabase sign out error:", e);
     }
+    localStorage.removeItem("erp_demo_session");
     setSession(null);
     setUser(null);
     window.location.href = "/login";
@@ -190,6 +220,7 @@ export const AppProvider = ({ children }) => {
         user,
         tenant,
         loading,
+        login,
         logout,
         loadProfile,
         switchTenant,

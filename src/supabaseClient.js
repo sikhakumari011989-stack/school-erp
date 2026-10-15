@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
-// This tells the app to actually use the keys from your .env file
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl =
+  import.meta.env.VITE_SUPABASE_URL ||
+  'https://lkcnausuvgdiwnsppakp.supabase.co'
+
+const supabaseKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxrY25hdXN1dmdkaXduc3BwYWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzMDMwMjcsImV4cCI6MjEwNjg3OTAyN30.QFmG6waeGtrK0dgGtzt0R6E9pSmvAL6Q9-XCnMyEWrw'
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
