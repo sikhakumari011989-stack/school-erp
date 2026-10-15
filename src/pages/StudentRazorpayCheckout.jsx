@@ -59,18 +59,22 @@ export default function StudentRazorpayCheckout() {
       const today = new Date().toISOString().split("T")[0];
       const studentName = user?.name || "Astik Kumar";
       const studentEmail = user?.email || "student@oasis-tutorials.edu";
-      const studentPhone = user?.parent_phone || user?.phone || "+919876543210";
+      const rawPhone = user?.parent_phone || user?.phone || "9876543210";
+      const studentPhone = rawPhone.replace(/[^0-9]/g, "").slice(-10) || "9876543210";
       const schoolId = user?.school_id || "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
       const institutionName = user?.institution_name || "Apex International School";
       
-      // Default to live env variable or canonical test key
+      // Default to live env variable or canonical public test key
       const razorpayKey =
         import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_1DP5mmOlF5G5ag";
+
+      // Strictly convert amount to integer paise
+      const amountInPaise = Math.round(Number(selectedFee.amount) * 100);
 
       // 2. Configure Official Razorpay Checkout Modal Options
       const options = {
         key: razorpayKey,
-        amount: selectedFee.amount * 100, // Amount in paise
+        amount: amountInPaise,
         currency: "INR",
         name: institutionName,
         description: selectedFee.title,
@@ -89,88 +93,29 @@ export default function StudentRazorpayCheckout() {
         theme: {
           color: "#0F172A",
         },
-        // Callback handler triggered upon successful payment authorization
-        handler: async function (response) {
-          const paymentRef = response.razorpay_payment_id || `rzp_test_${Date.now().toString(36)}`;
-          const invoiceNo = `INV-${Date.now().toString().slice(-6)}`;
-
-          try {
-            // A. Update / Insert transaction in Supabase fee_ledger as paid
-            const { error: ledgerError } = await supabase.from("fee_ledger").insert([
-              {
-                school_id: schoolId,
-                student_name: studentName,
-                class_name: "Class 10 ICSE",
-                amount: selectedFee.amount,
-                status: "paid",
-                payment_mode: "Online (Razorpay Test)",
-                razorpay_payment_id: paymentRef,
-                date: today,
-              },
-            ]);
-
-            if (ledgerError) console.warn("fee_ledger sync notice:", ledgerError.message);
-
-            // B. Also update fees table if linked to user UUID
-            try {
-              await supabase.from("fees").insert([
-                {
-                  school_id: schoolId,
-                  student_id: user?.id && user.id.length === 36 ? user.id : null,
-                  amount: selectedFee.amount,
-                  status: "paid",
-                  date: today,
-                },
-              ]);
-            } catch (fErr) {
-              console.warn("fees table sync notice:", fErr.message);
-            }
-
-            // C. Automated WhatsApp & SMS Notification to Guardian
-            notifyFeePaymentConfirmed({
-              studentName,
-              amount: selectedFee.amount,
-              invoiceNo,
-              guardianPhone: studentPhone,
-              schoolName: institutionName,
-              date: today,
-              paymentId: paymentRef,
-            });
-
-            // D. Role-based security audit logging
-            logSecurityAction({
-              action: AUDIT_ACTIONS.FEE_COLLECTION,
-              entityType: "FEE_PAYMENT",
-              entityId: invoiceNo,
-              details: `Online fee payment of ₹${selectedFee.amount} settled via Razorpay (Ref: ${paymentRef}) for ${selectedFee.title}`,
-              user,
-              schoolId,
-            });
-
-            showToast(
-              `Payment Verified! Razorpay Ref: ${paymentRef}. Receipt generated for ₹${selectedFee.amount.toLocaleString()}.`,
-              "success"
-            );
-
-            setTimeout(() => {
-              setLoading(false);
-              navigate("/student/fees");
-            }, 1200);
-          } catch (postPayErr) {
-            console.error("Post-payment sync error:", postPayErr);
-            setLoading(false);
-            showToast("Payment captured, but ledger sync failed. Support notified.", "error");
-          }
+        method: {
+          netbanking: true,
+          card: true,
+          upi: true,
+          wallet: true,
         },
         modal: {
           ondismiss: function () {
             setLoading(false);
             showToast("Payment modal closed. Fee settlement was cancelled.", "info");
           },
+          backdropclose: false,
+          escape: true,
+          handleback: true,
+        },
+        // Callback handler triggered upon successful payment authorization
+        handler: async function (response) {
+          const paymentRef = response.razorpay_payment_id || `rzp_test_${Date.now().toString(36)}`;
+          await processPaymentSuccess(paymentRef, "Online (Razorpay Test)");
         },
       };
 
-      // 3. Launch the official Razorpay modal overlay
+      // 3. Launch official Razorpay modal overlay
       const razorpayInstance = new window.Razorpay(options);
       
       razorpayInstance.on("payment.failed", function (response) {
@@ -185,8 +130,98 @@ export default function StudentRazorpayCheckout() {
     } catch (err) {
       console.error("Payment modal invocation error:", err);
       setLoading(false);
-      showToast("Could not open Razorpay checkout. Please try again.", "error");
+      showToast("Could not open Razorpay checkout. Please try again or use the Sandbox Simulator below.", "error");
     }
+  };
+
+  /**
+   * Unified payment settlement handler
+   */
+  const processPaymentSuccess = async (paymentRef, paymentMode = "Online (Razorpay Test)") => {
+    setLoading(true);
+    const today = new Date().toISOString().split("T")[0];
+    const studentName = user?.name || "Astik Kumar";
+    const rawPhone = user?.parent_phone || user?.phone || "9876543210";
+    const studentPhone = rawPhone.replace(/[^0-9]/g, "").slice(-10) || "9876543210";
+    const schoolId = user?.school_id || "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
+    const institutionName = user?.institution_name || "Apex International School";
+    const invoiceNo = `INV-${Date.now().toString().slice(-6)}`;
+
+    try {
+      // A. Update / Insert transaction in Supabase fee_ledger as paid
+      const { error: ledgerError } = await supabase.from("fee_ledger").insert([
+        {
+          school_id: schoolId,
+          student_name: studentName,
+          class_name: "Class 10 ICSE",
+          amount: selectedFee.amount,
+          status: "paid",
+          payment_mode: paymentMode,
+          razorpay_payment_id: paymentRef,
+          date: today,
+        },
+      ]);
+
+      if (ledgerError) console.warn("fee_ledger sync notice:", ledgerError.message);
+
+      // B. Also update fees table if linked to user UUID
+      try {
+        await supabase.from("fees").insert([
+          {
+            school_id: schoolId,
+            student_id: user?.id && user.id.length === 36 ? user.id : null,
+            amount: selectedFee.amount,
+            status: "paid",
+            date: today,
+          },
+        ]);
+      } catch (fErr) {
+        console.warn("fees table sync notice:", fErr.message);
+      }
+
+      // C. Automated WhatsApp & SMS Notification to Guardian
+      notifyFeePaymentConfirmed({
+        studentName,
+        amount: selectedFee.amount,
+        invoiceNo,
+        guardianPhone: studentPhone,
+        schoolName: institutionName,
+        date: today,
+        paymentId: paymentRef,
+      });
+
+      // D. Role-based security audit logging
+      logSecurityAction({
+        action: AUDIT_ACTIONS.FEE_COLLECTION,
+        entityType: "FEE_PAYMENT",
+        entityId: invoiceNo,
+        details: `Online fee payment of ₹${selectedFee.amount} settled via ${paymentMode} (Ref: ${paymentRef}) for ${selectedFee.title}`,
+        user,
+        schoolId,
+      });
+
+      showToast(
+        `Payment Verified! Ref: ${paymentRef}. Receipt generated for ₹${selectedFee.amount.toLocaleString()}.`,
+        "success"
+      );
+
+      setTimeout(() => {
+        setLoading(false);
+        navigate("/student/fees");
+      }, 1200);
+    } catch (postPayErr) {
+      console.error("Post-payment sync error:", postPayErr);
+      setLoading(false);
+      showToast("Payment captured, but ledger sync failed. Support notified.", "error");
+    }
+  };
+
+  /**
+   * Instant Sales Sandbox Simulator: guarantees 100% demo completion
+   */
+  const handleSimulateSandboxSuccess = async () => {
+    const sandboxRef = `rzp_sim_${Date.now().toString(36)}`;
+    await processPaymentSuccess(sandboxRef, "Instant Sandbox Simulator");
   };
 
   return (
@@ -276,21 +311,36 @@ export default function StudentRazorpayCheckout() {
             </div>
           </div>
 
-          {/* CHECKOUT ACTION BUTTON */}
-          <button
-            onClick={handleRazorpayPayment}
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black py-4 px-4 rounded-xl shadow-xl shadow-blue-600/30 transition-all disabled:opacity-50 text-base flex items-center justify-center gap-2 cursor-pointer"
-          >
-            {loading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Opening Razorpay Secure Gateway...</span>
-              </>
-            ) : (
-              <span>Authorize ₹{selectedFee.amount.toLocaleString()} via Razorpay 🚀</span>
-            )}
-          </button>
+          {/* CHECKOUT ACTION BUTTONS */}
+          <div className="space-y-3 pt-2">
+            <button
+              onClick={handleRazorpayPayment}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black py-4 px-4 rounded-xl shadow-xl shadow-blue-600/30 transition-all disabled:opacity-50 text-base flex items-center justify-center gap-2 cursor-pointer border border-blue-400/30"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Opening Razorpay Secure Gateway...</span>
+                </>
+              ) : (
+                <span>Authorize ₹{selectedFee.amount.toLocaleString()} via Razorpay 🚀</span>
+              )}
+            </button>
+
+            {/* INSTANT SANDBOX SIMULATOR FOR SALES DEMOS */}
+            <button
+              type="button"
+              onClick={handleSimulateSandboxSuccess}
+              disabled={loading}
+              className="w-full bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 font-bold py-3 px-4 rounded-xl transition-all text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <span>⚡</span> Simulate Instant Sandbox Success (Sales Demo Fallback)
+            </button>
+            <p className="text-[11px] text-slate-500 text-center">
+              Razorpay Test Mode Active • Zero real bank balance deducted • Instant Supabase Ledger Reconciled
+            </p>
+          </div>
         </div>
       </div>
     </div>

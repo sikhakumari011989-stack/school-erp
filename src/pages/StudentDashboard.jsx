@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { supabase } from "../supabaseClient";
 import { StatSkeleton } from "../Components/Skeleton";
+import NoticeBanner from "../Components/NoticeBanner";
 
 export default function StudentDashboard() {
   const { user } = useContext(AppContext);
@@ -127,6 +128,9 @@ export default function StudentDashboard() {
       <div className="fixed top-0 left-10 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="relative z-10 max-w-6xl mx-auto">
+        {/* INSTITUTIONAL NOTICEBOARD CIRCULAR BANNER */}
+        <NoticeBanner role="Student" schoolId={user?.school_id || user?.institution_code} />
+
         {/* WELCOME BANNER */}
         <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-8 shadow-2xl mb-8 flex justify-between items-center flex-wrap gap-4">
           <div>

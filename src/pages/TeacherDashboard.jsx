@@ -5,6 +5,7 @@ import { supabase } from "../supabaseClient";
 import { StatSkeleton } from "../Components/Skeleton";
 import { useToast } from "../context/ToastContext";
 import { generateReportCardPDF } from "../utils/pdfGenerator";
+import NoticeBanner from "../Components/NoticeBanner";
 
 export default function TeacherDashboard() {
   const { user } = useContext(AppContext);
@@ -110,6 +111,9 @@ export default function TeacherDashboard() {
       <div className="fixed top-0 right-10 w-96 h-96 bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="relative z-10 max-w-6xl mx-auto">
+        {/* INSTITUTIONAL NOTICEBOARD CIRCULAR BANNER */}
+        <NoticeBanner role="Teacher" schoolId={user?.school_id || user?.institution_code} />
+
         {/* HEADER */}
         <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-8 shadow-2xl mb-8 flex justify-between items-center flex-wrap gap-4">
           <div>

@@ -326,10 +326,26 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black py-4 px-4 rounded-xl shadow-lg shadow-blue-600/30 disabled:opacity-50 transition-all mt-3 border border-blue-500/40 hover:scale-[1.01]"
+            className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black py-4 px-4 rounded-xl shadow-lg shadow-blue-600/30 disabled:opacity-50 transition-all mt-3 border border-blue-500/40 hover:scale-[1.01] cursor-pointer"
           >
             {loading ? "Verifying Credentials & Institutional Node..." : "Access Tuition Portal 🚀"}
           </button>
+
+          {/* SELF-SERVICE ONBOARDING & CODE JOIN SHORTCUTS */}
+          <div className="flex items-center justify-between pt-2 px-1 text-xs">
+            <Link
+              to="/register"
+              className="text-blue-400 hover:text-blue-300 font-bold transition-colors flex items-center gap-1"
+            >
+              <span>🏫</span> Register New School
+            </Link>
+            <Link
+              to="/join"
+              className="text-purple-400 hover:text-purple-300 font-bold transition-colors flex items-center gap-1"
+            >
+              <span>🎓</span> Join with Code
+            </Link>
+          </div>
         </form>
 
         {/* 1-CLICK INSTANT DEMO TESTING LAUNCHPAD */}

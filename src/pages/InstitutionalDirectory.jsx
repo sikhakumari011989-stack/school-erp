@@ -30,36 +30,38 @@ export default function InstitutionalDirectory() {
           <div className="p-6 border-b border-slate-700 bg-slate-800/50">
             <h2 className="text-lg font-bold text-white">Verified Institutional Contacts</h2>
           </div>
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                <th className="p-5">Name & Role</th>
-                <th className="p-5">Department</th>
-                <th className="p-5">Contact Phone & Email</th>
-                <th className="p-5 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700/50 text-sm">
-              {directory.map((d, idx) => (
-                <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
-                  <td className="p-5">
-                    <p className="font-bold text-white text-base">{d.name}</p>
-                    <p className="text-xs text-blue-400 font-medium">{d.role}</p>
-                  </td>
-                  <td className="p-5 text-slate-300 font-medium">{d.dept}</td>
-                  <td className="p-5">
-                    <p className="font-mono text-xs text-emerald-400">{d.phone}</p>
-                    <p className="text-xs text-slate-400">{d.email}</p>
-                  </td>
-                  <td className="p-5 text-center">
-                    <button onClick={() => alert(`Initiating direct message to ${d.name}...`)} className="bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-600 hover:border-blue-500 transition-all">
-                      Message 💬
-                    </button>
-                  </td>
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left border-collapse min-w-[600px]">
+              <thead>
+                <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                  <th className="p-5">Name & Role</th>
+                  <th className="p-5">Department</th>
+                  <th className="p-5">Contact Phone & Email</th>
+                  <th className="p-5 text-center">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-700/50 text-sm">
+                {directory.map((d, idx) => (
+                  <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
+                    <td className="p-5">
+                      <p className="font-bold text-white text-base">{d.name}</p>
+                      <p className="text-xs text-blue-400 font-medium">{d.role}</p>
+                    </td>
+                    <td className="p-5 text-slate-300 font-medium">{d.dept}</td>
+                    <td className="p-5">
+                      <p className="font-mono text-xs text-emerald-400">{d.phone}</p>
+                      <p className="text-xs text-slate-400">{d.email}</p>
+                    </td>
+                    <td className="p-5 text-center">
+                      <button onClick={() => alert(`Initiating direct message to ${d.name}...`)} className="bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-600 hover:border-blue-500 transition-all">
+                        Message 💬
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>

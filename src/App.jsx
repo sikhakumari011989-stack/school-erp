@@ -31,19 +31,94 @@ import StudentConduct from "./pages/StudentConduct";
 import StudentFees from "./pages/StudentFees";
 import StudentTransport from "./pages/StudentTransport";
 import StudentRazorpayCheckout from "./pages/StudentRazorpayCheckout";
+import RegisterInstitution from "./pages/RegisterInstitution";
+import JoinSchool from "./pages/JoinSchool";
 import OfflineIndicator from "./Components/OfflineIndicator";
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
-  const isPublicPage = location.pathname === "/" || location.pathname === "/login";
+  const isPublicPage =
+    location.pathname === "/" ||
+    location.pathname === "/login" ||
+    location.pathname === "/register" ||
+    location.pathname === "/join";
+
+  const [installPrompt, setInstallPrompt] = React.useState(null);
+  const [isInstalled, setIsInstalled] = React.useState(false);
+  const [showInstallPill, setShowInstallPill] = React.useState(true);
+
+  React.useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+      setShowInstallPill(true);
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setInstallPrompt(null);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    if (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true
+    ) {
+      setIsInstalled(true);
+    }
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      if (choice.outcome === "accepted") {
+        setInstallPrompt(null);
+      }
+    } else {
+      alert("To install on iOS or mobile browser: Tap Share (or Menu 3-dots) and choose 'Add to Home Screen' 📱");
+    }
+  };
 
   return (
-    <div className="flex min-h-screen bg-[#0F172A] font-sans w-full">
+    <div className="flex min-h-screen bg-[#0F172A] font-sans w-full relative">
       <OfflineIndicator />
       {!isPublicPage && <Sidebar />}
-      <main className="flex-1 w-full overflow-y-auto min-h-screen p-4 sm:p-6 lg:p-8">
+      <main
+        className={`flex-1 w-full overflow-y-auto min-h-screen p-4 sm:p-6 lg:p-8 ${
+          isPublicPage ? "" : "pt-20 md:pt-8 pb-24 md:pb-8"
+        }`}
+      >
         {children}
       </main>
+
+      {/* PERSISTENT SLEEK PWA INSTALL FLOATING PILL */}
+      {!isInstalled && showInstallPill && (
+        <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 flex items-center gap-2 bg-gradient-to-r from-blue-600/95 via-indigo-600/95 to-purple-600/95 backdrop-blur-xl border border-white/20 text-white px-4 py-2.5 rounded-full shadow-2xl shadow-blue-500/40 text-xs font-bold transition-all hover:scale-105">
+          <button
+            onClick={handleInstallClick}
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <span className="text-base">📲</span>
+            <span>Install App</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          </button>
+          <button
+            onClick={() => setShowInstallPill(false)}
+            className="text-white/60 hover:text-white ml-1 text-sm font-bold cursor-pointer"
+            title="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -54,9 +129,11 @@ export default function App() {
       <ToastProvider>
         <AppLayout>
           <Routes>
-            {/* PUBLIC ROUTES */}
+            {/* PUBLIC ONBOARDING & AUTH ROUTES */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<RegisterInstitution />} />
+            <Route path="/join" element={<JoinSchool />} />
 
             {/* SUPER ADMIN & SYSTEM AUDIT (Admin only) */}
             <Route
