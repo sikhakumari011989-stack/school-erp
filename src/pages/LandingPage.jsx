@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "../context/ToastContext";
 
 export default function LandingPage() {
@@ -99,12 +99,12 @@ export default function LandingPage() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate("/login")}
-            className="text-slate-300 hover:text-white font-bold text-sm transition-all px-4 py-2"
+          <Link
+            to="/login"
+            className="text-slate-300 hover:text-white font-bold text-sm transition-all px-4 py-2 cursor-pointer"
           >
             Portal Sign In
-          </button>
+          </Link>
           <button
             onClick={() => setShowDemoModal(true)}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-sm px-6 py-2.5 rounded-xl shadow-lg shadow-blue-600/30 transition-all border border-blue-500/40 hover:scale-105"
@@ -139,12 +139,12 @@ export default function LandingPage() {
           >
             Request Institutional Walkthrough 🏛️
           </button>
-          <button
-            onClick={() => navigate("/login")}
-            className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white font-bold px-8 py-4 rounded-2xl border border-slate-700 transition-all text-base hover:border-slate-500"
+          <Link
+            to="/login"
+            className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white font-bold px-8 py-4 rounded-2xl border border-slate-700 transition-all text-base hover:border-slate-500 cursor-pointer inline-flex items-center justify-center"
           >
             Launch Live Demo Portal →
-          </button>
+          </Link>
         </div>
 
         {/* METRICS STRIP */}
@@ -243,12 +243,12 @@ export default function LandingPage() {
             >
               Request Custom Institutional Walkthrough 📞
             </button>
-            <button
-              onClick={() => navigate("/login")}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-8 py-4 rounded-xl border border-slate-600 transition-all"
+            <Link
+              to="/login"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-8 py-4 rounded-xl border border-slate-600 transition-all cursor-pointer inline-flex items-center justify-center"
             >
               Enter Live Demo Sandbox →
-            </button>
+            </Link>
           </div>
         </div>
       </div>

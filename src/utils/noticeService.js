@@ -150,3 +150,4 @@ export async function deleteNotice(id) {
     // ignore
   }
 }
+

@@ -34,6 +34,7 @@ import StudentRazorpayCheckout from "./pages/StudentRazorpayCheckout";
 import RegisterInstitution from "./pages/RegisterInstitution";
 import JoinSchool from "./pages/JoinSchool";
 import OfflineIndicator from "./Components/OfflineIndicator";
+import ErrorBoundary from "./Components/ErrorBoundary";
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
@@ -128,10 +129,11 @@ export default function App() {
     <AppProvider>
       <ToastProvider>
         <AppLayout>
-          <Routes>
-            {/* PUBLIC ONBOARDING & AUTH ROUTES */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
+          <ErrorBoundary>
+            <Routes>
+              {/* PUBLIC ONBOARDING & AUTH ROUTES */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
             <Route path="/register" element={<RegisterInstitution />} />
             <Route path="/join" element={<JoinSchool />} />
 
@@ -334,6 +336,7 @@ export default function App() {
             {/* FALLBACK CATCH-ALL */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </ErrorBoundary>
         </AppLayout>
       </ToastProvider>
     </AppProvider>

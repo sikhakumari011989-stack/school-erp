@@ -118,3 +118,4 @@ export default function NoticeBanner({ role = "All", schoolId }) {
     </div>
   );
 }
+

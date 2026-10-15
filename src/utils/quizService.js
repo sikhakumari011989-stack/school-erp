@@ -218,3 +218,4 @@ export async function deleteQuiz(id) {
     // ignore
   }
 }
+
