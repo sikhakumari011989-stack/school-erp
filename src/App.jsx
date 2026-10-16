@@ -33,16 +33,29 @@ import StudentTransport from "./pages/StudentTransport";
 import StudentRazorpayCheckout from "./pages/StudentRazorpayCheckout";
 import RegisterInstitution from "./pages/RegisterInstitution";
 import JoinSchool from "./pages/JoinSchool";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import PricingPolicy from "./pages/PricingPolicy";
+import RefundPolicy from "./pages/RefundPolicy";
+import ContactUs from "./pages/ContactUs";
 import OfflineIndicator from "./Components/OfflineIndicator";
 import ErrorBoundary from "./Components/ErrorBoundary";
 
+const PUBLIC_ROUTES = [
+  "/",
+  "/login",
+  "/register",
+  "/join",
+  "/terms",
+  "/privacy",
+  "/pricing-policy",
+  "/refund-policy",
+  "/contact",
+];
+
 const AppLayout = ({ children }) => {
   const location = useLocation();
-  const isPublicPage =
-    location.pathname === "/" ||
-    location.pathname === "/login" ||
-    location.pathname === "/register" ||
-    location.pathname === "/join";
+  const isPublicPage = PUBLIC_ROUTES.includes(location.pathname);
 
   const [installPrompt, setInstallPrompt] = React.useState(null);
   const [isInstalled, setIsInstalled] = React.useState(false);
@@ -134,8 +147,13 @@ export default function App() {
               {/* PUBLIC ONBOARDING & AUTH ROUTES */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<RegisterInstitution />} />
-            <Route path="/join" element={<JoinSchool />} />
+              <Route path="/register" element={<RegisterInstitution />} />
+              <Route path="/join" element={<JoinSchool />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/pricing-policy" element={<PricingPolicy />} />
+              <Route path="/refund-policy" element={<RefundPolicy />} />
+              <Route path="/contact" element={<ContactUs />} />
 
             {/* SUPER ADMIN & SYSTEM AUDIT (Admin only) */}
             <Route

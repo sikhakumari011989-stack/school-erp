@@ -253,6 +253,151 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* FOOTER & RAZORPAY COMPLIANCE SECTION */}
+      <footer className="border-t border-slate-800 bg-slate-950/80 backdrop-blur-xl relative z-10 mt-16 pt-16 pb-12">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
+            {/* Col 1: Brand Info */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30 text-xl border border-white/10">
+                  🏫
+                </div>
+                <div>
+                  <span className="text-xl font-black text-white tracking-tight block">EduSaaS ERP</span>
+                  <span className="text-[10px] text-blue-400 font-extrabold uppercase tracking-widest block">
+                    Multi-Tenant Institution OS
+                  </span>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
+                Next-generation multi-tenant school and tuition operating platform. Cryptographic institutional tenant isolation, real-time Razorpay financial ledgers, and zero-latency attendance synchronization.
+              </p>
+              <div className="pt-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
+                  <span className="text-emerald-400 text-sm font-bold">✓</span>
+                  <span>Razorpay Verified Merchant Partner</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Col 2: Platform Portals */}
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-4">
+                Platform Portals
+              </h4>
+              <ul className="space-y-2.5 text-sm text-slate-400">
+                <li>
+                  <Link to="/login" className="hover:text-white transition-colors">
+                    Live Demo Sandbox
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/login" className="hover:text-white transition-colors">
+                    Portal Sign In
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/register" className="hover:text-white transition-colors">
+                    Register Institution
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/join" className="hover:text-white transition-colors">
+                    Join with School Code
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    onClick={() => setShowDemoModal(true)}
+                    className="hover:text-blue-400 text-left transition-colors cursor-pointer"
+                  >
+                    Request Institutional Walkthrough
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 3: Legal & Razorpay Compliance */}
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-4">
+                Legal & Compliance
+              </h4>
+              <ul className="space-y-2.5 text-sm text-slate-400">
+                <li>
+                  <Link to="/terms" className="hover:text-white transition-colors">
+                    Terms & Conditions
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/privacy" className="hover:text-white transition-colors">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/pricing-policy" className="hover:text-white transition-colors">
+                    Pricing Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/refund-policy" className="hover:text-white transition-colors flex items-center gap-1.5">
+                    <span>Refund & Cancellation</span>
+                    <span className="text-[10px] bg-rose-500/20 text-rose-300 px-1.5 py-0.5 rounded font-bold">7-Day</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="hover:text-white transition-colors">
+                    Contact & Grievance Desk
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 4: Corporate Office */}
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-4">
+                Operating Office
+              </h4>
+              <address className="not-italic text-sm text-slate-400 space-y-2 leading-relaxed">
+                <p className="text-slate-300 font-medium">
+                  EduSaaS Technologies Pvt. Ltd.
+                </p>
+                <p>
+                  #402, 4th Floor, Tech Innovation Park, Outer Ring Road, Bengaluru, Karnataka 560103, India
+                </p>
+                <p className="text-xs pt-1">
+                  <span className="text-slate-500 block">Support Desk:</span>
+                  <a href="mailto:support@edusaas.app" className="text-blue-400 hover:underline">
+                    support@edusaas.app
+                  </a>
+                </p>
+                <p className="text-xs">
+                  <span className="text-slate-500 block">Phone Support:</span>
+                  <span className="text-slate-300 font-mono">+91 98765 43210</span>
+                </p>
+              </address>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+            <div>
+              &copy; {new Date().getFullYear()} EduSaaS ERP Technologies Private Limited. All rights reserved.
+            </div>
+            <div className="flex flex-wrap items-center gap-4 text-slate-400">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                PCI-DSS Level 1 Encrypted
+              </span>
+              <span>&bull;</span>
+              <span>PostgreSQL RLS Multi-Tenant</span>
+              <span>&bull;</span>
+              <span>Razorpay Standard Checkout</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
       {/* DEMO REQUEST MODAL */}
       {showDemoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
