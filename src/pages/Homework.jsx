@@ -1,8 +1,10 @@
 import { useContext, useState } from "react";
 import { AppContext } from "../context/AppContext";
+import { useToast } from "../context/ToastContext";
 
 export default function Homework() {
   const { homework, uploadHomework, getClassHomework, classes, user } = useContext(AppContext);
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     class_id: "",
     subject: "",
@@ -20,7 +22,7 @@ export default function Homework() {
     e.preventDefault();
     await uploadHomework(formData);
     setFormData({ class_id: "", subject: "", title: "", description: "", due_date: "", file_url: "" });
-    alert("✅ Homework uploaded!");
+    showToast("Homework uploaded successfully!", "success");
   };
 
   const classHomework = formData.class_id ? getClassHomework(formData.class_id) : homework;

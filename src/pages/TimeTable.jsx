@@ -16,7 +16,7 @@ export default function TimeTable() {
         </select>
       </div>
 
-      <div className="bg-[#1E293B] border border-slate-700 rounded-xl shadow-lg overflow-x-auto p-4">
+      <div className="bg-[#1E293B] border border-slate-700 rounded-xl shadow-lg overflow-x-auto w-full p-4">
         <table className="w-full text-center border-collapse min-w-[800px]">
           <thead>
             <tr className="border-b border-slate-700">

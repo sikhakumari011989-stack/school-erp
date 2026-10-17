@@ -1,0 +1,40 @@
+<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="edusaas-indigo-violet-pwa" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="edusaas-glow-border-pwa" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#34D399" stop-opacity="0.15"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded Squircle Container -->
+  <rect x="1" y="1" width="62" height="62" rx="16" fill="url(#edusaas-indigo-violet-pwa)" stroke="rgba(255, 255, 255, 0.22)" stroke-width="1.5"/>
+  <rect x="2.5" y="2.5" width="59" height="59" rx="14.5" stroke="url(#edusaas-glow-border-pwa)" stroke-width="1"/>
+
+  <!-- Academic Mortarboard Cap -->
+  <!-- Top Diamond Rhombus -->
+  <path d="M32 12.5L49.5 19.5L32 26.5L14.5 19.5L32 12.5Z" fill="#FFFFFF"/>
+  <!-- Cap Skull Band Underneath -->
+  <path d="M21 23.2V27.8C21 31.8 43 31.8 43 27.8V23.2L32 27.6L21 23.2Z" fill="#E0E7FF" fill-opacity="0.95"/>
+  <!-- Tassel Cord & Hanging Cyan Droplet -->
+  <path d="M43.5 21.5L47.5 26.5V32" stroke="#38BDF8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="47.5" cy="33.5" r="1.5" fill="#38BDF8"/>
+
+  <!-- Geometric Academic Shield Contour -->
+  <path d="M19 29.5C19 41.5 32 48.5 32 48.5C32 48.5 45 41.5 45 29.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Three Ascending Data Bars (Institutional Growth & Ledger Sync) -->
+  <!-- Bar 1 (Left - Emerald #34D399) -->
+  <rect x="24.5" y="38" width="3.5" height="6" rx="1.5" fill="#34D399"/>
+  <!-- Bar 2 (Center - Cyan #38BDF8) -->
+  <rect x="30.25" y="33.5" width="3.5" height="10.5" rx="1.5" fill="#38BDF8"/>
+  <!-- Bar 3 (Right - Emerald #34D399) -->
+  <rect x="36" y="29" width="3.5" height="15" rx="1.5" fill="#34D399"/>
+
+  <!-- Dynamic Ledger Sync Node Ray -->
+  <path d="M26.25 38L32 33.5L37.75 29" stroke="#A7F3D0" stroke-width="1" stroke-linecap="round" stroke-dasharray="1.5 1.5"/>
+</svg>
+

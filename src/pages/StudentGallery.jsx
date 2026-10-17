@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useToast } from "../context/ToastContext";
 
 export default function StudentGallery() {
+  const { showToast } = useToast();
   const [photos] = useState([
     { id: 1, title: "Annual Inter-School Football Championship Finals", category: "Sports", image: "🏆", date: "October 2026" },
     { id: 2, title: "Science Exhibition & Robotics Showcase", category: "Academics", image: "🔬", date: "September 2026" },
@@ -40,8 +42,8 @@ export default function StudentGallery() {
                 </h3>
               </div>
               <button 
-                onClick={() => alert(`Opening photo view for: ${item.title}`)}
-                className="w-full bg-slate-800 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded-xl transition-all border border-slate-700 hover:border-purple-500 flex items-center justify-center gap-2"
+                onClick={() => showToast(`Opening photo view for: ${item.title}`, "info")}
+                className="w-full bg-slate-800 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded-xl transition-all border border-slate-700 hover:border-purple-500 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>🔍</span> View Full Resolution
               </button>

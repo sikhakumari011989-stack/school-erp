@@ -1,12 +1,31 @@
 import React, { useState, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
+import BrandLogo from "./BrandLogo";
 
 export default function Sidebar() {
-  const { user, tenant, logout } = useContext(AppContext);
+  const { user, tenant, logout, handleSignOut, setUser } = useContext(AppContext);
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  const onSignOut = async () => {
+    try {
+      localStorage.removeItem("erp_session_user");
+      localStorage.removeItem("erp_demo_session");
+      sessionStorage.clear();
+    } catch (e) {
+      console.warn("Storage clear notice:", e);
+    }
+    if (typeof handleSignOut === "function") {
+      handleSignOut();
+    } else if (typeof logout === "function") {
+      logout();
+    } else {
+      if (typeof setUser === "function") setUser(null);
+      window.location.href = "/login?signedOut=true";
+    }
+  };
 
   if (!user) return null;
 
@@ -111,20 +130,17 @@ export default function Sidebar() {
       {/* ============================================================ */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#0F172A]/95 backdrop-blur-xl border-b border-slate-800/80 z-40 flex items-center justify-between px-4">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-base shadow-md shadow-blue-600/30 border border-white/10 flex-shrink-0">
-            {tenant?.logoUrl ? (
-              <img src={tenant.logoUrl} alt={tenant.name} className="w-5 h-5 object-contain" />
-            ) : (
-              "🏫"
-            )}
-          </div>
+          <BrandLogo size="sm" customLogoUrl={tenant?.logoUrl} />
           <div className="min-w-0">
             <h2 className="text-xs font-black text-white truncate max-w-[150px]">
               {tenant?.name || "Apex International"}
             </h2>
-            <p className="text-[9px] text-blue-400 font-extrabold uppercase tracking-wider truncate">
-              {tenant?.code || user.institution_code || "OASIS-TUTORIALS"}
-            </p>
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <p className="text-[9px] text-blue-400 font-extrabold uppercase tracking-wider truncate">
+                {tenant?.code || user.institution_code || "OASIS-TUTORIALS"}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -160,9 +176,7 @@ export default function Sidebar() {
             {/* Drawer Header */}
             <div className="p-5 border-b border-slate-800 bg-slate-900/60 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-lg">
-                  🏫
-                </div>
+                <BrandLogo size="sm" customLogoUrl={tenant?.logoUrl} />
                 <div>
                   <h3 className="text-xs font-black text-white truncate max-w-[140px]">
                     {tenant?.name || "Apex International"}
@@ -213,7 +227,7 @@ export default function Sidebar() {
                 </div>
               </div>
               <button
-                onClick={logout}
+                onClick={onSignOut}
                 className="w-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold py-2.5 px-3 rounded-xl transition-all border border-rose-500/20 flex items-center justify-center gap-2 text-xs"
               >
                 <span>🚪</span> Sign Out
@@ -258,23 +272,20 @@ export default function Sidebar() {
         {/* Brand Header */}
         <div className="p-6 border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-xl shadow-lg shadow-blue-600/30 border border-white/10 flex-shrink-0">
-              {tenant?.logoUrl ? (
-                <img src={tenant.logoUrl} alt={tenant.name} className="w-7 h-7 object-contain" />
-              ) : (
-                "🏫"
-              )}
-            </div>
+            <BrandLogo size="md" customLogoUrl={tenant?.logoUrl} />
             <div className="min-w-0">
               <h2 className="text-sm font-black text-white leading-snug truncate" title={tenant?.name || "Apex International"}>
                 {tenant?.name || "Apex International"}
               </h2>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <p className="text-[10px] text-blue-400 font-extrabold uppercase tracking-widest truncate">
-                  {tenant?.code || user.institution_code || "OASIS-TUTORIALS"}
-                </p>
+                <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded font-mono font-extrabold tracking-wider">
+                  MULTI-TENANT RLS ACTIVE
+                </span>
               </div>
+              <p className="text-[10px] text-blue-400 font-extrabold uppercase tracking-widest truncate mt-0.5">
+                {tenant?.code || user.institution_code || "OASIS-TUTORIALS"}
+              </p>
             </div>
           </div>
         </div>
@@ -316,7 +327,7 @@ export default function Sidebar() {
             </div>
           </div>
           <button
-            onClick={logout}
+            onClick={onSignOut}
             className="w-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-extrabold py-2.5 px-3 rounded-xl transition-all border border-rose-500/20 flex items-center justify-center gap-2 text-xs cursor-pointer"
           >
             <span>🚪</span> Sign Out

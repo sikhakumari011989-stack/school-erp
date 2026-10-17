@@ -93,7 +93,7 @@ export default function FinanceTracker() {
           <span className="text-xs font-semibold text-slate-400">{date}</span>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-800/50 border-b border-slate-700 text-slate-300 text-xs uppercase tracking-wider">

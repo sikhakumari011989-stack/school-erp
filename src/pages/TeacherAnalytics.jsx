@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useToast } from "../context/ToastContext";
 
 export default function TeacherAnalytics() {
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState("analytics");
   const [papers] = useState([
     { id: 1, title: "Mid-Term Mathematics Question Paper Set A", class: "Class 10-A", format: "PDF", date: "Oct 01, 2026" },
@@ -28,7 +30,7 @@ export default function TeacherAnalytics() {
                 activeTab === "analytics" ? "bg-purple-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
               }`}
             >
-              Student Analytics[cite: 3]
+              Student Analytics
             </button>
             <button
               onClick={() => setActiveTab("papers")}
@@ -36,7 +38,7 @@ export default function TeacherAnalytics() {
                 activeTab === "papers" ? "bg-purple-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
               }`}
             >
-              Question Papers[cite: 3]
+              Question Papers
             </button>
           </div>
         </div>
@@ -55,33 +57,35 @@ export default function TeacherAnalytics() {
               </div>
               <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
                 <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Students Needing Support</p>
-                <p className="text-3xl font-extrabold text-orange-400">2 Students[cite: 3]</p>
+                <p className="text-3xl font-extrabold text-orange-400">2 Students</p>
               </div>
             </div>
 
             {/* STUDENTS NEEDING EXTRA SUPPORT TABLE */}
             <div className="bg-[#1E293B] border border-slate-700 rounded-3xl shadow-2xl overflow-hidden">
               <div className="p-6 border-b border-slate-700 bg-slate-800/50">
-                <h2 className="text-lg font-bold text-white">Students Requiring Extra Support ⚠️[cite: 3]</h2>
+                <h2 className="text-lg font-bold text-white">Students Requiring Extra Support ⚠️</h2>
               </div>
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                    <th className="p-5">Student Name & Class</th>
-                    <th className="p-5">Performance / Attendance Issue[cite: 3]</th>
-                    <th className="p-5">Recommended Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700/50 text-sm">
-                  {supportStudents.map((st, i) => (
-                    <tr key={i} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="p-5 font-bold text-white">{st.name} <span className="text-xs text-slate-400 block font-normal">{st.class}</span></td>
-                      <td className="p-5 text-orange-400 font-medium">{st.issue}</td>
-                      <td className="p-5 text-slate-300 font-bold">{st.action}</td>
+              <div className="overflow-x-auto w-full">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                      <th className="p-5">Student Name & Class</th>
+                      <th className="p-5">Performance / Attendance Issue</th>
+                      <th className="p-5">Recommended Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/50 text-sm">
+                    {supportStudents.map((st, i) => (
+                      <tr key={i} className="hover:bg-slate-800/30 transition-colors">
+                        <td className="p-5 font-bold text-white">{st.name} <span className="text-xs text-slate-400 block font-normal">{st.class}</span></td>
+                        <td className="p-5 text-orange-400 font-medium">{st.issue}</td>
+                        <td className="p-5 text-slate-300 font-bold">{st.action}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         ) : (
@@ -89,10 +93,13 @@ export default function TeacherAnalytics() {
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl flex justify-between items-center">
               <div>
                 <h2 className="text-lg font-bold text-white">Upload Question Paper Source</h2>
-                <p className="text-slate-400 text-xs">Upload assessment papers for upcoming exams or weekly tests[cite: 3].</p>
+                <p className="text-slate-400 text-xs">Upload assessment papers for upcoming exams or weekly tests.</p>
               </div>
-              <button onClick={() => alert("Opening file uploader...")} className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg transition-all">
-                + Upload Paper[cite: 3]
+              <button
+                onClick={() => showToast("File uploader initialized. Select PDF / DOCX question papers.", "info")}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg transition-all cursor-pointer"
+              >
+                + Upload Paper
               </button>
             </div>
 
@@ -100,26 +107,28 @@ export default function TeacherAnalytics() {
               <div className="p-6 border-b border-slate-700 bg-slate-800/50">
                 <h2 className="text-lg font-bold text-white">Uploaded Question Paper Sources</h2>
               </div>
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                    <th className="p-5">Paper Title</th>
-                    <th className="p-5">Class Target</th>
-                    <th className="p-5">Format</th>
-                    <th className="p-5">Date Uploaded</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700/50 text-sm">
-                  {papers.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="p-5 font-bold text-white">{p.title}</td>
-                      <td className="p-5 text-slate-300">{p.class}</td>
-                      <td className="p-5 font-mono text-purple-400">{p.format}</td>
-                      <td className="p-5 text-slate-400 text-xs">{p.date}</td>
+              <div className="overflow-x-auto w-full">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                      <th className="p-5">Paper Title</th>
+                      <th className="p-5">Class Target</th>
+                      <th className="p-5">Format</th>
+                      <th className="p-5">Date Uploaded</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/50 text-sm">
+                    {papers.map((p) => (
+                      <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
+                        <td className="p-5 font-bold text-white">{p.title}</td>
+                        <td className="p-5 text-slate-300">{p.class}</td>
+                        <td className="p-5 font-mono text-purple-400">{p.format}</td>
+                        <td className="p-5 text-slate-400 text-xs">{p.date}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

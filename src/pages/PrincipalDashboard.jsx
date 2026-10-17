@@ -1,7 +1,24 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
+import { AppContext } from "../context/AppContext";
+import { useToast } from "../context/ToastContext";
+import SchoolUpiQrConfig from "../Components/SchoolUpiQrConfig";
 
 export default function PrincipalDashboard() {
+  const { user } = useContext(AppContext) || {};
+  const { showToast } = useToast();
+  const [activeTab, setActiveTab] = useState("features"); // 'features' | 'upi_qr'
   const [activeFeature, setActiveFeature] = useState(null);
+
+  const institutionCode = user?.institution_code || user?.school_id || "OASIS-TUTORIALS";
+  const institutionName = user?.institution_name || "Apex International Academy";
+
+  const handleCopyPortalLink = () => {
+    const portalUrl = `${window.location.origin}/portal?school=${institutionCode}`;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(portalUrl);
+    }
+    showToast(`Copied Direct Member Portal Link: ${portalUrl}`, "success");
+  };
 
   // The 20 Executive Features requested for Principal / Head Owner
   const features = [
@@ -32,13 +49,60 @@ export default function PrincipalDashboard() {
       <div className="fixed top-0 right-10 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="relative z-10">
-        <div className="mb-8">
-          <p className="text-blue-300 text-sm font-semibold mb-1 uppercase tracking-widest">Executive Suite</p>
-          <h1 className="text-4xl font-extrabold text-white">Principal / Head Command Center 🏛️</h1>
-          <p className="text-slate-400 text-sm mt-1">Full 20-Feature Institutional Control Room</p>
-        </div>
+        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <p className="text-blue-300 text-sm font-semibold mb-1 uppercase tracking-widest">Executive Suite</p>
+            <h1 className="text-4xl font-extrabold text-white">Principal / Head Command Center 🏛️</h1>
+            <p className="text-slate-400 text-sm mt-1">Full 20-Feature Institutional Control Room & Bank Node</p>
+          </div>
 
-        {activeFeature ? (
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              onClick={handleCopyPortalLink}
+              className="px-3.5 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-md"
+              title="Copy direct member portal link to share on WhatsApp"
+            >
+              <span>🔗</span>
+              <span>Copy Portal Link (/portal)</span>
+            </button>
+            <div className="flex gap-2 bg-slate-800/80 p-1.5 rounded-2xl border border-slate-700 flex-wrap">
+            <button
+              onClick={() => {
+                setActiveTab("features");
+                setActiveFeature(null);
+              }}
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer ${
+                activeTab === "features"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              🏛️ 20 Executive Modules
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("upi_qr");
+                setActiveFeature(null);
+              }}
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === "upi_qr"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <span>🏦</span>
+              <span>School UPI QR & Fee Scanner Setup</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+        {activeTab === "upi_qr" ? (
+          <SchoolUpiQrConfig
+            schoolId={institutionCode}
+            institutionName={institutionName}
+          />
+        ) : activeFeature ? (
           <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-8 shadow-2xl">
             <button 
               onClick={() => setActiveFeature(null)} 

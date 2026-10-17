@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
+import { useToast } from "../context/ToastContext";
 
 export default function CreateClassModal({ isOpen, onClose, onRefresh }) {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({ grade: "", section: "" });
   const [loading, setLoading] = useState(false);
 
@@ -24,12 +26,12 @@ export default function CreateClassModal({ isOpen, onClose, onRefresh }) {
 
       if (error) throw error;
 
-      alert(`Class ${className} created successfully!`);
+      showToast(`Class ${className} created successfully!`, "success");
       onRefresh(); // Updates the dashboard stats instantly
       onClose();   // Closes the popup
     } catch (error) {
       console.error("Database Error:", error);
-      alert("Failed to create class. Check console for details.");
+      showToast("Failed to create class. Please verify database connectivity.", "error");
     } finally {
       setLoading(false);
       setFormData({ grade: "", section: "" });

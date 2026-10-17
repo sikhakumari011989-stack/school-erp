@@ -23,7 +23,8 @@ export default function LeaveManagement() {
       </div>
 
       <div className="bg-[#1E293B] border border-slate-700 rounded-xl shadow-lg overflow-hidden">
-        <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-800/50 border-b border-slate-700 text-slate-300 text-sm">
               <th className="p-4 font-semibold">Applicant</th>
@@ -63,6 +64,7 @@ export default function LeaveManagement() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {isModalOpen && (

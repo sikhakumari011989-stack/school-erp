@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useToast } from "../context/ToastContext";
 
 export default function StaffDashboard() {
+  const { showToast } = useToast();
   const [attendanceMarked, setAttendanceMarked] = useState(false);
 
   const shifts = [
@@ -13,7 +15,7 @@ export default function StaffDashboard() {
 
   const handleMarkEntry = () => {
     setAttendanceMarked(true);
-    alert("Daily entry attendance logged successfully!");
+    showToast("Daily entry attendance logged successfully!", "success");
   };
 
   return (
@@ -71,7 +73,10 @@ export default function StaffDashboard() {
                     <p className="text-sm font-bold text-white">September 2026 Slip</p>
                     <p className="text-xs text-slate-400">Disbursed on Oct 1</p>
                   </div>
-                  <button onClick={() => alert("Downloading salary slip...")} className="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600/40 transition-all">
+                  <button
+                    onClick={() => showToast("Downloading verified salary slip (PDF)...", "info")}
+                    className="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600/40 transition-all cursor-pointer"
+                  >
                     Download PDF
                   </button>
                 </div>
@@ -84,34 +89,36 @@ export default function StaffDashboard() {
             <div className="p-6 border-b border-slate-700 bg-slate-800/50">
               <h2 className="text-lg font-bold text-white">Weekly Shift & Duty Roster</h2>
             </div>
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                  <th className="p-5">Day</th>
-                  <th className="p-5">Assigned Duty</th>
-                  <th className="p-5">Shift Hours</th>
-                  <th className="p-5 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700/50 text-sm">
-                {shifts.map((s, idx) => (
-                  <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="p-5 font-bold text-white">{s.day}</td>
-                    <td className="p-5 text-slate-300 font-medium">{s.duty}</td>
-                    <td className="p-5 font-mono text-slate-400 text-xs">{s.time}</td>
-                    <td className="p-5 text-center">
-                      <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
-                        s.status === 'Completed' ? 'bg-slate-700 text-slate-300' :
-                        s.status === 'Active Today' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                        'bg-slate-800 text-slate-500'
-                      }`}>
-                        {s.status}
-                      </span>
-                    </td>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                    <th className="p-5">Day</th>
+                    <th className="p-5">Assigned Duty</th>
+                    <th className="p-5">Shift Hours</th>
+                    <th className="p-5 text-center">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-700/50 text-sm">
+                  {shifts.map((s, idx) => (
+                    <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="p-5 font-bold text-white">{s.day}</td>
+                      <td className="p-5 text-slate-300 font-medium">{s.duty}</td>
+                      <td className="p-5 font-mono text-slate-400 text-xs">{s.time}</td>
+                      <td className="p-5 text-center">
+                        <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
+                          s.status === 'Completed' ? 'bg-slate-700 text-slate-300' :
+                          s.status === 'Active Today' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                          'bg-slate-800 text-slate-500'
+                        }`}>
+                          {s.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
         </div>

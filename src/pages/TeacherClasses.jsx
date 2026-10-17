@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useToast } from "../context/ToastContext";
 
 export default function TeacherClasses() {
+  const { showToast } = useToast();
   const [classesList] = useState([
     { id: 1, name: "Class 10-A", strength: 42, subject: "Mathematics", timing: "09:00 AM - 09:45 AM", room: "Room 302" },
     { id: 2, name: "Class 10-B", strength: 38, subject: "Mathematics", timing: "10:00 AM - 10:45 AM", room: "Room 304" },
@@ -15,7 +17,7 @@ export default function TeacherClasses() {
         <div className="mb-8">
           <p className="text-blue-300 text-sm font-semibold mb-1 uppercase tracking-widest">Faculty Portal</p>
           <h1 className="text-3xl font-extrabold text-white">My Classes & Timetable 👨‍🏫</h1>
-          <p className="text-slate-400 text-sm mt-1">Review assigned classes, section strengths, schedules, and student lists[cite: 3]</p>
+          <p className="text-slate-400 text-sm mt-1">Review assigned classes, section strengths, schedules, and student lists</p>
         </div>
 
         {/* TIMETABLE & CLASSES GRID */}
@@ -36,10 +38,10 @@ export default function TeacherClasses() {
                 <p className="text-slate-400 text-xs font-mono mb-6">Timing: {cls.timing}</p>
               </div>
               <button 
-                onClick={() => alert(`Opening student roster for ${cls.name}...`)}
-                className="w-full bg-slate-800 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl transition-all border border-slate-700 hover:border-blue-500 flex items-center justify-center gap-2 shadow-lg"
+                onClick={() => showToast(`Opening student roster for ${cls.name}...`, "info")}
+                className="w-full bg-slate-800 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl transition-all border border-slate-700 hover:border-blue-500 flex items-center justify-center gap-2 shadow-lg cursor-pointer"
               >
-                <span>👥</span> View Student Roster[cite: 3]
+                <span>👥</span> View Student Roster
               </button>
             </div>
           ))}

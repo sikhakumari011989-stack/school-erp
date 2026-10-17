@@ -95,14 +95,16 @@ const DEFAULT_QUIZZES = [
 ];
 
 /**
- * Fetch quizzes from Supabase or localStorage
+ * Fetch quizzes from Supabase or localStorage with strict school_id isolation
  */
 export async function getQuizzes(schoolId) {
+  const cleanSchoolId = schoolId ? String(schoolId).trim().toUpperCase() : null;
   try {
-    const { data, error } = await supabase
-      .from("lms_quizzes")
-      .select("*")
-      .order("created_at", { ascending: false });
+    let query = supabase.from("lms_quizzes").select("*");
+    if (cleanSchoolId) {
+      query = query.eq("school_id", cleanSchoolId);
+    }
+    const { data, error } = await query.order("created_at", { ascending: false });
 
     if (!error && data && data.length > 0) {
       return data.map((d) => ({
@@ -120,7 +122,7 @@ export async function getQuizzes(schoolId) {
 
   // Fallback to localStorage
   try {
-    const saved = localStorage.getItem("erp_lms_quizzes");
+    const saved = (cleanSchoolId && localStorage.getItem(`erp_lms_quizzes_${cleanSchoolId}`)) || localStorage.getItem("erp_lms_quizzes");
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;

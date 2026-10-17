@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useToast } from "../context/ToastContext";
 
 export default function StudentTransport() {
+  const { showToast } = useToast();
   const [routes] = useState([
     { id: 1, routeNo: "Route #3", driver: "Rajesh Kumar", phone: "+91 98230 12345", busNo: "MH-04-AB-5512", status: "On Time (En Route)", eta: "07:45 AM" },
     { id: 2, routeNo: "Route #3 (Return)", driver: "Rajesh Kumar", phone: "+91 98230 12345", busNo: "MH-04-AB-5512", status: "Scheduled", eta: "02:15 PM" }
@@ -24,7 +26,10 @@ export default function StudentTransport() {
             <h2 className="text-2xl font-black text-white mt-1">Bus currently approaching Station Road 📍</h2>
             <p className="text-slate-300 text-sm mt-1">Driver: Rajesh Kumar | Vehicle: MH-04-AB-5512</p>
           </div>
-          <button onClick={() => alert("Opening live interactive map tracker...")} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-blue-600/30 transition-all">
+          <button
+            onClick={() => showToast("Connecting to live transit GPS telemetry stream...", "info")}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-blue-600/30 transition-all cursor-pointer"
+          >
             Open Live Map 🗺️
           </button>
         </div>
@@ -34,7 +39,8 @@ export default function StudentTransport() {
           <div className="p-6 border-b border-slate-700 bg-slate-800/50">
             <h2 className="text-lg font-bold text-white">Assigned Bus Routes & Timings</h2>
           </div>
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
                 <th className="p-5">Route & Bus No</th>
@@ -64,6 +70,7 @@ export default function StudentTransport() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
       </div>

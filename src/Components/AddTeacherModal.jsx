@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
+import { useToast } from "../context/ToastContext";
 
 export default function AddTeacherModal({ isOpen, onClose, onRefresh }) {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({ name: "", email: "", subject: "" });
   const [loading, setLoading] = useState(false);
 
@@ -22,12 +24,12 @@ export default function AddTeacherModal({ isOpen, onClose, onRefresh }) {
 
       if (error) throw error;
 
-      alert("Teacher added successfully!");
+      showToast("Teacher added successfully!", "success");
       onRefresh(); // Updates the dashboard stats instantly
       onClose();   // Closes the popup
     } catch (error) {
       console.error("Database Error:", error);
-      alert("Failed to add teacher.");
+      showToast("Failed to add teacher. Please verify database connectivity.", "error");
     } finally {
       setLoading(false);
       setFormData({ name: "", email: "", subject: "" });

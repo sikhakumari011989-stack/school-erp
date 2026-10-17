@@ -41,13 +41,26 @@ export const AppProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(() => {
     try {
-      const saved = localStorage.getItem("erp_demo_session");
+      const saved =
+        localStorage.getItem("erp_session_user") ||
+        localStorage.getItem("erp_demo_session");
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
-  const [loading, setLoading] = useState(true);
+
+  // If local session already exists, start with loading=false for 0ms dashboard render
+  const [loading, setLoading] = useState(() => {
+    try {
+      const saved =
+        localStorage.getItem("erp_session_user") ||
+        localStorage.getItem("erp_demo_session");
+      return saved ? false : true;
+    } catch {
+      return true;
+    }
+  });
 
   const [tenant, setTenant] = useState({
     id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
@@ -95,26 +108,29 @@ export const AppProvider = ({ children }) => {
 
   // Reads the authenticated user's profile strictly from Supabase
   const loadProfile = async (currentSession) => {
-    if (!currentSession?.user) {
-      setSession(null);
-      const saved = localStorage.getItem("erp_demo_session");
-      if (saved) {
-        try {
-          setUser(JSON.parse(saved));
-        } catch {
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-      return;
-    }
-
-    setSession(currentSession);
-
     try {
-      // 1. Fetch user profile from Supabase profiles table
+      if (!currentSession?.user) {
+        setSession(null);
+        if (typeof window !== "undefined" && window.location.search.includes("signedOut=true")) {
+          setUser(null);
+          return;
+        }
+        const saved =
+          localStorage.getItem("erp_session_user") ||
+          localStorage.getItem("erp_demo_session");
+        if (saved) {
+          try {
+            setUser(JSON.parse(saved));
+          } catch {
+            setUser(null);
+          }
+        }
+        return;
+      }
+
+      setSession(currentSession);
+
+      // Fetch user profile from Supabase profiles table
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("id, role, role_code, full_name, school_id, schools ( code, name )")
@@ -134,7 +150,7 @@ export const AppProvider = ({ children }) => {
           authUid: currentSession.user.id,
         };
         setUser(userObj);
-        localStorage.removeItem("erp_demo_session");
+        localStorage.setItem("erp_session_user", JSON.stringify(userObj));
 
         if (profile.schools?.code) {
           loadTenantDetails(profile.schools.code);
@@ -154,37 +170,57 @@ export const AppProvider = ({ children }) => {
           authUid: currentSession.user.id,
         };
         setUser(userObj);
+        localStorage.setItem("erp_session_user", JSON.stringify(userObj));
       }
     } catch (err) {
-      console.error("Error loading Supabase profile:", err);
-      setUser(null);
+      console.warn("Error loading Supabase profile, preserving local cache:", err);
     } finally {
+      // Unconditionally clear loading state
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Hard 800ms safety timeout: guarantees loading screen never hangs on slow mobile networks
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 800);
+
     // 1. Initial tenant resolution and branding
     loadTenantDetails();
 
-    // 2. Fetch active Supabase Auth session
-    supabase.auth.getSession().then(({ data }) => {
-      loadProfile(data?.session);
-    });
+    // 2. Fetch active Supabase Auth session safely
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        loadProfile(data?.session);
+      })
+      .catch((err) => {
+        console.warn("Supabase getSession notice:", err);
+        setLoading(false);
+      });
 
     // 3. Listen to live Supabase Auth state changes (SIGN_IN, SIGN_OUT, TOKEN_REFRESH)
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      loadProfile(currentSession);
-    });
+    const { data: listener } = supabase?.auth?.onAuthStateChange
+      ? supabase.auth.onAuthStateChange((event, currentSession) => {
+          if (event === "SIGNED_OUT" || !currentSession) {
+            setSession(null);
+            setUser(null);
+            return;
+          }
+          loadProfile(currentSession);
+        })
+      : { data: { subscription: { unsubscribe: () => {} } } };
 
     return () => {
-      listener?.subscription?.unsubscribe();
+      clearTimeout(safetyTimeout);
+      listener?.subscription?.unsubscribe?.();
     };
   }, []);
 
   const login = (userData) => {
     setUser(userData);
     try {
+      localStorage.setItem("erp_session_user", JSON.stringify(userData));
       localStorage.setItem("erp_demo_session", JSON.stringify(userData));
       if (userData?.institution_code) {
         loadTenantDetails(userData.institution_code);
@@ -196,14 +232,24 @@ export const AppProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      localStorage.removeItem("erp_session_user");
+      localStorage.removeItem("erp_demo_session");
+      sessionStorage.clear();
     } catch (e) {
-      console.warn("Supabase sign out error:", e);
+      console.warn("Storage clear error:", e);
     }
-    localStorage.removeItem("erp_demo_session");
+
+    if (supabase?.auth?.signOut) {
+      try {
+        await supabase.auth.signOut().catch(() => {});
+      } catch (e) {
+        console.warn("Supabase sign out error:", e);
+      }
+    }
+
     setSession(null);
     setUser(null);
-    window.location.href = "/login";
+    window.location.href = "/login?signedOut=true";
   };
 
   const switchTenant = (code) => {
@@ -218,10 +264,12 @@ export const AppProvider = ({ children }) => {
       value={{
         session,
         user,
+        setUser,
         tenant,
         loading,
         login,
         logout,
+        handleSignOut: logout,
         loadProfile,
         switchTenant,
       }}

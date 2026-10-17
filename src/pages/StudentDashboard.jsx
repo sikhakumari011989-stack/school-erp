@@ -20,11 +20,12 @@ export default function StudentDashboard() {
   useEffect(() => {
     const fetchLiveStudentData = async () => {
       setLoading(true);
+      const schoolId = (user?.institution_code || user?.school_id || "OASIS-TUTORIALS").toUpperCase();
       try {
         const [attRes, hwRes, feeRes] = await Promise.all([
-          supabase.from("attendance").select("records").limit(10),
-          supabase.from("homework").select("id", { count: "exact" }),
-          supabase.from("fee_ledger").select("status, amount"),
+          supabase.from("attendance").select("records").eq("school_id", schoolId).limit(10),
+          supabase.from("homework").select("id", { count: "exact" }).eq("school_id", schoolId),
+          supabase.from("fee_ledger").select("status, amount").eq("school_id", schoolId),
         ]);
 
         // Calculate attendance
@@ -62,7 +63,7 @@ export default function StudentDashboard() {
     };
 
     fetchLiveStudentData();
-  }, []);
+  }, [user?.institution_code, user?.school_id]);
 
   const studentActions = [
     {

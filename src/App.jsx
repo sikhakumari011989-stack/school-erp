@@ -38,14 +38,17 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import PricingPolicy from "./pages/PricingPolicy";
 import RefundPolicy from "./pages/RefundPolicy";
 import ContactUs from "./pages/ContactUs";
+import SystemDiagnosticPage from "./pages/SystemDiagnosticPage";
 import OfflineIndicator from "./Components/OfflineIndicator";
 import ErrorBoundary from "./Components/ErrorBoundary";
 
 const PUBLIC_ROUTES = [
   "/",
   "/login",
+  "/portal",
   "/register",
   "/join",
+  "/system-check",
   "/terms",
   "/privacy",
   "/pricing-policy",
@@ -147,6 +150,8 @@ export default function App() {
               {/* PUBLIC ONBOARDING & AUTH ROUTES */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/portal" element={<Login isDirectPortal={true} />} />
+              <Route path="/system-check" element={<SystemDiagnosticPage />} />
               <Route path="/register" element={<RegisterInstitution />} />
               <Route path="/join" element={<JoinSchool />} />
               <Route path="/terms" element={<TermsOfService />} />
@@ -175,7 +180,7 @@ export default function App() {
             <Route
               path="/admin/directory"
               element={
-                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant"]}>
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant", "teacher"]}>
                   <InstitutionalDirectory />
                 </ProtectedRoute>
               }

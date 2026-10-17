@@ -3,6 +3,28 @@ import { AppContext } from "../context/AppContext";
 import { getQuizzes } from "../utils/quizService";
 import { useToast } from "../context/ToastContext";
 
+export function formatMathText(text) {
+  if (!text || typeof text !== "string") return text;
+  return text
+    .replace(/\$\$([^$]+)\$\$/g, "$1")
+    .replace(/\$([^$]+)\$/g, "$1")
+    .replace(/\\Delta/g, "Δ")
+    .replace(/\\pm/g, "±")
+    .replace(/\\sqrt\{([^}]+)\}/g, "√($1)")
+    .replace(/\\sqrt/g, "√")
+    .replace(/ax\^2/g, "ax²")
+    .replace(/bx\^2/g, "bx²")
+    .replace(/cx\^2/g, "cx²")
+    .replace(/x\^2/g, "x²")
+    .replace(/b\^2/g, "b²")
+    .replace(/a\^2/g, "a²")
+    .replace(/c\^2/g, "c²")
+    .replace(/\^2/g, "²")
+    .replace(/\^3/g, "³")
+    .replace(/<=/g, "≤")
+    .replace(/>=/g, "≥");
+}
+
 export default function StudentLMS() {
   const { user } = useContext(AppContext);
   const { showToast } = useToast();
@@ -227,7 +249,7 @@ export default function StudentLMS() {
                         >
                           <div className="flex justify-between items-start gap-2">
                             <p className="font-bold text-white">
-                              {idx + 1}. {item.question}
+                              {idx + 1}. {formatMathText(item.question)}
                             </p>
                             <span
                               className={`text-xs font-black uppercase px-2 py-0.5 rounded ${
@@ -247,15 +269,15 @@ export default function StudentLMS() {
                                   item.isCorrect ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"
                                 }
                               >
-                                {item.selectedOption}
+                                {formatMathText(item.selectedOption)}
                               </span>
                             </p>
                             {!item.isCorrect && (
                               <p className="text-emerald-400">
-                                Correct Answer: <span className="font-bold">{item.correctOption}</span>
+                                Correct Answer: <span className="font-bold">{formatMathText(item.correctOption)}</span>
                               </p>
                             )}
-                            <p className="text-slate-400 italic pt-1">💡 {item.explanation}</p>
+                            <p className="text-slate-400 italic pt-1">💡 {formatMathText(item.explanation)}</p>
                           </div>
                         </div>
                       ))}
@@ -311,7 +333,7 @@ export default function StudentLMS() {
                                   Question {currentQIndex + 1}
                                 </span>
                                 <h3 className="text-base sm:text-lg font-bold text-white leading-relaxed">
-                                  {currentQ.question}
+                                  {formatMathText(currentQ.question)}
                                 </h3>
                               </div>
 
@@ -338,7 +360,7 @@ export default function StudentLMS() {
                                       >
                                         {String.fromCharCode(65 + optIdx)}
                                       </div>
-                                      <span className="font-semibold text-sm">{opt}</span>
+                                      <span className="font-semibold text-sm">{formatMathText(opt)}</span>
                                     </div>
                                   );
                                 })}

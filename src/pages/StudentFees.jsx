@@ -20,41 +20,92 @@ export default function StudentFees() {
 
   const fetchStudentLedger = async () => {
     setLoading(true);
+    const schoolId = (user?.institution_code || user?.school_id || "OASIS-TUTORIALS").toUpperCase();
+
+    // Read local offline/demo fee records first
+    let localRecords = [];
     try {
-      const studentName = user?.name || "Astik Kumar";
+      const savedRaw = localStorage.getItem("erp_fee_ledger");
+      if (savedRaw) {
+        const all = JSON.parse(savedRaw);
+        localRecords = Array.isArray(all)
+          ? all.filter((r) => !r.school_id || String(r.school_id).toUpperCase() === schoolId)
+          : [];
+      }
+    } catch (e) {
+      console.warn("Local ledger read notice:", e);
+    }
+
+    try {
       const { data, error } = await supabase
         .from("fee_ledger")
         .select("*")
+        .eq("school_id", schoolId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      let combined = [];
 
       if (data && data.length > 0) {
-        // Map ledger rows
-        const formatted = data.map((d, index) => ({
-          id: d.id || index + 1,
-          term: d.student_name ? `${d.student_name} - ${d.class_name || "Term Fee"}` : "Term Tuition Fee",
+        combined = data.map((d, index) => ({
+          id: d.id || `db-${index}`,
+          term: d.term || (d.student_name ? `${d.student_name} - ${d.class_name || "Term Fee"}` : "Term Tuition Fee"),
           amount: Number(d.amount) || 15000,
           date: d.date || "2026-10-10",
           status: (d.status || "paid").toLowerCase() === "paid" ? "Paid" : "Pending",
-          mode: d.payment_mode || "Online",
+          mode: d.payment_mode || "School UPI QR",
+          utr: d.razorpay_payment_id || d.utr || null,
+          invoice_no: d.invoice_no || null,
         }));
-        setFees(formatted);
-      } else {
-        // Fallback default student fee transactions
-        setFees([
-          { id: 1, term: "First Term Tuition Fee (2026-27)", amount: 15000, date: "2026-06-15", status: "Paid", mode: "Razorpay NetBanking" },
-          { id: 2, term: "Annual Laboratory & Library Fund", amount: 4500, date: "2026-06-15", status: "Paid", mode: "Online UPI" },
-          { id: 3, term: "Second Term Tuition Fee (2026-27)", amount: 15000, date: "2026-10-12", status: "Paid", mode: "Online (Razorpay)" },
-        ]);
       }
+
+      // Prepend local recent records if not already in list
+      localRecords.forEach((lr) => {
+        const exists = combined.some((c) => c.utr === lr.utr || c.id === lr.id);
+        if (!exists) {
+          combined.unshift({
+            id: lr.id,
+            term: lr.term || lr.title || "Second Term Tuition Fee (2026-27)",
+            amount: Number(lr.amount) || 15000,
+            date: lr.date || new Date().toISOString().split("T")[0],
+            status: "Paid",
+            mode: lr.payment_mode || `School UPI QR (UTR: ${lr.utr || "Verified"})`,
+            utr: lr.utr || lr.razorpay_payment_id || null,
+            invoice_no: lr.invoice_no || null,
+          });
+        }
+      });
+
+      if (combined.length === 0) {
+        combined = [
+          { id: 1, term: "First Term Tuition Fee (2026-27)", amount: 15000, date: "2026-06-15", status: "Paid", mode: "School UPI QR (UTR: 202610158912)", utr: "202610158912" },
+          { id: 2, term: "Annual Laboratory & Library Fund", amount: 4500, date: "2026-06-15", status: "Paid", mode: "Online UPI", utr: "UPI98231145" },
+          { id: 3, term: "Second Term Tuition Fee (2026-27)", amount: 15000, date: "2026-10-12", status: "Paid", mode: "School UPI QR (UTR: 202610243419)", utr: "202610243419" },
+        ];
+      }
+
+      setFees(combined);
     } catch (err) {
       console.error("Error fetching fees for student:", err);
-      setFees([
-        { id: 1, term: "First Term Tuition Fee (2026-27)", amount: 15000, date: "2026-06-15", status: "Paid", mode: "Razorpay NetBanking" },
-        { id: 2, term: "Annual Laboratory & Library Fund", amount: 4500, date: "2026-06-15", status: "Paid", mode: "Online UPI" },
-        { id: 3, term: "Second Term Tuition Fee (2026-27)", amount: 15000, date: "2026-10-12", status: "Paid", mode: "Online (Razorpay)" },
-      ]);
+      // Fallback combined with local records
+      const fallback = localRecords.map((lr) => ({
+        id: lr.id,
+        term: lr.term || lr.title || "Second Term Tuition Fee (2026-27)",
+        amount: Number(lr.amount) || 15000,
+        date: lr.date || new Date().toISOString().split("T")[0],
+        status: "Paid",
+        mode: lr.payment_mode || `School UPI QR (UTR: ${lr.utr || "Verified"})`,
+        utr: lr.utr || null,
+        invoice_no: lr.invoice_no || null,
+      }));
+
+      if (fallback.length === 0) {
+        fallback.push(
+          { id: 1, term: "First Term Tuition Fee (2026-27)", amount: 15000, date: "2026-06-15", status: "Paid", mode: "School UPI QR (UTR: 202610158912)", utr: "202610158912" },
+          { id: 2, term: "Annual Laboratory & Library Fund", amount: 4500, date: "2026-06-15", status: "Paid", mode: "Online UPI", utr: "UPI98231145" },
+          { id: 3, term: "Second Term Tuition Fee (2026-27)", amount: 15000, date: "2026-10-12", status: "Paid", mode: "School UPI QR (UTR: 202610243419)", utr: "202610243419" }
+        );
+      }
+      setFees(fallback);
     } finally {
       setLoading(false);
     }
@@ -79,7 +130,10 @@ export default function StudentFees() {
         title: fee.term,
         amount: fee.amount,
         date: fee.date,
-        payment_mode: fee.mode || "Online (Razorpay)",
+        payment_mode: fee.mode || "School UPI QR",
+        utr: fee.utr || null,
+        transactionId: fee.utr || null,
+        invoiceNo: fee.invoice_no || null,
       },
     });
     showToast("Official Fee Tax Invoice PDF generated & downloaded!", "success");
@@ -142,7 +196,7 @@ export default function StudentFees() {
               <TableSkeleton rows={3} cols={5} />
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto w-full">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-700/60 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/40">
@@ -196,7 +250,7 @@ export default function StudentFees() {
           <div className="p-6 border-b border-slate-700/60 bg-slate-800/50">
             <h2 className="text-lg font-bold text-white">Academic Performance & Grade Vault</h2>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-700/60 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/40">

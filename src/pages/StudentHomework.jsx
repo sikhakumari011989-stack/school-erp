@@ -20,10 +20,12 @@ export default function StudentHomework() {
 
   const fetchHomework = async () => {
     setLoading(true);
+    const schoolId = (user?.institution_code || user?.school_id || "OASIS-TUTORIALS").toUpperCase();
     try {
       const { data, error } = await supabase
         .from("homework")
         .select("*")
+        .eq("school_id", schoolId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -38,7 +40,7 @@ export default function StudentHomework() {
 
   useEffect(() => {
     fetchHomework();
-  }, []);
+  }, [user?.institution_code, user?.school_id]);
 
   const toggleComplete = (id, title) => {
     setCompletedIds((prev) => {

@@ -4,6 +4,8 @@ import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { logSecurityAction, AUDIT_ACTIONS } from "../utils/auditLogger";
+import { buildStandardErpEmail } from "./Login";
+import BrandLogo from "../Components/BrandLogo";
 
 export default function RegisterInstitution() {
   const { login } = useContext(AppContext);
@@ -92,7 +94,8 @@ export default function RegisterInstitution() {
           options: {
             data: {
               full_name: formData.adminName.trim(),
-              role: "admin",
+              role: "trustee",
+              role_code: "HOD-01",
               institution_code: cleanCode,
             },
           },
@@ -104,14 +107,14 @@ export default function RegisterInstitution() {
         console.warn("Supabase Auth sign-up notice:", authException);
       }
 
-      // 3. Provision admin entry in profiles table
+      // 3. Provision master HOD entry in profiles table
       try {
         await supabase.from("profiles").insert([
           {
             id: authUser?.id || undefined,
             full_name: formData.adminName.trim(),
-            role: "admin",
-            role_code: "ADMIN-01",
+            role: "trustee",
+            role_code: "HOD-01",
             school_id: schoolId,
           },
         ]);
@@ -119,44 +122,78 @@ export default function RegisterInstitution() {
         console.warn("Profile table sync notice:", profErr);
       }
 
-      // 4. Construct active session payload
-      const registeredAdmin = {
-        id: authUser?.id || `admin-${Date.now()}`,
+      // 4. Construct active session payload with standardized login email for HOD-01
+      const mappedEmail = buildStandardErpEmail(cleanCode, "HOD-01");
+      const registeredHod = {
+        id: authUser?.id || `hod-${Date.now()}`,
         name: formData.adminName.trim(),
-        email: formData.email.trim(),
-        role: "admin",
-        role_code: "ADMIN-01",
+        email: mappedEmail,
+        role: "trustee",
+        role_code: "HOD-01",
+        personal_code: "HOD-01",
         school_id: schoolId,
         institution_code: cleanCode,
         institution_name: formData.institutionName.trim(),
       };
+
+      // Set active tenant and sync HOD to local directory
+      localStorage.setItem("erp_active_tenant", cleanCode);
+      try {
+        const existingDir = JSON.parse(
+          localStorage.getItem(`erp_directory_${cleanCode}`) || "[]"
+        );
+        existingDir.unshift({
+          full_name: formData.adminName.trim(),
+          role: "trustee",
+          role_code: "HOD-01",
+          roll_number: "HOD-01",
+          school_id: cleanCode,
+          email: mappedEmail,
+        });
+        localStorage.setItem(`erp_directory_${cleanCode}`, JSON.stringify(existingDir));
+      } catch (e) {
+        console.warn("Local directory cache update notice:", e);
+      }
 
       // 5. Audit Log
       logSecurityAction({
         action: AUDIT_ACTIONS.TENANT_SWITCH,
         entityType: "SCHOOL",
         entityId: cleanCode,
-        details: `Self-service onboarding: Registered "${formData.institutionName}" (${cleanCode}) with Super Admin ${formData.adminName}`,
-        user: registeredAdmin,
+        details: `Self-service onboarding: Registered "${formData.institutionName}" (${cleanCode}) with Master HOD ${formData.adminName}`,
+        user: registeredHod,
         schoolId: schoolId,
       });
 
+      // Auto-establish session immediately
+      if (typeof login === "function") {
+        login(registeredHod);
+      }
+      localStorage.setItem("erp_session_user", JSON.stringify(registeredHod));
+      localStorage.setItem("erp_demo_session", JSON.stringify(registeredHod));
+
       setSuccessData({
-        ...registeredAdmin,
+        ...registeredHod,
         password: formData.password,
       });
 
-      showToast(`School "${formData.institutionName}" registered successfully!`, "success");
+      showToast(`School "${formData.institutionName}" registered successfully! Master HOD account activated.`, "success");
     } catch (err) {
       console.error("Institution registration error:", err);
       showToast("Registration completed with offline sandbox parameters.", "info");
-      setSuccessData({
+      const fallbackHod = {
         name: formData.adminName,
         institution_code: cleanCode,
         institution_name: formData.institutionName,
-        role: "admin",
-        role_code: "ADMIN-01",
-      });
+        role: "trustee",
+        role_code: "HOD-01",
+        personal_code: "HOD-01",
+        school_id: cleanCode,
+      };
+      if (typeof login === "function") {
+        login(fallbackHod);
+      }
+      setSuccessData(fallbackHod);
     } finally {
       setLoading(false);
     }
@@ -169,7 +206,7 @@ export default function RegisterInstitution() {
       } else {
         localStorage.setItem("erp_demo_session", JSON.stringify(successData));
       }
-      navigate("/admin/dashboard");
+      navigate("/trustee/dashboard");
     }
   };
 
@@ -182,8 +219,8 @@ export default function RegisterInstitution() {
       <div className="relative z-10 w-full max-w-xl">
         {/* BRAND LOGO HEADER */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white text-2xl shadow-xl shadow-blue-500/25 border border-white/10 mb-4">
-            🏫
+          <div className="flex justify-center mb-4">
+            <BrandLogo size="lg" className="shadow-xl shadow-indigo-600/30" />
           </div>
           <span className="text-[11px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 inline-block mb-2">
             Multi-Tenant SaaS Onboarding
@@ -224,11 +261,11 @@ export default function RegisterInstitution() {
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-1 border-b border-slate-800">
-                  <span className="text-slate-400 uppercase tracking-wider font-sans font-bold">Tier 2 Admin Role ID:</span>
-                  <span className="text-emerald-400 font-bold">{successData.role_code || "ADMIN-01"}</span>
+                  <span className="text-slate-400 uppercase tracking-wider font-sans font-bold">Tier 2 Master Role ID:</span>
+                  <span className="text-emerald-400 font-bold">{successData.role_code || "HOD-01"}</span>
                 </div>
                 <div className="flex justify-between items-center py-1">
-                  <span className="text-slate-400 uppercase tracking-wider font-sans font-bold">Super Admin User:</span>
+                  <span className="text-slate-400 uppercase tracking-wider font-sans font-bold">Master HOD / Trustee:</span>
                   <span className="text-slate-200">{successData.name}</span>
                 </div>
               </div>
@@ -238,7 +275,7 @@ export default function RegisterInstitution() {
                   <span>💡</span> Share with your faculty & students:
                 </p>
                 <p className="text-slate-300">
-                  Give students and staff your Institution Code <strong className="text-white">"{successData.institution_code}"</strong> so they can log in or join at <strong className="text-white">/join</strong>.
+                  Give students and staff your Institution Code <strong className="text-white">"{successData.institution_code}"</strong> so they can log in at <strong className="text-white">/portal</strong>.
                 </p>
               </div>
 
@@ -246,7 +283,7 @@ export default function RegisterInstitution() {
                 onClick={handleLaunchDashboard}
                 className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black py-4 px-6 rounded-xl shadow-xl shadow-blue-600/30 transition-all text-sm border border-blue-400/40 cursor-pointer"
               >
-                Launch Super Admin Dashboard 🚀
+                Launch HOD / Trustee Command Center 🚀
               </button>
             </div>
           ) : (

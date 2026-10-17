@@ -5,6 +5,8 @@ import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { resolveSchoolUuid } from "../utils/supabaseHelpers";
 import { logSecurityAction, AUDIT_ACTIONS } from "../utils/auditLogger";
+import { buildStandardErpEmail } from "./Login";
+import BrandLogo from "../Components/BrandLogo";
 
 export default function JoinSchool() {
   const { login } = useContext(AppContext);
@@ -160,18 +162,37 @@ export default function JoinSchool() {
         }
       }
 
-      // 5. Construct authenticated user session
+      // 5. Construct authenticated user session with standardized email
       const matchedSchool = schools.find((s) => s.code === cleanInstCode);
+      const mappedEmail = buildStandardErpEmail(cleanInstCode, cleanPersonalCode);
       const userSession = {
         id: authUser?.id || `user-${Date.now()}`,
         name: formData.fullName.trim(),
-        email: formData.email.trim(),
+        email: mappedEmail,
         role: formData.role,
         role_code: cleanPersonalCode,
         school_id: schoolUuid,
         institution_code: cleanInstCode,
         institution_name: matchedSchool?.name || "Tuition Campus Partner",
       };
+
+      // Sync member to local tenant directory for zero-latency login
+      try {
+        const existingDir = JSON.parse(
+          localStorage.getItem(`erp_directory_${cleanInstCode}`) || "[]"
+        );
+        existingDir.unshift({
+          full_name: formData.fullName.trim(),
+          role: formData.role,
+          role_code: cleanPersonalCode,
+          roll_number: cleanPersonalCode,
+          school_id: cleanInstCode,
+          email: mappedEmail,
+        });
+        localStorage.setItem(`erp_directory_${cleanInstCode}`, JSON.stringify(existingDir));
+      } catch (dirErr) {
+        console.warn("Local directory cache update notice:", dirErr);
+      }
 
       // 6. Security Audit Log
       logSecurityAction({
@@ -227,8 +248,8 @@ export default function JoinSchool() {
       <div className="relative z-10 w-full max-w-xl">
         {/* BRAND HEADER */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white text-2xl shadow-xl shadow-purple-500/25 border border-white/10 mb-4">
-            🎓
+          <div className="flex justify-center mb-4">
+            <BrandLogo size="lg" className="shadow-xl shadow-indigo-600/30" />
           </div>
           <span className="text-[11px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 inline-block mb-2">
             Member Enrollment

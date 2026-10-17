@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useToast } from "../context/ToastContext";
 
 export default function TeacherPlanner() {
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState("planner");
   const [lessons] = useState([
     { id: 1, subject: "Mathematics", chapter: "Chapter 4: Quadratic Equations", objective: "Solve by factorization and formula", status: "Completed" },
@@ -51,44 +53,52 @@ export default function TeacherPlanner() {
           <div className="bg-[#1E293B] border border-slate-700 rounded-3xl shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center">
               <h2 className="text-lg font-bold text-white">Syllabus & Lesson Planner Schedule</h2>
-              <button onClick={() => alert("Opening new lesson entry modal...")} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-lg transition-all">
+              <button
+                onClick={() => showToast("Lesson entry form initialized. Add curriculum topic.", "info")}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-lg transition-all cursor-pointer"
+              >
                 + Add Lesson Plan
               </button>
             </div>
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                  <th className="p-5">Subject</th>
-                  <th className="p-5">Chapter & Topic</th>
-                  <th className="p-5">Learning Objective</th>
-                  <th className="p-5 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700/50 text-sm">
-                {lessons.map((l) => (
-                  <tr key={l.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="p-5 font-bold text-blue-400">{l.subject}</td>
-                    <td className="p-5 font-bold text-white">{l.chapter}</td>
-                    <td className="p-5 text-slate-300">{l.objective}</td>
-                    <td className="p-5 text-center">
-                      <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
-                        l.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                        l.status === 'In Progress' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                        'bg-slate-800 text-slate-400'
-                      }`}>
-                        {l.status}
-                      </span>
-                    </td>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                    <th className="p-5">Subject</th>
+                    <th className="p-5">Chapter & Topic</th>
+                    <th className="p-5">Learning Objective</th>
+                    <th className="p-5 text-center">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-700/50 text-sm">
+                  {lessons.map((l) => (
+                    <tr key={l.id} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="p-5 font-bold text-blue-400">{l.subject}</td>
+                      <td className="p-5 font-bold text-white">{l.chapter}</td>
+                      <td className="p-5 text-slate-300">{l.objective}</td>
+                      <td className="p-5 text-center">
+                        <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
+                          l.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                          l.status === 'In Progress' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                          'bg-slate-800 text-slate-400'
+                        }`}>
+                          {l.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <div className="bg-[#1E293B] border border-slate-700 rounded-3xl shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center">
               <h2 className="text-lg font-bold text-white">Faculty Tasks & Reminders</h2>
-              <button onClick={() => alert("Opening task creation modal...")} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-lg transition-all">
+              <button
+                onClick={() => showToast("Task scheduler initialized. Create institutional reminder.", "info")}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-lg transition-all cursor-pointer"
+              >
                 + New Task
               </button>
             </div>

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useToast } from "../context/ToastContext";
 
 export default function InstitutionalDirectory() {
+  const { showToast } = useToast();
   const [directory] = useState([
     { name: "Dr. V. K. Sharma", role: "Principal / Headmaster", dept: "Administration", phone: "+91 98230 11101", email: "principal@sirjp.edu" },
     { name: "Mrs. Sunita Rao", role: "Chief Accountant", dept: "Finance & Accounts", phone: "+91 98230 22202", email: "accounts@sirjp.edu" },
@@ -20,7 +22,10 @@ export default function InstitutionalDirectory() {
             <h1 className="text-3xl font-extrabold text-white">Staff & Department Directory 📞</h1>
             <p className="text-slate-400 text-sm mt-1">Official verified institutional contacts and department extensions</p>
           </div>
-          <button onClick={() => alert("Opening broadcast message composer...")} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg shadow-blue-600/30 transition-all">
+          <button
+            onClick={() => showToast("Opening broadcast message composer...", "info")}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg shadow-blue-600/30 transition-all cursor-pointer"
+          >
             Send Broadcast Notice 📢
           </button>
         </div>
@@ -53,7 +58,10 @@ export default function InstitutionalDirectory() {
                       <p className="text-xs text-slate-400">{d.email}</p>
                     </td>
                     <td className="p-5 text-center">
-                      <button onClick={() => alert(`Initiating direct message to ${d.name}...`)} className="bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-600 hover:border-blue-500 transition-all">
+                      <button
+                        onClick={() => showToast(`Initiating direct message to ${d.name}...`, "info")}
+                        className="bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-600 hover:border-blue-500 transition-all cursor-pointer"
+                      >
                         Message 💬
                       </button>
                     </td>

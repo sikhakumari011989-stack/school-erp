@@ -1,8 +1,10 @@
 import { useContext, useState } from "react";
 import { AppContext } from "../context/AppContext";
+import { useToast } from "../context/ToastContext";
 
 export default function Reports() {
   const { getFeeReport, getAttendanceReport, getMarksReport, classes } = useContext(AppContext);
+  const { showToast } = useToast();
   const [reportType, setReportType] = useState("fees");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -11,7 +13,7 @@ export default function Reports() {
 
   const handleGenerateReport = () => {
     if (!startDate || !endDate) {
-      alert("Please select date range");
+      showToast("Please select both start and end date range.", "error");
       return;
     }
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "../context/ToastContext";
+import BrandLogo from "../Components/BrandLogo";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -86,31 +87,31 @@ export default function LandingPage() {
 
       {/* TOP NAVIGATION BAR */}
       <nav className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center relative z-20 border-b border-slate-800/80">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30 text-2xl border border-white/10">
-            🏫
-          </div>
-          <div>
-            <span className="text-xl font-black text-white tracking-tight block">EduSaaS ERP</span>
-            <span className="text-[10px] text-blue-400 font-extrabold uppercase tracking-widest block">
-              Multi-Tenant Institution OS
-            </span>
-          </div>
-        </div>
+        <Link to="/" className="cursor-pointer">
+          <BrandLogo size="md" showText={true} />
+        </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <Link
-            to="/login"
-            className="text-slate-300 hover:text-white font-bold text-sm transition-all px-4 py-2 cursor-pointer"
+            to="/portal"
+            className="text-slate-300 hover:text-white font-bold text-xs sm:text-sm transition-all px-3.5 py-2 cursor-pointer border border-slate-700/80 rounded-xl bg-slate-800/60 hover:bg-slate-800 hidden sm:inline-flex items-center gap-1.5"
           >
-            Portal Sign In
+            <span>📱</span>
+            <span>Direct Portal (/portal)</span>
           </Link>
-          <button
-            onClick={() => setShowDemoModal(true)}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-sm px-6 py-2.5 rounded-xl shadow-lg shadow-blue-600/30 transition-all border border-blue-500/40 hover:scale-105"
+          <Link
+            to="/register"
+            className="text-emerald-400 hover:text-emerald-300 font-extrabold text-xs sm:text-sm transition-all px-3 py-2 cursor-pointer"
           >
-            Request Institutional Demo 🚀
-          </button>
+            Register School
+          </Link>
+          <Link
+            to="/login?demo=true"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/30 transition-all border border-blue-500/40 hover:scale-105 inline-flex items-center gap-1.5"
+          >
+            <span>Launch Live Demo Portal</span>
+            <span>🚀</span>
+          </Link>
         </div>
       </nav>
 
@@ -133,17 +134,25 @@ export default function LandingPage() {
         </p>
 
         <div className="flex justify-center items-center gap-4 flex-wrap">
+          <Link
+            to="/register"
+            className="bg-gradient-to-r from-emerald-500 via-teal-600 to-emerald-600 hover:from-emerald-400 hover:to-teal-500 text-white font-extrabold px-8 py-4 rounded-2xl shadow-xl shadow-emerald-600/30 transition-all border border-emerald-400/50 text-base hover:scale-105 inline-flex items-center gap-2 cursor-pointer"
+          >
+            <span>🚀</span>
+            <span>Register New School (2-Min Setup)</span>
+          </Link>
           <button
             onClick={() => setShowDemoModal(true)}
-            className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold px-8 py-4 rounded-2xl shadow-xl shadow-blue-600/30 transition-all border border-blue-500/50 text-base hover:scale-105"
+            className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold px-8 py-4 rounded-2xl shadow-xl shadow-blue-600/30 transition-all border border-blue-500/50 text-base hover:scale-105 cursor-pointer"
           >
             Request Institutional Walkthrough 🏛️
           </button>
           <Link
-            to="/login"
-            className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white font-bold px-8 py-4 rounded-2xl border border-slate-700 transition-all text-base hover:border-slate-500 cursor-pointer inline-flex items-center justify-center"
+            to="/login?demo=true"
+            className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white font-bold px-8 py-4 rounded-2xl border border-slate-700 transition-all text-base hover:border-slate-500 cursor-pointer inline-flex items-center justify-center gap-2"
           >
-            Launch Live Demo Portal →
+            <span>Launch Live Demo Portal</span>
+            <span>→</span>
           </Link>
         </div>
 
@@ -227,8 +236,8 @@ export default function LandingPage() {
       {/* INSTITUTIONAL DEMO CTA BANNER */}
       <div className="max-w-5xl mx-auto px-6 py-12 relative z-10">
         <div className="bg-gradient-to-br from-blue-900/40 via-slate-900 to-purple-900/40 border border-slate-700/80 rounded-[2.5rem] p-8 sm:p-14 text-center shadow-2xl relative overflow-hidden">
-          <div className="w-16 h-16 bg-blue-600/30 border border-blue-500/40 rounded-2xl mx-auto mb-6 flex items-center justify-center text-3xl">
-            🏛️
+          <div className="flex justify-center mb-6">
+            <BrandLogo size="lg" className="shadow-2xl shadow-indigo-600/40" />
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
             Ready to Modernize Your Educational Infrastructure?
@@ -288,13 +297,18 @@ export default function LandingPage() {
               </h4>
               <ul className="space-y-2.5 text-sm text-slate-400">
                 <li>
-                  <Link to="/login" className="hover:text-white transition-colors">
+                  <Link to="/login?demo=true" className="hover:text-white transition-colors">
                     Live Demo Sandbox
                   </Link>
                 </li>
                 <li>
-                  <Link to="/login" className="hover:text-white transition-colors">
-                    Portal Sign In
+                  <Link to="/portal" className="hover:text-white transition-colors">
+                    Direct Member Portal (/portal)
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/system-check" className="hover:text-emerald-400 transition-colors flex items-center gap-1">
+                    <span>🩺 System & Isolation Check</span>
                   </Link>
                 </li>
                 <li>

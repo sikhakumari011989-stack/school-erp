@@ -44,17 +44,43 @@ export function generateFeeInvoicePDF({
   doc.setFillColor(59, 130, 246); // Blue 500
   doc.rect(0, 40, 210, 2.5, "F");
 
+  // --- CUSTOM WHITE-LABEL SCHOOL LOGO RENDERING ---
+  const schoolLogo =
+    tenant.logoUrl ||
+    (() => {
+      try {
+        return (
+          localStorage.getItem(`erp_school_logo_${institutionCode}`) ||
+          localStorage.getItem("erp_school_logo_default") ||
+          null
+        );
+      } catch {
+        return null;
+      }
+    })();
+
+  let titleOffset = 14;
+  if (schoolLogo && typeof schoolLogo === "string" && schoolLogo.startsWith("data:image")) {
+    try {
+      const format = schoolLogo.includes("png") ? "PNG" : "JPEG";
+      doc.addImage(schoolLogo, format, 14, 8, 24, 24);
+      titleOffset = 42;
+    } catch (e) {
+      console.warn("Could not render logo in PDF invoice:", e);
+    }
+  }
+
   // INSTITUTION TITLE & DETAILS
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
-  doc.text(institutionName.toUpperCase(), 14, 18);
+  doc.text(institutionName.toUpperCase(), titleOffset, 18);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(148, 163, 184); // Slate 400
-  doc.text(`Affiliation Code: ${institutionCode} | ISO 9001:2025 Certified Educational Body`, 14, 25);
-  doc.text(`${institutionAddress} | Email: ${contactEmail}`, 14, 31);
+  doc.text(`Affiliation Code: ${institutionCode} | ISO 9001:2025 Certified Educational Body`, titleOffset, 25);
+  doc.text(`${institutionAddress} | Email: ${contactEmail}`, titleOffset, 31);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
@@ -87,7 +113,12 @@ export function generateFeeInvoicePDF({
   doc.text(`Invoice Number: ${invoiceNo}`, 120, 60);
   doc.text(`Payment Date: ${dateStr}`, 120, 66);
   doc.text(`Payment Method: ${paymentMethod}`, 120, 72);
-  doc.text(`Gateway Reference: ${transactionId}`, 120, 78);
+  const utrRef = payment.utr || (transactionId && !transactionId.startsWith("RZP") ? transactionId : null);
+  if (utrRef) {
+    doc.text(`UPI UTR / Bank Ref: ${utrRef}`, 120, 78);
+  } else {
+    doc.text(`Gateway Reference: ${transactionId}`, 120, 78);
+  }
 
   // --- TABLE OF CHARGES ---
   const tableData = [
@@ -223,17 +254,43 @@ export function generateReportCardPDF({
   doc.setFillColor(168, 85, 247); // Purple 500
   doc.rect(0, 40, 210, 2.5, "F");
 
+  // --- CUSTOM WHITE-LABEL SCHOOL LOGO RENDERING ---
+  const schoolLogo =
+    tenant.logoUrl ||
+    (() => {
+      try {
+        return (
+          localStorage.getItem(`erp_school_logo_${institutionCode}`) ||
+          localStorage.getItem("erp_school_logo_default") ||
+          null
+        );
+      } catch {
+        return null;
+      }
+    })();
+
+  let titleOffset = 14;
+  if (schoolLogo && typeof schoolLogo === "string" && schoolLogo.startsWith("data:image")) {
+    try {
+      const format = schoolLogo.includes("png") ? "PNG" : "JPEG";
+      doc.addImage(schoolLogo, format, 14, 8, 24, 24);
+      titleOffset = 42;
+    } catch (e) {
+      console.warn("Could not render logo in PDF report card:", e);
+    }
+  }
+
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
-  doc.text(institutionName.toUpperCase(), 14, 18);
+  doc.text(institutionName.toUpperCase(), titleOffset, 18);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(192, 132, 252); // Purple 300
-  doc.text(`OFFICIAL ACADEMIC TRANSCRIPT & PERFORMANCE REPORT`, 14, 25);
+  doc.text(`OFFICIAL ACADEMIC TRANSCRIPT & PERFORMANCE REPORT`, titleOffset, 25);
   doc.setTextColor(148, 163, 184);
-  doc.text(`Institutional Node: ${institutionCode} | Academic Session 2026-2027`, 14, 31);
+  doc.text(`Institutional Node: ${institutionCode} | Academic Session 2026-2027`, titleOffset, 31);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);

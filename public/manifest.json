@@ -1,21 +1,27 @@
 {
-  "name": "Tuition ERP - Multi-Tenant Academic OS",
-  "short_name": "TuitionERP",
+  "name": "EduSaaS ERP - Multi-Tenant Tuition & School OS",
+  "short_name": "EduSaaS ERP",
   "description": "Enterprise Multi-Tenant SaaS Platform for Schools, Tuitions, and Academic Institutions",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#0F172A",
-  "theme_color": "#0F172A",
+  "background_color": "#0b0f19",
+  "theme_color": "#0b0f19",
   "icons": [
     {
-      "src": "/favicon.svg",
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-icon.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/favicon.svg",
+      "src": "/pwa-icon.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
@@ -28,15 +34,14 @@
       "short_name": "Attendance",
       "description": "Log classroom daily roll call offline",
       "url": "/teacher/attendance",
-      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any" }]
     },
     {
       "name": "Student Homework",
       "short_name": "Homework",
       "description": "View assignments and learning tasks",
       "url": "/student/homework",
-      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any" }]
     }
   ]
 }
-

@@ -33,30 +33,32 @@ export default function StudentConduct() {
           <div className="p-6 border-b border-slate-700 bg-slate-800/50">
             <h2 className="text-lg font-bold text-white">Merit & Conduct Log</h2>
           </div>
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                <th className="p-5">Record Description</th>
-                <th className="p-5">Category</th>
-                <th className="p-5">Date</th>
-                <th className="p-5 text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700/50 text-sm">
-              {records.map((rec) => (
-                <tr key={rec.id} className="hover:bg-slate-800/30 transition-colors">
-                  <td className="p-5 font-bold text-white text-base">{rec.title}</td>
-                  <td className="p-5 font-mono text-slate-300">{rec.type}</td>
-                  <td className="p-5 text-slate-400 text-xs">{rec.date}</td>
-                  <td className="p-5 text-center">
-                    <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-extrabold uppercase">
-                      {rec.status}
-                    </span>
-                  </td>
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                  <th className="p-5">Record Description</th>
+                  <th className="p-5">Category</th>
+                  <th className="p-5">Date</th>
+                  <th className="p-5 text-center">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-700/50 text-sm">
+                {records.map((rec) => (
+                  <tr key={rec.id} className="hover:bg-slate-800/30 transition-colors">
+                    <td className="p-5 font-bold text-white text-base">{rec.title}</td>
+                    <td className="p-5 font-mono text-slate-300">{rec.type}</td>
+                    <td className="p-5 text-slate-400 text-xs">{rec.date}</td>
+                    <td className="p-5 text-center">
+                      <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-extrabold uppercase">
+                        {rec.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
