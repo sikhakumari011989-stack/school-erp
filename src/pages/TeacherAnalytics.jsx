@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
+import { publishStudyMaterial } from "../utils/studyMaterialService";
 
 export default function TeacherAnalytics() {
   const { user } = useContext(AppContext);
@@ -107,7 +108,21 @@ export default function TeacherAnalytics() {
       localStorage.setItem(`erp_question_papers_${schoolId}`, JSON.stringify(updated));
     } catch (e) {}
 
-    showToast(`Question paper "${newPaper.title}" registered in question bank!`, "success");
+    // Automatically sync to Student LMS Study Vault
+    try {
+      publishStudyMaterial({
+        title: newPaper.title,
+        subject: user?.subject || "Curriculum Resource",
+        className: newPaper.class,
+        type: newPaper.format || "PDF",
+        size: "2.4 MB",
+        description: `Uploaded by ${user?.name || "faculty"} for ${newPaper.class} board preparation.`,
+        schoolId,
+        user,
+      });
+    } catch (err) {}
+
+    showToast(`Resource "${newPaper.title}" published to Question Bank and Student LMS!`, "success");
     setPaperForm({ title: "", className: "Class 10-A", format: "PDF" });
     setShowPaperModal(false);
   };

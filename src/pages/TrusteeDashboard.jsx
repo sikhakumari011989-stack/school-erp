@@ -12,6 +12,7 @@ import SystemDiagnostic from "../Components/SystemDiagnostic";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
 import TransportFleetManager from "../Components/TransportFleetManager";
 import NonTeachingStaffManager from "../Components/NonTeachingStaffManager";
+import FeeStructureConfigurator from "../Components/FeeStructureConfigurator";
 import { buildStandardErpEmail } from "./Login";
 import { getNextMemberId, getDefaultSchoolDirectory } from "../utils/idGenerator";
 
@@ -935,10 +936,16 @@ export default function TrusteeDashboard() {
         ) : activeTab === "certificates" ? (
           <CertificateManagementCard mode="trustee" />
         ) : activeTab === "upi_qr" ? (
-          <SchoolUpiQrConfig
-            schoolId={institutionCode}
-            institutionName={user?.institution_name || "Apex International Academy"}
-          />
+          <div className="space-y-8">
+            <SchoolUpiQrConfig
+              schoolId={institutionCode}
+              institutionName={user?.institution_name || "Apex International Academy"}
+            />
+            <FeeStructureConfigurator
+              schoolId={institutionCode}
+              institutionName={user?.institution_name || "Apex International Academy"}
+            />
+          </div>
         ) : null}
 
         {/* BULK CSV ONBOARDING MODAL */}

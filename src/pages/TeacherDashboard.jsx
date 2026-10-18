@@ -21,8 +21,8 @@ export default function TeacherDashboard() {
       },
       student: {
         name: user?.name || "Student Member",
-        roll_number: "STU-101",
-        class: "Class 10 ICSE",
+        roll_number: user?.personal_code || "ENR-01",
+        class: user?.class_name || "Academic Batch",
       },
       academicTerm: "Term Comprehensive Examination",
       attendanceRate: "100%",

@@ -15,6 +15,8 @@ import DisciplinaryLogManager from "../Components/DisciplinaryLogManager";
 import CustomReportBuilder from "../Components/CustomReportBuilder";
 import SystemAudit from "./SystemAudit";
 import BulkImportModal from "../Components/BulkImportModal";
+import FeeStructureConfigurator from "../Components/FeeStructureConfigurator";
+import NoticeBanner from "../Components/NoticeBanner";
 import { getNotices, publishNotice, deleteNotice } from "../utils/noticeService";
 import { logSecurityAction } from "../utils/auditLogger";
 
@@ -30,6 +32,9 @@ export default function PrincipalDashboard() {
     facultyCount: 0,
     feeCollectionRate: "0%",
     paidCount: 0,
+    hasGrades: false,
+    avgScore: "0%",
+    passRatio: "0%",
   });
   const [loadingStats, setLoadingStats] = useState(true);
 
@@ -157,12 +162,33 @@ export default function PrincipalDashboard() {
 
       const rate = allLedger.length > 0 ? `${Math.round((paid / allLedger.length) * 100)}%` : "0%";
 
+      // Academic Performance dynamic evaluation (Clean Slate)
+      let hasGrades = false;
+      let avgScore = "0%";
+      let passRatio = "0%";
+      try {
+        const rawGrades = localStorage.getItem(`erp_grades_${institutionCode}`);
+        if (rawGrades) {
+          const parsed = JSON.parse(rawGrades);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            hasGrades = true;
+            const total = parsed.reduce((sum, g) => sum + (Number(g.percentage || g.score) || 0), 0);
+            avgScore = `${Math.round(total / parsed.length)}%`;
+            const passed = parsed.filter((g) => (Number(g.percentage || g.score) || 0) >= 35).length;
+            passRatio = `${Math.round((passed / parsed.length) * 100)}%`;
+          }
+        }
+      } catch (e) {}
+
       setStats({
         totalRevenue: rev,
         enrolledStudents: studentSet.size,
         facultyCount,
         feeCollectionRate: rate,
         paidCount: paid,
+        hasGrades,
+        avgScore,
+        passRatio,
       });
 
       // 3. Notices
@@ -418,6 +444,9 @@ export default function PrincipalDashboard() {
       <div className="fixed top-0 right-10 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="relative z-10 max-w-6xl mx-auto space-y-8">
+        {/* ACTIVE INSTITUTION BROADCAST BANNER */}
+        <NoticeBanner role="Principal" schoolId={institutionCode} />
+
         {/* HEADER BAR */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -511,6 +540,9 @@ export default function PrincipalDashboard() {
 
                 {/* SCHOOL UPI QR CONFIG CARD */}
                 <SchoolUpiQrConfig schoolId={institutionCode} institutionName={institutionName} />
+
+                {/* MASTER FEE STRUCTURE CONFIGURATOR */}
+                <FeeStructureConfigurator schoolId={institutionCode} institutionName={institutionName} />
 
                 {/* REVENUE LEDGER TABLE */}
                 <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-slate-700/70 rounded-3xl shadow-2xl overflow-hidden">
@@ -820,20 +852,40 @@ export default function PrincipalDashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Class Average Score</p>
-                    <p className="text-3xl font-black text-emerald-400">81.6%</p>
-                    <span className="text-xs text-slate-400 mt-1 block">Term evaluation standing</span>
+                    <p className="text-3xl font-black text-emerald-400">
+                      {stats.hasGrades && stats.enrolledStudents > 0 ? stats.avgScore : "0%"}
+                    </p>
+                    <span className="text-xs text-slate-400 mt-1 block">
+                      {stats.hasGrades && stats.enrolledStudents > 0 ? "Term evaluation standing" : "No grades recorded"}
+                    </span>
                   </div>
                   <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Overall Pass Ratio</p>
-                    <p className="text-3xl font-black text-blue-400">96.8%</p>
-                    <span className="text-xs text-slate-400 mt-1 block">Board benchmark exceeded</span>
+                    <p className="text-3xl font-black text-blue-400">
+                      {stats.hasGrades && stats.enrolledStudents > 0 ? stats.passRatio : "0%"}
+                    </p>
+                    <span className="text-xs text-slate-400 mt-1 block">
+                      {stats.hasGrades && stats.enrolledStudents > 0 ? "Board benchmark exceeded" : "No grades recorded"}
+                    </span>
                   </div>
                   <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Active Remedial Watchlist</p>
                     <p className="text-3xl font-black text-orange-400">{watchlist.length} Scholars</p>
-                    <span className="text-xs text-slate-400 mt-1 block">Targeted coaching active</span>
+                    <span className="text-xs text-slate-400 mt-1 block">
+                      {watchlist.length > 0 ? "Targeted coaching active" : "0 under watch"}
+                    </span>
                   </div>
                 </div>
+
+                {(!stats.hasGrades || stats.enrolledStudents === 0) && (
+                  <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 text-center text-slate-400 space-y-2">
+                    <span className="text-3xl block opacity-60">📊</span>
+                    <h4 className="text-base font-bold text-white">No student performance or grade data recorded yet.</h4>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                      No student performance or grade data recorded yet. Import students and record exam scores to populate analytics.
+                    </p>
+                  </div>
+                )}
 
                 {/* WATCHLIST TABLE */}
                 <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-slate-700/70 rounded-3xl shadow-2xl overflow-hidden">

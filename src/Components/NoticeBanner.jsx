@@ -13,11 +13,18 @@ export default function NoticeBanner({ role = "All", schoolId }) {
       const filtered = all.filter((n) => {
         const aud = (n.audience || "").toLowerCase();
         const userRole = (role || "").toLowerCase();
-        return aud === "all" || aud === userRole || aud.includes(userRole);
+        if (aud === "all" || aud === "all students & staff" || aud.includes("all")) return true;
+        if (userRole === "student" && aud.includes("student")) return true;
+        if (userRole === "teacher" && (aud.includes("teacher") || aud.includes("faculty") || aud.includes("staff"))) return true;
+        if (userRole === "trustee" && (aud.includes("trustee") || aud.includes("hod") || aud.includes("admin") || aud.includes("staff"))) return true;
+        return aud === userRole;
       });
       setNotices(filtered);
     };
+
     load();
+    window.addEventListener("erp-notices-updated", load);
+    return () => window.removeEventListener("erp-notices-updated", load);
   }, [role, schoolId]);
 
   const activeNotices = notices.filter((n) => !dismissed.includes(n.id));

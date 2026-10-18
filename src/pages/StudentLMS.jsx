@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { getQuizzes } from "../utils/quizService";
+import { getStudyMaterials } from "../utils/studyMaterialService";
 import { useToast } from "../context/ToastContext";
 
 export function formatMathText(text) {
@@ -33,12 +34,9 @@ export default function StudentLMS() {
   const [quizzes, setQuizzes] = useState([]);
   const [loadingQuizzes, setLoadingQuizzes] = useState(true);
 
-  const [materials] = useState([
-    { id: 1, title: "Mathematics Chapter 4 Notes - Algebra & Quadratics", subject: "Mathematics", type: "PDF", size: "2.4 MB" },
-    { id: 2, title: "Physics Laws of Motion & Momentum Summary Guide", subject: "Physics", type: "PDF", size: "3.1 MB" },
-    { id: 3, title: "ICSE Chemistry Revision Guide & Periodic Formulas", subject: "Chemistry", type: "PDF", size: "1.8 MB" },
-    { id: 4, title: "Computer Applications Java Algorithms Question Bank", subject: "Computers", type: "Document", size: "4.2 MB" },
-  ]);
+  // Dynamic study materials uploaded by faculty (Clean Slate)
+  const [materials, setMaterials] = useState([]);
+  const [loadingMaterials, setLoadingMaterials] = useState(true);
 
   // Quiz state
   const [selectedQuiz, setSelectedQuiz] = useState(null);
@@ -46,20 +44,35 @@ export default function StudentLMS() {
   const [userAnswers, setUserAnswers] = useState({});
   const [scoreResult, setScoreResult] = useState(null);
 
+  const schoolCode = user?.school_id || user?.institution_code;
+
+  const loadLmsContent = async () => {
+    setLoadingQuizzes(true);
+    setLoadingMaterials(true);
+    try {
+      const [qData, mData] = await Promise.all([
+        getQuizzes(schoolCode),
+        getStudyMaterials(schoolCode),
+      ]);
+      setQuizzes(qData || []);
+      setMaterials(mData || []);
+    } catch (err) {
+      console.error("Error loading LMS data:", err);
+    } finally {
+      setLoadingQuizzes(false);
+      setLoadingMaterials(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      setLoadingQuizzes(true);
-      try {
-        const data = await getQuizzes(user?.school_id || user?.institution_code);
-        setQuizzes(data);
-      } catch (err) {
-        console.error("Error loading quizzes:", err);
-      } finally {
-        setLoadingQuizzes(false);
-      }
+    loadLmsContent();
+    window.addEventListener("erp-quizzes-updated", loadLmsContent);
+    window.addEventListener("erp-study-materials-updated", loadLmsContent);
+    return () => {
+      window.removeEventListener("erp-quizzes-updated", loadLmsContent);
+      window.removeEventListener("erp-study-materials-updated", loadLmsContent);
     };
-    load();
-  }, [user]);
+  }, [schoolCode]);
 
   const handleStartQuiz = (quiz) => {
     setSelectedQuiz(quiz);
@@ -152,34 +165,48 @@ export default function StudentLMS() {
 
         {/* TAB 1: STUDY MATERIALS */}
         {activeTab === "lms" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {materials.map((mat) => (
-              <div
-                key={mat.id}
-                className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-6 shadow-2xl flex flex-col justify-between group hover:border-purple-500/50 transition-all"
-              >
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1 rounded-xl text-xs font-bold uppercase">
-                      {mat.subject}
-                    </span>
-                    <span className="text-slate-400 text-xs font-mono font-bold">{mat.size}</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-2 group-hover:text-purple-300 transition-colors">
-                    {mat.title}
-                  </h3>
-                  <p className="text-slate-400 text-xs mb-6">
-                    Verified ICSE reference document uploaded by departmental faculty for semester revision.
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleDownloadResource(mat)}
-                  className="w-full bg-slate-800/80 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded-xl transition-all border border-slate-700 hover:border-purple-500 flex items-center justify-center gap-2 text-xs cursor-pointer"
-                >
-                  <span>📥</span> Download PDF Resource
-                </button>
+          <div>
+            {loadingMaterials ? (
+              <div className="text-center py-12 text-slate-400">Loading syllabus study materials...</div>
+            ) : materials.length === 0 ? (
+              <div className="p-12 text-center bg-[#1E293B]/70 border border-slate-700/60 rounded-3xl text-slate-400 space-y-3">
+                <div className="text-5xl opacity-60">📚</div>
+                <h3 className="text-lg font-bold text-white">No study notes or interactive quizzes uploaded by faculty yet.</h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  When your subject teachers upload chapter notes, revision formula sheets, or reference documents, they will appear here for download.
+                </p>
               </div>
-            ))}
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {materials.map((mat) => (
+                  <div
+                    key={mat.id}
+                    className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-6 shadow-2xl flex flex-col justify-between group hover:border-purple-500/50 transition-all"
+                  >
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1 rounded-xl text-xs font-bold uppercase">
+                          {mat.subject}
+                        </span>
+                        <span className="text-slate-400 text-xs font-mono font-bold">{mat.size || "PDF"}</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-white mb-2 group-hover:text-purple-300 transition-colors">
+                        {mat.title}
+                      </h3>
+                      <p className="text-slate-400 text-xs mb-6">
+                        {mat.description || `Verified reference document uploaded by ${mat.author || "faculty"} for semester revision.`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDownloadResource(mat)}
+                      className="w-full bg-slate-800/80 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded-xl transition-all border border-slate-700 hover:border-purple-500 flex items-center justify-center gap-2 text-xs cursor-pointer"
+                    >
+                      <span>📥</span> Download PDF Resource
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           /* TAB 2: INTERACTIVE QUIZZES */
@@ -414,6 +441,14 @@ export default function StudentLMS() {
               <div>
                 {loadingQuizzes ? (
                   <div className="text-center py-12 text-slate-400">Loading interactive quizzes...</div>
+                ) : quizzes.length === 0 ? (
+                  <div className="p-12 text-center bg-[#1E293B]/70 border border-slate-700/60 rounded-3xl text-slate-400 space-y-3">
+                    <div className="text-5xl opacity-60">⚡</div>
+                    <h3 className="text-lg font-bold text-white">No study notes or interactive quizzes uploaded by faculty yet.</h3>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                      Your departmental faculty has not published any live quiz tests for this batch yet. Check back following classroom lessons.
+                    </p>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {quizzes.map((q) => (

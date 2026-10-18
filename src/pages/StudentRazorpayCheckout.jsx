@@ -39,29 +39,9 @@ export default function StudentRazorpayCheckout() {
     .trim()
     .toUpperCase();
 
-  const [selectedFee, setSelectedFee] = useState({
-    title: "Second Term Tuition Fee (2026-27)",
-    amount: 15000,
-    term: "Term 2",
-  });
-
-  const availableFees = [
-    {
-      title: "Second Term Tuition Fee (2026-27)",
-      amount: 15000,
-      term: "Term 2",
-    },
-    {
-      title: "Annual Laboratory & Library Fee",
-      amount: 4500,
-      term: "Annual",
-    },
-    {
-      title: "Campus Transportation & Bus Route Fee",
-      amount: 3200,
-      term: "Quarterly",
-    },
-  ];
+  const [availableFees, setAvailableFees] = useState([]);
+  const [selectedFee, setSelectedFee] = useState(null);
+  const [loadingFees, setLoadingFees] = useState(true);
 
   // Dynamic School UPI Data
   const [schoolQr, setSchoolQr] = useState(DEFAULT_DEMO_QR_SVG);
@@ -72,8 +52,7 @@ export default function StudentRazorpayCheckout() {
       "Scan via Google Pay, PhonePe, Paytm, or BHIM. Enter student name in remarks, then input 12-digit UTR below.",
   });
 
-  // Load configured QR and metadata from localStorage
-  useEffect(() => {
+  const loadFeesAndConfig = async () => {
     try {
       const savedQr = localStorage.getItem(`erp_school_qr_${activeSchoolCode}`);
       if (savedQr) setSchoolQr(savedQr);
@@ -85,6 +64,55 @@ export default function StudentRazorpayCheckout() {
     } catch (e) {
       console.warn("Error loading student checkout UPI config:", e);
     }
+
+    // Dynamic fee structures configured by school HOD/Principal
+    setLoadingFees(true);
+    let loaded = [];
+    try {
+      const savedFees = localStorage.getItem(`erp_fee_structure_${activeSchoolCode}`);
+      if (savedFees) {
+        const parsed = JSON.parse(savedFees);
+        if (Array.isArray(parsed) && parsed.length > 0) loaded = parsed;
+      }
+    } catch (e) {}
+
+    try {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from("fee_structures")
+          .select("*")
+          .eq("school_id", activeSchoolCode);
+
+        if (!error && data && data.length > 0) {
+          const map = new Map();
+          data.forEach((d) => map.set(d.id, {
+            id: d.id,
+            title: d.title || d.component_name,
+            term: d.term || d.category || "Term Fee",
+            amount: Number(d.amount) || 0,
+            description: d.description || "",
+          }));
+          loaded.forEach((l) => {
+            if (!map.has(l.id)) map.set(l.id, l);
+          });
+          loaded = Array.from(map.values());
+        }
+      }
+    } catch (err) {}
+
+    setAvailableFees(loaded);
+    setSelectedFee((prev) => {
+      if (prev && loaded.some((f) => f.title === prev.title)) return prev;
+      return loaded.length > 0 ? loaded[0] : null;
+    });
+    setLoadingFees(false);
+  };
+
+  useEffect(() => {
+    loadFeesAndConfig();
+    const handleUpdate = () => loadFeesAndConfig();
+    window.addEventListener("erp-fee-structure-updated", handleUpdate);
+    return () => window.removeEventListener("erp-fee-structure-updated", handleUpdate);
   }, [activeSchoolCode]);
 
   const handleCopyUpi = () => {
@@ -109,6 +137,11 @@ export default function StudentRazorpayCheckout() {
    * Unified payment settlement handler
    */
   const processUpiSettlement = async (enteredUtr, paymentModeOverride) => {
+    if (!selectedFee) {
+      showToast("No active fee structure selected. Please select a published fee head to settle.", "error");
+      return;
+    }
+
     const cleanUtr = String(enteredUtr || "").trim();
 
     if (!cleanUtr || cleanUtr.length < 8) {
@@ -246,9 +279,11 @@ export default function StudentRazorpayCheckout() {
   };
 
   // UPI Deep Link for mobile devices
-  const upiDeepLink = `upi://pay?pa=${encodeURIComponent(schoolUpiMeta.upiId)}&pn=${encodeURIComponent(
-    schoolUpiMeta.merchantName
-  )}&am=${selectedFee.amount}&cu=INR&tn=${encodeURIComponent(selectedFee.title)}`;
+  const upiDeepLink = selectedFee
+    ? `upi://pay?pa=${encodeURIComponent(schoolUpiMeta.upiId)}&pn=${encodeURIComponent(
+        schoolUpiMeta.merchantName
+      )}&am=${selectedFee.amount}&cu=INR&tn=${encodeURIComponent(selectedFee.title)}`
+    : "#";
 
   return (
     <div className="relative text-slate-200 min-h-full pb-10 font-sans">
@@ -349,48 +384,62 @@ export default function StudentRazorpayCheckout() {
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
                 1. Select Fee Component to Settle
               </label>
-              <div className="space-y-2.5">
-                {availableFees.map((fee, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => setSelectedFee(fee)}
-                    className={`p-4 rounded-2xl border cursor-pointer transition-all flex justify-between items-center ${
-                      selectedFee.title === fee.title
-                        ? "bg-blue-600/20 border-blue-500 shadow-lg shadow-blue-500/10"
-                        : "bg-slate-900/60 border-slate-800 hover:border-slate-700"
-                    }`}
-                  >
-                    <div>
-                      <p className="font-bold text-white text-sm">{fee.title}</p>
-                      <span className="text-[11px] text-blue-400 font-semibold">{fee.term}</span>
+              {loadingFees ? (
+                <div className="p-8 text-center text-slate-400 text-xs">Loading published fee structures...</div>
+              ) : availableFees.length === 0 ? (
+                <div className="p-8 text-center bg-slate-900/60 rounded-2xl border border-slate-800 text-slate-400 space-y-3">
+                  <div className="text-4xl opacity-60">📑</div>
+                  <h4 className="text-base font-bold text-white">No active fee structures published by school administration yet.</h4>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                    Your school administration has not configured any fee heads for online settlement yet. Please contact your HOD or Accounts department.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {availableFees.map((fee, idx) => (
+                    <div
+                      key={fee.id || idx}
+                      onClick={() => setSelectedFee(fee)}
+                      className={`p-4 rounded-2xl border cursor-pointer transition-all flex justify-between items-center ${
+                        selectedFee?.title === fee.title
+                          ? "bg-blue-600/20 border-blue-500 shadow-lg shadow-blue-500/10"
+                          : "bg-slate-900/60 border-slate-800 hover:border-slate-700"
+                      }`}
+                    >
+                      <div>
+                        <p className="font-bold text-white text-sm">{fee.title}</p>
+                        <span className="text-[11px] text-blue-400 font-semibold">{fee.term}</span>
+                      </div>
+                      <span className="font-black text-emerald-400 text-base">
+                        ₹{Number(fee.amount || 0).toLocaleString()}
+                      </span>
                     </div>
-                    <span className="font-black text-emerald-400 text-base">
-                      ₹{fee.amount.toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* PAYABLE SUMMARY */}
-            <div className="bg-slate-900/70 p-4 rounded-2xl border border-slate-800 space-y-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400 font-bold uppercase">Enrolled Student</span>
-                <span className="text-white font-bold">
-                  {user?.name || user?.full_name || "Enrolled Student"} ({activeSchoolCode})
-                </span>
+            {selectedFee && (
+              <div className="bg-slate-900/70 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400 font-bold uppercase">Enrolled Student</span>
+                  <span className="text-white font-bold">
+                    {user?.name || user?.full_name || "Enrolled Student"} ({activeSchoolCode})
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400 font-bold uppercase">Settlement Component</span>
+                  <span className="text-blue-400 font-bold">{selectedFee.title}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-slate-800">
+                  <span className="text-slate-200 font-bold text-sm">Total Payable Amount</span>
+                  <span className="text-2xl font-black text-emerald-400">
+                    ₹{Number(selectedFee.amount || 0).toLocaleString()}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400 font-bold uppercase">Settlement Component</span>
-                <span className="text-blue-400 font-bold">{selectedFee.title}</span>
-              </div>
-              <div className="flex justify-between items-center pt-2 border-t border-slate-800">
-                <span className="text-slate-200 font-bold text-sm">Total Payable Amount</span>
-                <span className="text-2xl font-black text-emerald-400">
-                  ₹{selectedFee.amount.toLocaleString()}
-                </span>
-              </div>
-            </div>
+            )}
 
             {/* UTR ENTRY FORM */}
             <form
@@ -449,7 +498,7 @@ export default function StudentRazorpayCheckout() {
               <div className="space-y-3 pt-2">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !selectedFee}
                   className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 px-4 rounded-xl shadow-xl shadow-emerald-600/30 transition-all disabled:opacity-50 text-base flex items-center justify-center gap-2 cursor-pointer border border-emerald-400/30"
                 >
                   {loading ? (
@@ -460,7 +509,9 @@ export default function StudentRazorpayCheckout() {
                   ) : (
                     <>
                       <Receipt className="w-5 h-5" />
-                      <span>Verify & Submit Fee Payment (₹{selectedFee.amount.toLocaleString()})</span>
+                      <span>
+                        Verify & Submit Fee Payment {selectedFee ? `(₹${Number(selectedFee.amount).toLocaleString()})` : "(Select Fee Head Above)"}
+                      </span>
                     </>
                   )}
                 </button>
@@ -469,7 +520,7 @@ export default function StudentRazorpayCheckout() {
                 <button
                   type="button"
                   onClick={handleAutoFillDemoUtr}
-                  disabled={loading}
+                  disabled={loading || !selectedFee}
                   className="w-full bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 font-bold py-3 px-4 rounded-xl transition-all text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   <Sparkles className="w-4 h-4 text-amber-400" />
