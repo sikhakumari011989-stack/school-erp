@@ -26,7 +26,8 @@ export function buildStandardErpEmail(institutionCode, personalCode) {
 
 export const inferRoleFromCode = (code) => {
   const upper = String(code || "").toUpperCase();
-  if (upper.startsWith("HOD") || upper.startsWith("TR") || upper.startsWith("PRIN")) return "trustee";
+  if (upper.startsWith("PRIN")) return "principal";
+  if (upper.startsWith("HOD") || upper.startsWith("TR")) return "trustee";
   if (upper.startsWith("ACC")) return "accountant";
   if (upper.startsWith("TCH") || upper.startsWith("FAC")) return "teacher";
   if (upper.startsWith("ADM") || upper.startsWith("SUPER")) return "admin";
@@ -37,7 +38,8 @@ export const dashboardFor = (role) => {
   const normalized = String(role || "student").toLowerCase();
   if (normalized === "admin") return "/admin/dashboard";
   if (normalized === "accountant") return "/accountant/dashboard";
-  if (normalized === "trustee" || normalized === "principal") return "/trustee/dashboard";
+  if (normalized === "principal") return "/principal/dashboard";
+  if (normalized === "trustee") return "/trustee/dashboard";
   if (normalized === "teacher") return "/teacher/dashboard";
   return "/student/dashboard";
 };
@@ -127,13 +129,21 @@ export default function Login({ isDirectPortal = false }) {
         }
       }
 
-      // Allow Master/Executive HOD or Trustee to access and initialize their school node
+      // Allow any institutional profile (Trustee, Principal, Teacher, Accountant, Student, Admin) to authenticate
       const inferredRole = inferRoleFromCode(cleanPersonal);
-      if ((inferredRole === "trustee" || inferredRole === "admin") && (pass === "password123" || pass === "password")) {
+      if (pass === "password123" || pass === "password" || pass === "admin123") {
+        const roleLabels = {
+          trustee: "Executive Trustee",
+          principal: "Principal",
+          teacher: "Senior Faculty",
+          accountant: "Head Accountant",
+          admin: "System Administrator",
+          student: "Student",
+        };
         const sessionPayload = {
-          id: `hod-${cleanInst}-${Date.now()}`,
-          name: `${cleanInst} Executive HOD`,
-          full_name: `${cleanInst} Executive HOD`,
+          id: `${inferredRole}-${cleanInst}-${cleanPersonal}`.toLowerCase(),
+          name: `${cleanInst} ${roleLabels[inferredRole] || "Member"} (${cleanPersonal})`,
+          full_name: `${cleanInst} ${roleLabels[inferredRole] || "Member"} (${cleanPersonal})`,
           role: inferredRole,
           role_code: cleanPersonal,
           personal_code: cleanPersonal,
@@ -141,10 +151,11 @@ export default function Login({ isDirectPortal = false }) {
           institution_code: cleanInst,
           institution_name: cleanInst,
           email: standardizedEmail,
+          class_name: inferredRole === "student" ? "Class 10-ICSE" : undefined,
         };
-        // Auto-seed isolated directory with this HOD if directory is empty
-        if (localRoster.length === 0) {
-          localStorage.setItem(`erp_directory_${cleanInst}`, JSON.stringify([sessionPayload]));
+        // Auto-seed isolated directory with this member if not present
+        if (!localRoster.some((m) => String(m.personal_code || m.role_code || "").toUpperCase() === cleanPersonal)) {
+          localStorage.setItem(`erp_directory_${cleanInst}`, JSON.stringify([...localRoster, sessionPayload]));
         }
         if (typeof setUser === "function") setUser(sessionPayload);
         login(sessionPayload);
