@@ -57,7 +57,7 @@ export default function StudentRazorpayCheckout() {
       term: "Annual",
     },
     {
-      title: "Transportation Fleet & GPS Fee",
+      title: "Campus Transportation & Bus Route Fee",
       amount: 3200,
       term: "Quarterly",
     },

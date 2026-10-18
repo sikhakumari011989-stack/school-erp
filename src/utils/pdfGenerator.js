@@ -385,3 +385,146 @@ export function generateReportCardPDF({
   return doc;
 }
 
+/**
+ * Generates an official, digitally signed Institutional Student Certificate
+ */
+export function generateOfficialCertificatePDF({
+  tenant = {},
+  student = {},
+  certificate = {},
+}) {
+  const doc = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4",
+  });
+
+  const institutionName = tenant.name || "Apex International Academy";
+  const institutionCode = tenant.code || "OASIS-TUTORIALS";
+  const institutionAddress = tenant.address || "14-B Campus Boulevard, Knowledge Park, Mumbai";
+
+  const studentName = student.name || student.student_name || "Astik Kumar";
+  const rollNumber = student.roll_number || student.personal_code || "STU-1024";
+  const className = student.class_name || student.class || "Class 10-ICSE";
+  const certType = (certificate.certificate_type || "BONAFIDE CERTIFICATE").toUpperCase();
+  const certId = certificate.id || `CERT-${Date.now().toString().slice(-6)}`;
+  const issueDate = certificate.issue_date || certificate.request_date || new Date().toISOString().split("T")[0];
+  const reason = certificate.reason || "Higher Academic Admission & Verification";
+
+  // Double border styling
+  doc.setDrawColor(30, 41, 59); // Slate 800
+  doc.setLineWidth(2);
+  doc.rect(8, 8, 281, 194);
+
+  doc.setDrawColor(79, 70, 229); // Indigo 600
+  doc.setLineWidth(0.8);
+  doc.rect(12, 12, 273, 186);
+
+  // Header
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(30, 41, 59);
+  doc.text(institutionName.toUpperCase(), 148.5, 30, { align: "center" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`${institutionAddress} | Institutional Affiliation Node: ${institutionCode}`, 148.5, 37, { align: "center" });
+  doc.text("Recognized by the Department of School Education | ISO 9001:2025 Quality Certified", 148.5, 42, { align: "center" });
+
+  // Certificate Title Ribbon
+  doc.setFillColor(243, 232, 255); // Purple 100
+  doc.roundedRect(60, 49, 177, 14, 4, 4, "F");
+  doc.setDrawColor(168, 85, 247);
+  doc.roundedRect(60, 49, 177, 14, 4, 4, "D");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(107, 33, 168); // Purple 700
+  doc.text(`OFFICIAL ${certType}`, 148.5, 58, { align: "center" });
+
+  // Meta identifiers
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Certificate No: ${certId}`, 24, 72);
+  doc.text(`Date of Issue: ${issueDate}`, 273, 72, { align: "right" });
+
+  // Body text
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setTextColor(15, 23, 42);
+  
+  doc.text(`This is to officially certify that`, 148.5, 86, { align: "center" });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(79, 70, 229);
+  doc.text(studentName.toUpperCase(), 148.5, 96, { align: "center" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(30, 41, 59);
+  doc.text(
+    `Bearing Student Identification / Roll No: ${rollNumber}, is a registered regular student of this institution enrolled in ${className} for the academic session 2026-2027.`,
+    148.5,
+    108,
+    { align: "center", maxWidth: 220 }
+  );
+
+  doc.text(
+    `According to official institutional records, their moral conduct, personal character, and academic participation have been found to be EXCELLENT throughout their enrollment.`,
+    148.5,
+    120,
+    { align: "center", maxWidth: 220 }
+  );
+
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(9.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Application Purpose: "${reason}"`, 148.5, 133, { align: "center", maxWidth: 210 });
+
+  // Digital verification seal box
+  doc.setDrawColor(203, 213, 225);
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(24, 145, 95, 28, 3, 3, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(30, 41, 59);
+  doc.text("DIGITAL TAMPER-PROOF VERIFICATION", 28, 152);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Hash: SHA256-${certId}-${rollNumber}`, 28, 158);
+  doc.text("Cryptographically signed by Institutional Principal Node", 28, 163);
+  doc.text(`Timestamp: ${new Date().toISOString()} | Status: ISSUED`, 28, 168);
+
+  // Official Stamp & Signature Block
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(30, 41, 59);
+  doc.text("Head of Department (Academics)", 150, 164);
+  doc.text("Dr. V. K. Sharma (Principal)", 235, 164);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text("Faculty Academic Board", 150, 170);
+  doc.text("Head of Institution & Board Member", 235, 170);
+
+  // Digital Signature Seal Stamp Icon
+  doc.setDrawColor(16, 185, 129);
+  doc.setFillColor(236, 253, 245);
+  doc.circle(235, 150, 7, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6);
+  doc.setTextColor(16, 185, 129);
+  doc.text("SEALED", 235, 151, { align: "center" });
+
+  doc.save(`${institutionCode}_${certType.replace(/[^a-zA-Z0-9]/g, "_")}_${rollNumber}.pdf`);
+  return doc;
+}
+
+

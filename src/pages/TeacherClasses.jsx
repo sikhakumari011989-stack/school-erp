@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useToast } from "../context/ToastContext";
+import CertificateManagementCard from "../Components/CertificateManagementCard";
 
 export default function TeacherClasses() {
   const { showToast } = useToast();
@@ -47,6 +48,8 @@ export default function TeacherClasses() {
           ))}
         </div>
 
+        {/* STUDENT CERTIFICATE REQUESTS APPROVAL WORKFLOW */}
+        <CertificateManagementCard mode="teacher" />
       </div>
     </div>
   );

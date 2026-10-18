@@ -6,6 +6,7 @@ import { StatSkeleton } from "../Components/Skeleton";
 import { useToast } from "../context/ToastContext";
 import { generateReportCardPDF } from "../utils/pdfGenerator";
 import NoticeBanner from "../Components/NoticeBanner";
+import CertificateManagementCard from "../Components/CertificateManagementCard";
 
 export default function TeacherDashboard() {
   const { user } = useContext(AppContext);
@@ -228,6 +229,9 @@ export default function TeacherDashboard() {
             </button>
           ))}
         </div>
+
+        {/* STUDENT CERTIFICATE REQUESTS APPROVAL WORKFLOW */}
+        <CertificateManagementCard mode="teacher" />
       </div>
     </div>
   );

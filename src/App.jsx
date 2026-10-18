@@ -324,6 +324,14 @@ export default function App() {
               }
             />
             <Route
+              path="/student/certificate-request"
+              element={
+                <ProtectedRoute allowedRoles={["student", "admin"]}>
+                  <CertificateGenerator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/student/calendar"
               element={
                 <ProtectedRoute allowedRoles={["student", "admin"]}>

@@ -9,6 +9,7 @@ import { getNotices, publishNotice, deleteNotice } from "../utils/noticeService"
 import BulkImportModal from "../Components/BulkImportModal";
 import SchoolUpiQrConfig from "../Components/SchoolUpiQrConfig";
 import SystemDiagnostic from "../Components/SystemDiagnostic";
+import CertificateManagementCard from "../Components/CertificateManagementCard";
 import { buildStandardErpEmail } from "./Login";
 
 export default function TrusteeDashboard() {
@@ -356,6 +357,15 @@ export default function TrusteeDashboard() {
                 }`}
               >
                 📢 Circulars ({noticesList.length})
+              </button>
+              <button
+                onClick={() => setActiveTab("certificates")}
+                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === "certificates" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <span>📜</span>
+                <span>Digital Certificate Signatures</span>
               </button>
               <button
                 onClick={() => setActiveTab("upi_qr")}
@@ -730,6 +740,8 @@ export default function TrusteeDashboard() {
               </div>
             </div>
           </div>
+        ) : activeTab === "certificates" ? (
+          <CertificateManagementCard mode="trustee" />
         ) : activeTab === "upi_qr" ? (
           <SchoolUpiQrConfig
             schoolId={institutionCode}

@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import SchoolUpiQrConfig from "../Components/SchoolUpiQrConfig";
+import CertificateManagementCard from "../Components/CertificateManagementCard";
 
 export default function PrincipalDashboard() {
   const { user } = useContext(AppContext) || {};
@@ -37,7 +38,7 @@ export default function PrincipalDashboard() {
     { id: 13, name: "VIP Parent Scheduler", icon: "📅", desc: "Manage high-level trustee or parent meetings." },
     { id: 14, name: "Live CCTV Feed", icon: "📹", desc: "Campus security monitoring stream integration." },
     { id: 15, name: "Inventory Master", icon: "📦", desc: "Track uniforms, books, and laboratory equipment." },
-    { id: 16, name: "Transport Fleet", icon: "🚌", desc: "Monitor school bus routes and GPS tracking." },
+    { id: 16, name: "Campus Bus Routes", icon: "🚌", desc: "Monitor school bus routes, stops, and driver contacts." },
     { id: 17, name: "Disciplinary Log", icon: "⚖️", desc: "Review conduct reports and student disciplinary actions." },
     { id: 18, name: "Alumni Network", icon: "🎓", desc: "Manage graduate records and alumni outreach." },
     { id: 19, name: "Exam Control Room", icon: "📋", desc: "Authorize question papers and examination centers." },
@@ -81,6 +82,20 @@ export default function PrincipalDashboard() {
             </button>
             <button
               onClick={() => {
+                setActiveTab("certificates");
+                setActiveFeature(null);
+              }}
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === "certificates"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <span>📜</span>
+              <span>Digital Certificate Signatures</span>
+            </button>
+            <button
+              onClick={() => {
                 setActiveTab("upi_qr");
                 setActiveFeature(null);
               }}
@@ -91,13 +106,25 @@ export default function PrincipalDashboard() {
               }`}
             >
               <span>🏦</span>
-              <span>School UPI QR & Fee Scanner Setup</span>
+              <span>School UPI QR Setup</span>
             </button>
           </div>
         </div>
       </div>
 
-        {activeTab === "upi_qr" ? (
+        {activeTab === "certificates" || activeFeature?.id === 12 ? (
+          <div>
+            {activeFeature?.id === 12 && (
+              <button 
+                onClick={() => setActiveFeature(null)} 
+                className="text-blue-400 hover:text-white font-bold mb-4 flex items-center gap-2 cursor-pointer"
+              >
+                ← Back to 20 Modules
+              </button>
+            )}
+            <CertificateManagementCard mode="principal" />
+          </div>
+        ) : activeTab === "upi_qr" ? (
           <SchoolUpiQrConfig
             schoolId={institutionCode}
             institutionName={institutionName}
