@@ -374,10 +374,10 @@ export default function LandingPage() {
               </h4>
               <address className="not-italic text-sm text-slate-400 space-y-2 leading-relaxed">
                 <p className="text-slate-300 font-medium">
-                  EduSaaS Technologies Pvt. Ltd.
+                  EduSaaS ERP
                 </p>
                 <p>
-                  #402, 4th Floor, Tech Innovation Park, Outer Ring Road, Bengaluru, Karnataka 560103, India
+                  Flat number 201, Jivdani Chaya, near Rajshree Hospital, beside Kalavati Mandir, Mahim Manohar Highway, Palghar 401404
                 </p>
                 <p className="text-xs pt-1">
                   <span className="text-slate-500 block">Support Desk:</span>

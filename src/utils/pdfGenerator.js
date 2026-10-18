@@ -22,8 +22,8 @@ export function generateFeeInvoicePDF({
 
   const institutionName = tenant.name || "Apex International Academy";
   const institutionCode = tenant.code || "CAMPUS-01";
-  const institutionAddress = tenant.address || "14-B Campus Boulevard, Knowledge Park, Mumbai";
-  const contactEmail = tenant.email || "accounts@apexacademy.edu";
+  const institutionAddress = tenant.address || "Flat number 201, Jivdani Chaya, near Rajshree Hospital, beside Kalavati Mandir, Mahim Manohar Highway, Palghar 401404";
+  const contactEmail = tenant.email || "sikhakumari011989@gmail.com";
 
   const studentName = student.name || "Enrolled Student";
   const studentRoll = student.roll_number || "STU-101";
@@ -212,12 +212,18 @@ export function generateFeeInvoicePDF({
   doc.text("Bursar & Accounts Office", 155, finalY + 67);
 
   // FOOTER
-  doc.setFontSize(7);
+  doc.setFontSize(6.5);
   doc.setTextColor(148, 163, 184);
+  doc.text(
+    `Issuer HQ: Flat number 201, Jivdani Chaya, near Rajshree Hospital, beside Kalavati Mandir, Mahim Manohar Highway, Palghar 401404 | Support: +91 9518388499 | ${contactEmail}`,
+    105,
+    281,
+    { align: "center" }
+  );
   doc.text(
     "This is a computer-generated tax invoice and legal receipt. No manual signature required.",
     105,
-    285,
+    286,
     { align: "center" }
   );
 
@@ -401,7 +407,7 @@ export function generateOfficialCertificatePDF({
 
   const institutionName = tenant.name || "Apex International Academy";
   const institutionCode = tenant.code || "CAMPUS-01";
-  const institutionAddress = tenant.address || "14-B Campus Boulevard, Knowledge Park, Mumbai";
+  const institutionAddress = tenant.address || "Flat number 201, Jivdani Chaya, near Rajshree Hospital, beside Kalavati Mandir, Mahim Manohar Highway, Palghar 401404";
 
   const studentName = student.name || student.student_name || "Enrolled Student";
   const rollNumber = student.roll_number || student.personal_code || "STU-101";
@@ -506,7 +512,7 @@ export function generateOfficialCertificatePDF({
   doc.setFontSize(10);
   doc.setTextColor(30, 41, 59);
   doc.text("Head of Department (Academics)", 150, 164);
-  doc.text("Dr. V. K. Sharma (Principal)", 235, 164);
+  doc.text("Principal & Executive Trustee", 235, 164);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);

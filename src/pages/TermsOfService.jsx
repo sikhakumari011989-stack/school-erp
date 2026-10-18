@@ -158,8 +158,8 @@ export default function TermsOfService() {
             </h2>
             <p>
               These Terms are governed by and construed in accordance with the laws of the Republic of India. Any disputes arising
-              hereunder shall be resolved by binding arbitration in Bengaluru, Karnataka, pursuant to the Arbitration and Conciliation
-              Act, 1996, and the courts in Bengaluru shall have exclusive jurisdiction.
+              hereunder shall be resolved by binding arbitration pursuant to the Arbitration and Conciliation
+              Act, 1996, and the competent courts having jurisdiction over Palghar, Maharashtra shall have exclusive jurisdiction.
             </p>
           </section>
 
@@ -168,7 +168,7 @@ export default function TermsOfService() {
             <div>
               <h3 className="font-bold text-white text-sm">Questions regarding our Terms?</h3>
               <p className="text-slate-400 text-xs mt-0.5">
-                Our legal compliance desk is available at legal@edusaas.app or via our verified contact desk.
+                Our legal compliance desk is available at sikhakumari011989@gmail.com or via our verified contact desk.
               </p>
             </div>
             <Link

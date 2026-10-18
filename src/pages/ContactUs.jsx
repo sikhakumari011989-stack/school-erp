@@ -91,13 +91,13 @@ export default function ContactUs() {
                   </div>
                   <div>
                     <h3 className="font-bold text-white text-xs uppercase tracking-wider text-slate-400 mb-0.5">
-                      Registered Physical Address
+                      Operating Office / Headquarters
                     </h3>
                     <p className="text-slate-200 text-sm leading-snug">
-                      EduSaaS ERP Technologies Private Limited<br />
-                      #402, 4th Floor, Tech Innovation Park<br />
-                      Outer Ring Road, Kadubeesanahalli<br />
-                      Bengaluru, Karnataka - 560103, India
+                      EduSaaS ERP<br />
+                      Flat number 201, Jivdani Chaya,<br />
+                      near Rajshree Hospital, beside Kalavati Mandir,<br />
+                      Mahim Manohar Highway, Palghar 401404
                     </p>
                   </div>
                 </div>

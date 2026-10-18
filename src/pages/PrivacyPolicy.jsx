@@ -149,11 +149,11 @@ export default function PrivacyPolicy() {
               appointed Grievance Officer are provided below:
             </p>
             <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 text-xs space-y-1.5 text-slate-300">
-              <div><strong>Name:</strong> Rajesh M. Nair, Grievance Officer</div>
-              <div><strong>Entity:</strong> EduSaaS ERP Technologies Pvt. Ltd.</div>
-              <div><strong>Address:</strong> #402, 4th Floor, Tech Innovation Park, Outer Ring Road, Bengaluru, Karnataka - 560103, India</div>
-              <div><strong>Email:</strong> <a href="mailto:grievance@edusaas.app" className="text-blue-400 underline">grievance@edusaas.app</a></div>
-              <div><strong>Phone:</strong> +91 (080) 4123-4567 (Mon - Fri, 10 AM to 5 PM IST)</div>
+              <div><strong>Grievance Office:</strong> Compliance & Grievance Cell</div>
+              <div><strong>Entity:</strong> EduSaaS ERP</div>
+              <div><strong>Address:</strong> Flat number 201, Jivdani Chaya, near Rajshree Hospital, beside Kalavati Mandir, Mahim Manohar Highway, Palghar 401404</div>
+              <div><strong>Email:</strong> <a href="mailto:sikhakumari011989@gmail.com" className="text-blue-400 underline">sikhakumari011989@gmail.com</a></div>
+              <div><strong>Phone:</strong> +91 9518388499 (Mon - Fri, 10 AM to 5 PM IST)</div>
             </div>
           </section>
 

@@ -98,7 +98,7 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
         tenant: {
           name: tenant?.name || user?.institution_name || "Apex International Academy",
           code: activeSchoolId,
-          address: tenant?.address || "14-B Campus Boulevard, Knowledge Park, Mumbai",
+          address: tenant?.address || "Flat number 201, Jivdani Chaya, near Rajshree Hospital, beside Kalavati Mandir, Mahim Manohar Highway, Palghar 401404",
         },
         student: {
           name: cert.student_name,
