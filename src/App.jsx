@@ -1,7 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AppProvider } from "./context/AppContext";
-import { ToastProvider } from "./context/ToastContext";
+import { ToastProvider, useToast } from "./context/ToastContext";
 import ProtectedRoute from "./Components/ProtectedRoute";
 
 // Import Components & Pages
@@ -53,6 +53,7 @@ const PUBLIC_ROUTES = [
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
+  const { showToast } = useToast();
   const isPublicPage = PUBLIC_ROUTES.includes(location.pathname);
 
   const [installPrompt, setInstallPrompt] = React.useState(null);
@@ -95,7 +96,7 @@ const AppLayout = ({ children }) => {
         setInstallPrompt(null);
       }
     } else {
-      alert("To install on iOS or mobile browser: Tap Share (or Menu 3-dots) and choose 'Add to Home Screen' 📱");
+      showToast("To install on iOS or mobile browser: Tap Share (or Menu 3-dots) and choose 'Add to Home Screen' 📱", "info", 6000);
     }
   };
 

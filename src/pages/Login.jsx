@@ -30,6 +30,7 @@ export const inferRoleFromCode = (code) => {
   if (upper.startsWith("HOD") || upper.startsWith("TR")) return "trustee";
   if (upper.startsWith("ACC")) return "accountant";
   if (upper.startsWith("TCH") || upper.startsWith("FAC")) return "teacher";
+  if (upper.startsWith("NON") || upper.startsWith("STF") || upper.startsWith("STAFF")) return "staff";
   if (upper.startsWith("ADM") || upper.startsWith("SUPER")) return "admin";
   return "student";
 };
@@ -41,6 +42,7 @@ export const dashboardFor = (role) => {
   if (normalized === "principal") return "/principal/dashboard";
   if (normalized === "trustee") return "/trustee/dashboard";
   if (normalized === "teacher") return "/teacher/dashboard";
+  if (normalized === "staff" || normalized === "non_teaching") return "/staff/dashboard";
   return "/student/dashboard";
 };
 
@@ -137,6 +139,7 @@ export default function Login({ isDirectPortal = false }) {
           principal: "Principal",
           teacher: "Senior Faculty",
           accountant: "Head Accountant",
+          staff: "Non-Teaching Support Staff",
           admin: "System Administrator",
           student: "Student",
         };
