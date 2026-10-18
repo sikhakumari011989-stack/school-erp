@@ -131,7 +131,7 @@ export async function getQuizzes(schoolId) {
     // ignore
   }
 
-  return DEFAULT_QUIZZES;
+  return [];
 }
 
 /**

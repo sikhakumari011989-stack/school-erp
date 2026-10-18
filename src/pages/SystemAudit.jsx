@@ -18,51 +18,10 @@ export default function SystemAudit() {
     setLoading(true);
     try {
       const records = await getAuditLogs(user?.school_id || user?.institution_code);
-      if (records && records.length > 0) {
-        setLogs(records);
-      } else {
-        // Fallback default enterprise audit entries
-        setLogs([
-          {
-            id: "aud_01",
-            user_name: "ADMIN-01 (Super Admin)",
-            user_role: "admin",
-            action: "Admitted new student to Class 10-ICSE",
-            ip_address: "192.168.1.45",
-            created_at: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-            status: "Verified",
-          },
-          {
-            id: "aud_02",
-            user_name: "ACC-01 (Accountant)",
-            user_role: "accountant",
-            action: "Confirmed Razorpay fee settlement of ₹15,000",
-            ip_address: "192.168.1.88",
-            created_at: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
-            status: "Verified",
-          },
-          {
-            id: "aud_03",
-            user_name: "TCH-01 (Faculty)",
-            user_role: "teacher",
-            action: "Synchronized daily roll call & absent parent alerts",
-            ip_address: "192.168.1.12",
-            created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-            status: "Verified",
-          },
-          {
-            id: "aud_04",
-            user_name: "HOD-01 (Trustee)",
-            user_role: "trustee",
-            action: "Exported institutional financial compliance report",
-            ip_address: "192.168.2.14",
-            created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-            status: "Encrypted",
-          },
-        ]);
-      }
+      setLogs(records || []);
     } catch (err) {
       console.error("Error loading audit logs:", err);
+      setLogs([]);
     } finally {
       setLoading(false);
     }
@@ -144,6 +103,14 @@ export default function SystemAudit() {
           {loading ? (
             <div className="p-6">
               <TableSkeleton rows={5} />
+            </div>
+          ) : logs.length === 0 ? (
+            <div className="p-12 text-center text-slate-400">
+              <div className="text-4xl mb-3">🛡️</div>
+              <h3 className="text-lg font-bold text-white mb-1">Audit Vault Initialized (Clean Slate)</h3>
+              <p className="text-sm max-w-md mx-auto text-slate-400">
+                No administrative or security actions recorded yet for this institution. Real-time cryptographic events will stream here as administrative operations occur.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto w-full">

@@ -4,6 +4,8 @@ import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import SchoolUpiQrConfig from "../Components/SchoolUpiQrConfig";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
+import TransportFleetManager from "../Components/TransportFleetManager";
+import NonTeachingStaffManager from "../Components/NonTeachingStaffManager";
 
 export default function PrincipalDashboard() {
   const { user } = useContext(AppContext) || {};
@@ -208,6 +210,34 @@ export default function PrincipalDashboard() {
             </button>
             <button
               onClick={() => {
+                setActiveTab("transport");
+                setActiveFeature(null);
+              }}
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === "transport"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <span>🚌</span>
+              <span>Bus Fleet Manager</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("non_teaching");
+                setActiveFeature(null);
+              }}
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === "non_teaching"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <span>🧹</span>
+              <span>Non-Teaching Staff</span>
+            </button>
+            <button
+              onClick={() => {
                 setActiveTab("upi_qr");
                 setActiveFeature(null);
               }}
@@ -236,6 +266,20 @@ export default function PrincipalDashboard() {
             )}
             <CertificateManagementCard mode="principal" />
           </div>
+        ) : activeTab === "transport" || activeFeature?.id === 16 ? (
+          <div>
+            {activeFeature?.id === 16 && (
+              <button 
+                onClick={() => setActiveFeature(null)} 
+                className="text-blue-400 hover:text-white font-bold mb-4 flex items-center gap-2 cursor-pointer"
+              >
+                ← Back to 20 Modules
+              </button>
+            )}
+            <TransportFleetManager schoolId={institutionCode} />
+          </div>
+        ) : activeTab === "non_teaching" ? (
+          <NonTeachingStaffManager schoolId={institutionCode} />
         ) : activeTab === "upi_qr" ? (
           <SchoolUpiQrConfig
             schoolId={institutionCode}

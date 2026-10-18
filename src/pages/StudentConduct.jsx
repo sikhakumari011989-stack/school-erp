@@ -1,11 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import { AppContext } from "../context/AppContext";
 
 export default function StudentConduct() {
-  const [records] = useState([
-    { id: 1, title: "Positive Participation in Science Exhibition", type: "Merit", date: "Oct 05, 2026", status: "Commendation" },
-    { id: 2, title: "Exemplary Fair Play in Inter-House Football", type: "Sportsmanship", date: "Sep 22, 2026", status: "Awarded" },
-    { id: 3, title: "Library Book Return Compliance", type: "Record", date: "Sep 10, 2026", status: "Verified" }
-  ]);
+  const { user } = useContext(AppContext);
+  const schoolId = user?.school_id || user?.institution_code || "CAMPUS-01";
+  const [records, setRecords] = useState([]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(`erp_conduct_${schoolId}`);
+      if (stored) {
+        setRecords(JSON.parse(stored));
+      } else {
+        setRecords([]);
+      }
+    } catch (e) {
+      setRecords([]);
+    }
+  }, [schoolId]);
 
   return (
     <div className="relative text-slate-200 min-h-full pb-10 font-sans">
@@ -22,45 +34,62 @@ export default function StudentConduct() {
         <div className="bg-gradient-to-r from-emerald-600/25 to-teal-600/10 border border-emerald-500/30 rounded-3xl p-6 shadow-2xl mb-8 flex justify-between items-center">
           <div>
             <span className="text-xs font-extrabold text-emerald-400 uppercase tracking-widest">Behavioral Standing</span>
-            <h2 className="text-2xl font-black text-white mt-1">Excellent Standing (Grade A+) ⭐</h2>
-            <p className="text-slate-300 text-sm mt-1">No disciplinary infractions recorded. Keep up the outstanding discipline!</p>
+            <h2 className="text-2xl font-black text-white mt-1">
+              {records.length === 0 ? "Exemplary Clean Record (Grade A+) ⭐" : "Official Standing Evaluated"}
+            </h2>
+            <p className="text-slate-300 text-sm mt-1">
+              {records.length === 0
+                ? "No disciplinary infractions or conduct penalties recorded. Keep up the outstanding discipline!"
+                : `${records.length} official behavioral entries logged on institutional file.`}
+            </p>
           </div>
           <div className="text-4xl">🛡️</div>
         </div>
 
         {/* RECORDS TABLE */}
         <div className="bg-[#1E293B] border border-slate-700 rounded-3xl shadow-2xl overflow-hidden">
-          <div className="p-6 border-b border-slate-700 bg-slate-800/50">
+          <div className="p-6 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center">
             <h2 className="text-lg font-bold text-white">Merit & Conduct Log</h2>
+            <span className="text-xs text-slate-400 font-semibold">{records.length} Entries</span>
           </div>
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                  <th className="p-5">Record Description</th>
-                  <th className="p-5">Category</th>
-                  <th className="p-5">Date</th>
-                  <th className="p-5 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700/50 text-sm">
-                {records.map((rec) => (
-                  <tr key={rec.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="p-5 font-bold text-white text-base">{rec.title}</td>
-                    <td className="p-5 font-mono text-slate-300">{rec.type}</td>
-                    <td className="p-5 text-slate-400 text-xs">{rec.date}</td>
-                    <td className="p-5 text-center">
-                      <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-extrabold uppercase">
-                        {rec.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
 
+          {records.length === 0 ? (
+            <div className="p-12 text-center text-slate-400">
+              <div className="text-4xl mb-3">⚖️</div>
+              <h3 className="text-lg font-bold text-white mb-1">Clean Slate (No Conduct Infractions)</h3>
+              <p className="text-sm max-w-md mx-auto text-slate-400">
+                No behavioral infractions or merit points logged on record yet. Any faculty citations or commendations will be recorded here.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/30">
+                    <th className="p-5">Record Description</th>
+                    <th className="p-5">Category</th>
+                    <th className="p-5">Date</th>
+                    <th className="p-5 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700/50 text-sm">
+                  {records.map((rec) => (
+                    <tr key={rec.id} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="p-5 font-bold text-white text-base">{rec.title}</td>
+                      <td className="p-5 font-mono text-slate-300">{rec.type}</td>
+                      <td className="p-5 text-slate-400 text-xs">{rec.date}</td>
+                      <td className="p-5 text-center">
+                        <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-extrabold uppercase">
+                          {rec.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

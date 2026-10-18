@@ -2,62 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 
-const DEFAULT_GALLERY_PHOTOS = [
-  {
-    id: 1,
-    title: "Annual Inter-School Football Championship Finals",
-    category: "SPORTS",
-    image: "🏆",
-    imageUrl: null,
-    date: "October 2026",
-    uploadedBy: "Faculty Sports Department",
-  },
-  {
-    id: 2,
-    title: "Science Exhibition & Robotics Showcase",
-    category: "SCIENCE & TECH",
-    image: "🔬",
-    imageUrl: null,
-    date: "September 2026",
-    uploadedBy: "Physics & CS Department",
-  },
-  {
-    id: 3,
-    title: "Independence Day Cultural Fest & Musical Parade",
-    category: "CULTURAL EVENTS",
-    image: "🇮🇳",
-    imageUrl: null,
-    date: "August 2026",
-    uploadedBy: "Student Cultural Council",
-  },
-  {
-    id: 4,
-    title: "Computer Lab Full-Stack Coding & AI Hackathon",
-    category: "SCIENCE & TECH",
-    image: "💻",
-    imageUrl: null,
-    date: "October 2026",
-    uploadedBy: "IT Cell",
-  },
-  {
-    id: 5,
-    title: "Annual Inter-School Debate & Library Week",
-    category: "ACADEMICS",
-    image: "📚",
-    imageUrl: null,
-    date: "September 2026",
-    uploadedBy: "Literary Society",
-  },
-  {
-    id: 6,
-    title: "Campus Tree Plantation & Green Eco Club Drive",
-    category: "COMMUNITY",
-    image: "🌱",
-    imageUrl: null,
-    date: "August 2026",
-    uploadedBy: "Campus Eco Cell",
-  },
-];
+const DEFAULT_GALLERY_PHOTOS = [];
 
 const CATEGORIES = [
   "ALL",
@@ -104,13 +49,11 @@ export default function StudentGallery() {
       if (saved) {
         setPhotos(JSON.parse(saved));
       } else {
-        localStorage.setItem(storageKey, JSON.stringify(DEFAULT_GALLERY_PHOTOS));
-        localStorage.setItem("erp_campus_gallery", JSON.stringify(DEFAULT_GALLERY_PHOTOS));
-        setPhotos(DEFAULT_GALLERY_PHOTOS);
+        setPhotos([]);
       }
     } catch (err) {
       console.warn("Failed to load campus gallery:", err);
-      setPhotos(DEFAULT_GALLERY_PHOTOS);
+      setPhotos([]);
     }
   };
 
