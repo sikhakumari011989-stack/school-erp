@@ -7,7 +7,7 @@ export default function LeaveManagement() {
   const [leaves, setLeaves] = useState([
     { id: 1, name: "Mr. Sharma", role: "Teacher", date: "2026-10-12", reason: "Family Function", status: "Pending" },
     { id: 2, name: "Mrs. Gupta", role: "Teacher", date: "2026-10-15", reason: "Medical Appointment", status: "Approved" },
-    { id: 3, name: "Astik Kumar", role: "Student", date: "2026-10-10", reason: "Fever", status: "Pending" }
+    { id: 3, name: "Rohan Mehta", role: "Student", date: "2026-10-10", reason: "Fever", status: "Pending" }
   ]);
 
   return (

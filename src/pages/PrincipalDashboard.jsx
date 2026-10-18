@@ -148,26 +148,31 @@ export default function PrincipalDashboard() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feat) => (
-              <div 
-                key={feat.id} 
-                onClick={() => setActiveFeature(feat)}
-                className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl hover:border-blue-500/50 hover:bg-white/10 transition-all cursor-pointer group flex flex-col justify-between"
-              >
-                <div>
-                  <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform shadow-inner">
-                    {feat.icon}
+          <div className="space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {features.map((feat) => (
+                <div 
+                  key={feat.id} 
+                  onClick={() => setActiveFeature(feat)}
+                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl hover:border-blue-500/50 hover:bg-white/10 transition-all cursor-pointer group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform shadow-inner">
+                      {feat.icon}
+                    </div>
+                    <span className="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest block mb-1">Feature #{feat.id}</span>
+                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">{feat.name}</h3>
+                    <p className="text-slate-400 text-xs line-clamp-2">{feat.desc}</p>
                   </div>
-                  <span className="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest block mb-1">Feature #{feat.id}</span>
-                  <h3 className="text-lg font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">{feat.name}</h3>
-                  <p className="text-slate-400 text-xs line-clamp-2">{feat.desc}</p>
+                  <div className="mt-6 flex items-center text-xs font-bold text-slate-400 group-hover:text-white transition-colors">
+                    <span>Launch Module</span> →
+                  </div>
                 </div>
-                <div className="mt-6 flex items-center text-xs font-bold text-slate-400 group-hover:text-white transition-colors">
-                  <span>Launch Module</span> →
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* DEDICATED PENDING STUDENT CERTIFICATES APPROVAL CARD */}
+            <CertificateManagementCard mode="principal" />
           </div>
         )}
 

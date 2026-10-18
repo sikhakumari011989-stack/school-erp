@@ -20,7 +20,7 @@ export default function StudentHomework() {
 
   const fetchHomework = async () => {
     setLoading(true);
-    const schoolId = (user?.institution_code || user?.school_id || "OASIS-TUTORIALS").toUpperCase();
+    const schoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
     try {
       const { data, error } = await supabase
         .from("homework")

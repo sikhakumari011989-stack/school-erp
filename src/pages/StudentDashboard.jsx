@@ -20,7 +20,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     const fetchLiveStudentData = async () => {
       setLoading(true);
-      const schoolId = (user?.institution_code || user?.school_id || "OASIS-TUTORIALS").toUpperCase();
+      const schoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
       try {
         const [attRes, hwRes, feeRes] = await Promise.all([
           supabase.from("attendance").select("records").eq("school_id", schoolId).limit(10),
@@ -140,11 +140,11 @@ export default function StudentDashboard() {
                 Student Portal
               </span>
               <span className="text-xs text-slate-400 font-bold">
-                {user?.institution_code || "OASIS-TUTORIALS"}
+                {user?.institution_code || user?.school_id || "Campus Portal"}
               </span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400">
-              Welcome Back, {user?.name || "Astik Kumar"} 🎓
+              Welcome Back, {user?.name || user?.full_name || "Student"} 🎓
             </h1>
             <p className="text-slate-400 text-sm mt-1">
               Track your daily classroom attendance, assigned homework, and Razorpay fee receipts

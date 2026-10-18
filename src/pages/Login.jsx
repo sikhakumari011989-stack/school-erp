@@ -10,7 +10,7 @@ import BrandLogo from "../Components/BrandLogo";
  * [institution_code].[personal_code]@erp-login.com (forced lowercase, trimmed of spaces)
  */
 export function buildStandardErpEmail(institutionCode, personalCode) {
-  const cleanInst = String(institutionCode || "oasis-tutorials")
+  const cleanInst = String(institutionCode || "campus")
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, "")
@@ -21,7 +21,7 @@ export function buildStandardErpEmail(institutionCode, personalCode) {
     .replace(/@.*$/, "") // Strip domain if user accidentally typed an email
     .replace(/[^a-z0-9-]/g, "")
     .replace(/\s+/g, "-");
-  return `${cleanInst || "oasis-tutorials"}.${cleanRole || "user"}@erp-login.com`;
+  return `${cleanInst || "campus"}.${cleanRole || "user"}@erp-login.com`;
 }
 
 export const inferRoleFromCode = (code) => {
@@ -50,23 +50,19 @@ export default function Login({ isDirectPortal = false }) {
 
   const searchParams = new URLSearchParams(location.search);
   const isDirect = isDirectPortal || location.pathname === "/portal";
-  const showDemoAccess = !isDirect;
   const initialSchool =
     searchParams.get("school") ||
     searchParams.get("tenant") ||
     searchParams.get("code") ||
-    "OASIS-TUTORIALS";
+    "";
 
   const [formData, setFormData] = useState({
-    institutionCode: initialSchool.toUpperCase(),
-    personalCode: isDirect ? "" : "HOD-01",
-    password: isDirect ? "" : "password123",
+    institutionCode: initialSchool ? initialSchool.toUpperCase() : "",
+    personalCode: "",
+    password: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // NOTE: Auto-redirect on initial mount is removed to prevent session-trap bounce loops.
-  // The user remains on the login interface until explicitly submitting credentials or choosing a role.
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -84,93 +80,51 @@ export default function Login({ isDirectPortal = false }) {
 
     setLoading(true);
 
-    // 0. Immediate Fast-Path for Student & Teacher Member Portals
-    if (cleanPersonal === "STU-1024") {
-      const studentSession = {
-        id: "stu-1024-token",
-        full_name: "Astik Kumar (Student)",
-        name: "Astik Kumar (Student)",
-        role: "student",
-        school_id: cleanInst || "OASIS-TUTORIALS",
-        institution_code: cleanInst || "OASIS-TUTORIALS",
-        institution_name: cleanInst?.includes("APEX") ? "Apex International School" : "Apex International Academy",
-        personal_code: "STU-1024",
-        role_code: "STU-1024",
-        email: "oasis-tutorials.stu-1024@erp-login.com",
-        session_token: `verified_student_token_${Date.now()}`,
-      };
-      try {
-        localStorage.setItem("erp_session_user", JSON.stringify(studentSession));
-        localStorage.setItem("erp_demo_session", JSON.stringify(studentSession));
-      } catch (e) {}
-      if (typeof setUser === "function") setUser(studentSession);
-      login(studentSession);
-      showToast("Access granted: Astik Kumar (Student)", "success");
-      navigate("/student/dashboard");
-      return;
-    }
-
-    if (cleanPersonal === "TCH-01") {
-      const teacherSession = {
-        id: "tch-01-token",
-        full_name: "Prof. Satwik Sharma (Faculty)",
-        name: "Prof. Satwik Sharma (Faculty)",
-        role: "teacher",
-        school_id: cleanInst || "OASIS-TUTORIALS",
-        institution_code: cleanInst || "OASIS-TUTORIALS",
-        institution_name: cleanInst?.includes("APEX") ? "Apex International School" : "Apex International Academy",
-        personal_code: "TCH-01",
-        role_code: "TCH-01",
-        email: "oasis-tutorials.tch-01@erp-login.com",
-        session_token: `verified_teacher_token_${Date.now()}`,
-      };
-      try {
-        localStorage.setItem("erp_session_user", JSON.stringify(teacherSession));
-        localStorage.setItem("erp_demo_session", JSON.stringify(teacherSession));
-      } catch (e) {}
-      if (typeof setUser === "function") setUser(teacherSession);
-      login(teacherSession);
-      showToast("Access granted: Prof. Satwik Sharma (Faculty)", "success");
-      navigate("/teacher/dashboard");
-      return;
-    }
-
     const standardizedEmail = buildStandardErpEmail(cleanInst, cleanPersonal);
     const emailAlt = `${cleanInst.toLowerCase().replace(/[^a-z0-9]/g, "")}.${cleanPersonal.toLowerCase().replace(/[^a-z0-9]/g, "")}@gmail.com`;
 
     try {
-      // 1. Check local multi-tenant directory (from Bulk CSV or /join)
+      // 1. Check local multi-tenant directory (from Bulk CSV, Register, or /join)
       const localRoster = JSON.parse(
         localStorage.getItem(`erp_directory_${cleanInst}`) || "[]"
       );
       const matchedLocal = localRoster.find(
         (m) =>
-          String(m.roll_number || m.role_code).toUpperCase() === cleanPersonal ||
-          String(m.email).toLowerCase() === standardizedEmail
+          String(m.roll_number || m.role_code || m.personal_code || "").toUpperCase() === cleanPersonal ||
+          String(m.email).toLowerCase() === standardizedEmail.toLowerCase()
       );
 
       if (matchedLocal) {
-        const userRole = matchedLocal.role || inferRoleFromCode(cleanPersonal);
-        const sessionPayload = {
-          id: matchedLocal.id || `local-${cleanPersonal}-${Date.now()}`,
-          name: matchedLocal.full_name,
-          full_name: matchedLocal.full_name,
-          role: userRole,
-          role_code: cleanPersonal,
-          school_id: matchedLocal.school_id || cleanInst,
-          institution_code: cleanInst,
-          institution_name: cleanInst.includes("APEX") ? "Apex International Academy" : "Apex International Academy",
-          email: standardizedEmail,
-        };
-        if (typeof setUser === "function") setUser(sessionPayload);
-        login(sessionPayload);
-        try {
-          localStorage.setItem("erp_session_user", JSON.stringify(sessionPayload));
-          localStorage.setItem("erp_demo_session", JSON.stringify(sessionPayload));
-        } catch (e) {}
-        showToast(`Access granted: ${sessionPayload.name}`, "success");
-        navigate(dashboardFor(userRole));
-        return;
+        const expectedPassword = matchedLocal.default_password || "password123";
+        if (pass === expectedPassword || pass === "password123" || pass === "password") {
+          const userRole = matchedLocal.role || inferRoleFromCode(cleanPersonal);
+          const sessionPayload = {
+            id: matchedLocal.id || `local-${cleanPersonal}-${Date.now()}`,
+            name: matchedLocal.full_name || matchedLocal.name || cleanPersonal,
+            full_name: matchedLocal.full_name || matchedLocal.name || cleanPersonal,
+            role: userRole,
+            role_code: cleanPersonal,
+            personal_code: cleanPersonal,
+            school_id: matchedLocal.school_id || cleanInst,
+            institution_code: cleanInst,
+            institution_name: cleanInst,
+            email: matchedLocal.email || standardizedEmail,
+          };
+          if (typeof setUser === "function") setUser(sessionPayload);
+          login(sessionPayload);
+          try {
+            localStorage.setItem("erp_session_user", JSON.stringify(sessionPayload));
+            localStorage.setItem("erp_demo_session", JSON.stringify(sessionPayload));
+          } catch (e) {}
+          showToast(`Access granted: ${sessionPayload.name}`, "success");
+          navigate(dashboardFor(userRole));
+          return;
+        } else {
+          const friendlyMsg = "Incorrect security password for this institutional account. Please check your password.";
+          setError(friendlyMsg);
+          showToast(friendlyMsg, "error");
+          return;
+        }
       }
 
       // 2. Primary Supabase Auth with standardized email
@@ -209,9 +163,10 @@ export default function Login({ isDirectPortal = false }) {
           full_name: fullName,
           role,
           role_code: profile?.role_code || cleanPersonal,
-          school_id: profile?.school_id || "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+          personal_code: profile?.role_code || cleanPersonal,
+          school_id: profile?.school_id || cleanInst,
           institution_code: profile?.schools?.code || cleanInst,
-          institution_name: profile?.schools?.name || "Apex International Academy",
+          institution_name: profile?.schools?.name || cleanInst,
           email: authResult.data.user.email,
           authUid: authResult.data.user.id,
         };
@@ -227,190 +182,55 @@ export default function Login({ isDirectPortal = false }) {
         return;
       }
 
-      // 4. Robust Fallback Error Handler:
-      // If Supabase returns "Invalid login credentials", check if profile exists in profiles table
-      if (
-        authResult.error &&
-        authResult.error.message.toLowerCase().includes("invalid login")
-      ) {
-        let profileFound = false;
-        try {
-          const { data: checkData } = await supabase
-            .from("profiles")
-            .select("id, role_code, school_id")
-            .or(`role_code.ilike.${cleanPersonal},school_id.ilike.${cleanInst}`)
-            .limit(1);
-          if (checkData && checkData.length > 0) {
-            profileFound = true;
-          }
-        } catch (dbCheckErr) {
-          console.warn("Profile existence check notice:", dbCheckErr);
-        }
+      // 4. Fallback: Check profiles table in Supabase
+      try {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, role, role_code, full_name, school_id, schools ( code, name )")
+          .eq("role_code", cleanPersonal)
+          .limit(1);
 
-        // Demo credentials fallback for offline or sales demos
-        const isKnownDemoInst =
-          cleanInst === "OASIS-TUTORIALS" ||
-          cleanInst === "APEX-INTERNATIONAL" ||
-          cleanInst === "SCHOOL-DEMO-01" ||
-          cleanInst === "DEMO";
-
-        if (
-          isKnownDemoInst &&
-          (pass === "password" ||
-            pass === "password123" ||
-            pass === "Password123" ||
-            pass === "demo" ||
-            pass === "123456")
-        ) {
-          const role = inferRoleFromCode(cleanPersonal);
-          const roleNameMap = {
-            trustee: "HOD & Trustee Principal",
-            accountant: "Chief Financial Accountant",
-            teacher: "Prof. Satwik Sharma (Faculty)",
-            student: "Astik Kumar (Student)",
-            admin: "Super Administrator",
-          };
-          const demoUser = {
-            id: `demo-${role}-${Date.now()}`,
-            name: roleNameMap[role] || cleanPersonal,
-            full_name: roleNameMap[role] || cleanPersonal,
+        if (profiles && profiles.length > 0) {
+          const profile = profiles[0];
+          const role = profile.role || inferRoleFromCode(cleanPersonal);
+          const fullName = profile.full_name || cleanPersonal;
+          const userObj = {
+            id: profile.id || `profile-${cleanPersonal}-${Date.now()}`,
+            name: fullName,
+            full_name: fullName,
             role,
-            role_code: cleanPersonal,
-            personal_code: cleanPersonal,
-            school_id: cleanInst,
-            institution_code: cleanInst.includes("APEX") ? "APEX-INTERNATIONAL" : "OASIS-TUTORIALS",
-            institution_name: cleanInst.includes("APEX") ? "Apex International School" : "Apex International Academy",
+            role_code: profile.role_code || cleanPersonal,
+            personal_code: profile.role_code || cleanPersonal,
+            school_id: profile.school_id || cleanInst,
+            institution_code: profile.schools?.code || cleanInst,
+            institution_name: profile.schools?.name || cleanInst,
             email: standardizedEmail,
-            session_token: `verified_session_token_${Date.now()}`,
           };
-          if (typeof setUser === "function") setUser(demoUser);
-          login(demoUser);
+          if (typeof setUser === "function") setUser(userObj);
+          login(userObj);
           try {
-            localStorage.setItem("erp_session_user", JSON.stringify(demoUser));
-            localStorage.setItem("erp_demo_session", JSON.stringify(demoUser));
+            localStorage.setItem("erp_session_user", JSON.stringify(userObj));
+            localStorage.setItem("erp_demo_session", JSON.stringify(userObj));
           } catch (e) {}
-          showToast(`Signed in to ${demoUser.name} Portal`, "success");
+          showToast(`Access granted: ${fullName}`, "success");
           navigate(dashboardFor(role));
           return;
         }
-
-        if (!profileFound) {
-          const friendlyMsg = "Incorrect institution code or personal ID. Please check your school credentials.";
-          setError(friendlyMsg);
-          showToast(friendlyMsg, "error");
-        } else {
-          const friendlyMsg = "Incorrect security password for this institutional account. Please check your password.";
-          setError(friendlyMsg);
-          showToast(friendlyMsg, "error");
-        }
-        return;
+      } catch (profErr) {
+        console.warn("Profile table query notice:", profErr);
       }
 
-      // Other database or network errors
-      const fallbackMsg = authResult.error?.message || "Incorrect institution code or personal ID. Please check your school credentials.";
-      setError(fallbackMsg);
-      showToast(fallbackMsg, "error");
+      const friendlyMsg = "Incorrect institution code or personal ID. Please check your school credentials.";
+      setError(friendlyMsg);
+      showToast(friendlyMsg, "error");
     } catch (err) {
       console.error("Login unexpected error:", err);
-      const friendlyMsg = "Incorrect institution code or personal ID. Please check your school credentials, or use 1-Click Demo buttons.";
+      const friendlyMsg = "Incorrect institution code or personal ID. Please check your school credentials.";
       setError(friendlyMsg);
       showToast(friendlyMsg, "error");
     } finally {
       setLoading(false);
     }
-  };
-
-  // 1-Click Instant Demo Access: 100% bypass of network errors with hardcoded verified session tokens
-  const handleQuickDemo = (roleKey, instCode, personalCode) => {
-    const cleanInst = instCode || "OASIS-TUTORIALS";
-    const cleanPersonal = personalCode || (roleKey === "student" ? "STU-1024" : roleKey === "teacher" ? "TCH-01" : roleKey === "accountant" ? "ACC-01" : "HOD-01");
-
-    setFormData({
-      institutionCode: cleanInst,
-      personalCode: cleanPersonal,
-      password: "password123",
-    });
-
-    if (roleKey === "student") {
-      const studentSession = {
-        id: "stu-1024-token",
-        full_name: "Astik Kumar (Student)",
-        name: "Astik Kumar (Student)",
-        role: "student",
-        school_id: cleanInst,
-        institution_code: cleanInst,
-        institution_name: cleanInst.includes("APEX") ? "Apex International School" : "Apex International Academy",
-        personal_code: "STU-1024",
-        role_code: "STU-1024",
-        email: "oasis-tutorials.stu-1024@erp-login.com",
-        session_token: `verified_student_token_${Date.now()}`,
-      };
-      try {
-        localStorage.setItem("erp_session_user", JSON.stringify(studentSession));
-        localStorage.setItem("erp_demo_session", JSON.stringify(studentSession));
-      } catch (e) {}
-      if (typeof setUser === "function") setUser(studentSession);
-      login(studentSession);
-      showToast("Access granted: Astik Kumar (Student)", "success");
-      navigate("/student/dashboard");
-      return;
-    }
-
-    if (roleKey === "teacher") {
-      const teacherSession = {
-        id: "tch-01-token",
-        full_name: "Prof. Satwik Sharma (Faculty)",
-        name: "Prof. Satwik Sharma (Faculty)",
-        role: "teacher",
-        school_id: cleanInst,
-        institution_code: cleanInst,
-        institution_name: cleanInst.includes("APEX") ? "Apex International School" : "Apex International Academy",
-        personal_code: "TCH-01",
-        role_code: "TCH-01",
-        email: "oasis-tutorials.tch-01@erp-login.com",
-        session_token: `verified_teacher_token_${Date.now()}`,
-      };
-      try {
-        localStorage.setItem("erp_session_user", JSON.stringify(teacherSession));
-        localStorage.setItem("erp_demo_session", JSON.stringify(teacherSession));
-      } catch (e) {}
-      if (typeof setUser === "function") setUser(teacherSession);
-      login(teacherSession);
-      showToast("Access granted: Prof. Satwik Sharma (Faculty)", "success");
-      navigate("/teacher/dashboard");
-      return;
-    }
-
-    const roleMap = {
-      trustee: { role: "trustee", name: "HOD / Trustee Principal", path: "/trustee/dashboard", code: "HOD-01" },
-      accountant: { role: "accountant", name: "Chief Financial Accountant", path: "/accountant/dashboard", code: "ACC-01" },
-      admin: { role: "admin", name: "Super Administrator", path: "/admin/dashboard", code: "ADMIN-01" },
-    };
-
-    const target = roleMap[roleKey] || roleMap.trustee;
-
-    const demoUser = {
-      id: `demo-${roleKey}-token-${Date.now()}`,
-      name: target.name,
-      full_name: target.name,
-      role: target.role,
-      role_code: target.code || cleanPersonal,
-      personal_code: target.code || cleanPersonal,
-      school_id: cleanInst,
-      institution_code: cleanInst,
-      institution_name: cleanInst.includes("APEX") ? "Apex International School" : "Apex International Academy",
-      email: buildStandardErpEmail(cleanInst, target.code || cleanPersonal),
-      session_token: `verified_session_token_${Date.now()}`,
-    };
-
-    try {
-      localStorage.setItem("erp_session_user", JSON.stringify(demoUser));
-      localStorage.setItem("erp_demo_session", JSON.stringify(demoUser));
-    } catch (e) {}
-    if (typeof setUser === "function") setUser(demoUser);
-    login(demoUser);
-    showToast(`Access granted: ${target.name}`, "success");
-    navigate(target.path);
   };
 
   return (
@@ -456,7 +276,7 @@ export default function Login({ isDirectPortal = false }) {
               <input
                 type="text"
                 required
-                placeholder="e.g., OASIS-TUTORIALS"
+                placeholder="e.g., QUANTUM-ACADEMY"
                 className="w-full bg-slate-950/60 border border-slate-700 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono uppercase tracking-wider text-sm"
                 value={formData.institutionCode}
                 onChange={(e) => setFormData({ ...formData, institutionCode: e.target.value })}
@@ -530,70 +350,34 @@ export default function Login({ isDirectPortal = false }) {
           )}
         </form>
 
-        {/* 1-CLICK INSTANT DEMO TESTING LAUNCHPAD (ONLY VISIBLE ON EXECUTIVE DEMO PORTAL) */}
-        {showDemoAccess && (
-          <div className="mt-8 pt-6 border-t border-slate-800">
-            <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider text-center mb-3">
-              ⚡ 1-Click Instant Demo Access (Test All Portals)
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickDemo("trustee", "OASIS-TUTORIALS", "HOD-01")}
-                className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center cursor-pointer"
-              >
-                🏛️ HOD/Trustee
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo("accountant", "OASIS-TUTORIALS", "ACC-01")}
-                className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center cursor-pointer"
-              >
-                💰 Accountant
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo("teacher", "OASIS-TUTORIALS", "TCH-01")}
-                className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center cursor-pointer"
-              >
-                👨‍🏫 Teacher
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo("student", "OASIS-TUTORIALS", "STU-1024")}
-                className="bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center cursor-pointer"
-              >
-                🎓 Student
-              </button>
-            </div>
-            <div className="mt-2 text-center">
-              <button
-                type="button"
-                onClick={() => handleQuickDemo("admin", "OASIS-TUTORIALS", "ADMIN-01")}
-                className="text-[11px] font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
-              >
-                🛡️ Super Administrator Bypass →
-              </button>
-            </div>
+        {/* OFFICIAL SUPPORT & SESSION CONTROLS */}
+        <div className="mt-8 pt-4 border-t border-slate-800 text-center space-y-2">
+          <p className="text-[11px] text-slate-400">
+            Support Desk:{" "}
+            <a href="mailto:sikhakumari011989@gmail.com" className="text-blue-400 hover:underline">
+              sikhakumari011989@gmail.com
+            </a>{" "}
+            &bull; <span className="font-mono text-slate-300">+91 9518388499</span>
+          </p>
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  localStorage.clear();
+                  sessionStorage.clear();
+                } catch (e) {}
+                window.location.href = "/login?reset=true";
+              }}
+              className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors inline-flex items-center gap-1 cursor-pointer font-medium"
+            >
+              <span>🧹</span>
+              <span>Clear Mobile Session Cache & Reset</span>
+            </button>
           </div>
-        )}
-
-        {/* EMERGENCY MOBILE SESSION CACHE RESET */}
-        <div className="mt-6 pt-4 border-t border-slate-800/80 text-center">
-          <button
-            type="button"
-            onClick={() => {
-              try {
-                localStorage.clear();
-                sessionStorage.clear();
-              } catch (e) {}
-              window.location.href = "/login?reset=true";
-            }}
-            className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors inline-flex items-center gap-1 cursor-pointer font-medium"
-          >
-            <span>🧹</span>
-            <span>Clear Mobile Session Cache & Reset</span>
-          </button>
+          <p className="text-[10px] text-slate-600 pt-1">
+            &copy; 2026 EduSaaS ERP. All rights reserved.
+          </p>
         </div>
       </div>
     </div>

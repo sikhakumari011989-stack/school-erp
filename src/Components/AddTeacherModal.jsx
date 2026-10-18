@@ -51,7 +51,7 @@ export default function AddTeacherModal({ isOpen, onClose, onRefresh }) {
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Full Name</label>
             <input 
-              type="text" required placeholder="e.g., Satwik" 
+              type="text" required placeholder="e.g., Dr. Rajesh Verma" 
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
               value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
             />
@@ -60,7 +60,7 @@ export default function AddTeacherModal({ isOpen, onClose, onRefresh }) {
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
             <input 
-              type="email" required placeholder="e.g., satwik@school.com" 
+              type="email" required placeholder="e.g., r.verma@school.com" 
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
               value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})}
             />

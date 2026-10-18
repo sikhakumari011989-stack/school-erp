@@ -21,12 +21,12 @@ export function generateFeeInvoicePDF({
   });
 
   const institutionName = tenant.name || "Apex International Academy";
-  const institutionCode = tenant.code || "OASIS-TUTORIALS";
+  const institutionCode = tenant.code || "CAMPUS-01";
   const institutionAddress = tenant.address || "14-B Campus Boulevard, Knowledge Park, Mumbai";
   const contactEmail = tenant.email || "accounts@apexacademy.edu";
 
-  const studentName = student.name || "Astik Kumar";
-  const studentRoll = student.roll_number || "STU-1024";
+  const studentName = student.name || "Enrolled Student";
+  const studentRoll = student.roll_number || "STU-101";
   const studentClass = student.class || "Class 10 ICSE";
 
   const invoiceNo = payment.invoiceNo || `INV-${Date.now().toString().slice(-6)}`;
@@ -79,7 +79,7 @@ export function generateFeeInvoicePDF({
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(148, 163, 184); // Slate 400
-  doc.text(`Affiliation Code: ${institutionCode} | ISO 9001:2025 Certified Educational Body`, titleOffset, 25);
+  doc.text(`Affiliation Code: ${institutionCode} | Academic Session 2026-2027`, titleOffset, 25);
   doc.text(`${institutionAddress} | Email: ${contactEmail}`, titleOffset, 31);
 
   doc.setFont("helvetica", "bold");
@@ -242,9 +242,9 @@ export function generateReportCardPDF({
   });
 
   const institutionName = tenant.name || "Apex International Academy";
-  const institutionCode = tenant.code || "OASIS-TUTORIALS";
-  const studentName = student.name || "Astik Kumar";
-  const studentRoll = student.roll_number || "STU-1024";
+  const institutionCode = tenant.code || "CAMPUS-01";
+  const studentName = student.name || "Enrolled Student";
+  const studentRoll = student.roll_number || "STU-101";
   const studentClass = student.class || "Class 10 ICSE";
 
   // HEADER BANNER
@@ -400,11 +400,11 @@ export function generateOfficialCertificatePDF({
   });
 
   const institutionName = tenant.name || "Apex International Academy";
-  const institutionCode = tenant.code || "OASIS-TUTORIALS";
+  const institutionCode = tenant.code || "CAMPUS-01";
   const institutionAddress = tenant.address || "14-B Campus Boulevard, Knowledge Park, Mumbai";
 
-  const studentName = student.name || student.student_name || "Astik Kumar";
-  const rollNumber = student.roll_number || student.personal_code || "STU-1024";
+  const studentName = student.name || student.student_name || "Enrolled Student";
+  const rollNumber = student.roll_number || student.personal_code || "STU-101";
   const className = student.class_name || student.class || "Class 10-ICSE";
   const certType = (certificate.certificate_type || "BONAFIDE CERTIFICATE").toUpperCase();
   const certId = certificate.id || `CERT-${Date.now().toString().slice(-6)}`;
@@ -430,7 +430,7 @@ export function generateOfficialCertificatePDF({
   doc.setFontSize(9);
   doc.setTextColor(100, 116, 139);
   doc.text(`${institutionAddress} | Institutional Affiliation Node: ${institutionCode}`, 148.5, 37, { align: "center" });
-  doc.text("Recognized by the Department of School Education | ISO 9001:2025 Quality Certified", 148.5, 42, { align: "center" });
+  doc.text("Recognized by the Department of School Education | Academic Session 2026-2027", 148.5, 42, { align: "center" });
 
   // Certificate Title Ribbon
   doc.setFillColor(243, 232, 255); // Purple 100

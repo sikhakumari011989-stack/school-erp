@@ -7,10 +7,10 @@ export const AppContext = createContext();
  * Resolves active tenant from subdomain, query params (?tenant=...), or storage
  */
 function resolveTenantCode() {
-  if (typeof window === "undefined") return "OASIS-TUTORIALS";
+  if (typeof window === "undefined") return "CAMPUS-01";
 
   try {
-    // 1. Check URL search param (?tenant=OASIS-TUTORIALS or ?institution=...)
+    // 1. Check URL search param (?tenant=CAMPUS-01 or ?institution=...)
     const params = new URLSearchParams(window.location.search);
     const paramTenant = params.get("tenant") || params.get("institution");
     if (paramTenant) {
@@ -19,7 +19,7 @@ function resolveTenantCode() {
       return clean;
     }
 
-    // 2. Check Subdomain (e.g. oasis.domain.com or apex.localhost)
+    // 2. Check Subdomain (e.g. campus.domain.com or apex.localhost)
     const host = window.location.hostname;
     const parts = host.split(".");
     if (parts.length > 2 && parts[0] !== "www" && parts[0] !== "app") {
@@ -34,7 +34,7 @@ function resolveTenantCode() {
   }
 
   // 4. Fallback Default
-  return "OASIS-TUTORIALS";
+  return "CAMPUS-01";
 }
 
 export const AppProvider = ({ children }) => {
@@ -63,11 +63,11 @@ export const AppProvider = ({ children }) => {
   });
 
   const [tenant, setTenant] = useState({
-    id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-    name: "Apex International Academy",
-    code: "OASIS-TUTORIALS",
-    city: "Mumbai",
-    state: "Maharashtra",
+    id: "campus-default-node",
+    name: "EduSaaS Institutional Node",
+    code: "CAMPUS-01",
+    city: "New Delhi",
+    state: "Delhi",
     primaryColor: "#3B82F6",
     accentColor: "#8B5CF6",
     logoUrl: null,
@@ -143,9 +143,9 @@ export const AppProvider = ({ children }) => {
           name: profile.full_name || currentSession.user.email?.split("@")[0] || "User",
           role: profile.role || "student",
           role_code: profile.role_code || "STU",
-          school_id: profile.school_id || "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-          institution_code: profile.schools?.code || "OASIS-TUTORIALS",
-          institution_name: profile.schools?.name || "Apex International Academy",
+          school_id: profile.school_id || "default-school-node",
+          institution_code: profile.schools?.code || resolveTenantCode(),
+          institution_name: profile.schools?.name || "Academic Campus",
           email: currentSession.user.email,
           authUid: currentSession.user.id,
         };
@@ -163,9 +163,9 @@ export const AppProvider = ({ children }) => {
           name: meta.full_name || currentSession.user.email?.split("@")[0] || "Authenticated Member",
           role: meta.role || "student",
           role_code: meta.role_code || "MEMBER",
-          school_id: meta.school_id || "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-          institution_code: meta.institution_code || "OASIS-TUTORIALS",
-          institution_name: meta.institution_name || "Apex International Academy",
+          school_id: meta.school_id || "default-school-node",
+          institution_code: meta.institution_code || resolveTenantCode(),
+          institution_name: meta.institution_name || "Academic Campus",
           email: currentSession.user.email,
           authUid: currentSession.user.id,
         };

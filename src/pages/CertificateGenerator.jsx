@@ -4,41 +4,7 @@ import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { generateOfficialCertificatePDF } from "../utils/pdfGenerator";
 
-export const getDefaultCertificateRequests = (schoolId = "OASIS-TUTORIALS") => [
-  {
-    id: "CERT-90821",
-    student_name: "Astik Kumar",
-    roll_number: "STU-1024",
-    class_name: "Class 10-ICSE",
-    certificate_type: "Bonafide Certificate",
-    reason: "Passport Application & National Olympiad Verification",
-    status: "APPROVED",
-    request_date: "2026-10-15",
-    school_id: schoolId,
-  },
-  {
-    id: "CERT-90822",
-    student_name: "Astik Kumar",
-    roll_number: "STU-1024",
-    class_name: "Class 10-ICSE",
-    certificate_type: "Character Certificate",
-    reason: "State Athletics Representation Verification",
-    status: "PENDING",
-    request_date: "2026-10-17",
-    school_id: schoolId,
-  },
-  {
-    id: "CERT-90823",
-    student_name: "Astik Kumar",
-    roll_number: "STU-1024",
-    class_name: "Class 10-ICSE",
-    certificate_type: "Fee Clearance Letter",
-    reason: "Scholarship Foundation Eligibility Proof",
-    status: "PENDING",
-    request_date: "2026-10-17",
-    school_id: schoolId,
-  },
-];
+export const getDefaultCertificateRequests = () => [];
 
 export default function CertificateGenerator() {
   const { user, tenant } = useContext(AppContext) || {};
@@ -49,26 +15,25 @@ export default function CertificateGenerator() {
   const [loading, setLoading] = useState(false);
   const [requests, setRequests] = useState([]);
 
-  const activeSchoolId = user?.institution_code || user?.school_id || tenant?.code || "OASIS-TUTORIALS";
-  const studentName = user?.name || "Astik Kumar";
-  const rollNumber = user?.personal_code || user?.role_code || "STU-1024";
-  const className = user?.class_name || "Class 10-ICSE";
+  const activeSchoolId = user?.institution_code || user?.school_id || tenant?.code || "";
+  const studentName = user?.name || user?.full_name || "Enrolled Student";
+  const rollNumber = user?.personal_code || user?.role_code || user?.roll_number || "";
+  const className = user?.class_name || "General Batch";
 
   // Load certificate requests for this school & student
   const loadRequests = () => {
+    if (!activeSchoolId) return;
     try {
       const storageKey = `erp_certificate_requests_${activeSchoolId}`;
       const saved = localStorage.getItem(storageKey);
       if (saved) {
         setRequests(JSON.parse(saved));
       } else {
-        const initial = getDefaultCertificateRequests(activeSchoolId);
-        localStorage.setItem(storageKey, JSON.stringify(initial));
-        localStorage.setItem("erp_certificate_requests", JSON.stringify(initial));
-        setRequests(initial);
+        setRequests([]);
       }
     } catch (err) {
       console.warn("Failed to load certificate requests:", err);
+      setRequests([]);
     }
   };
 
@@ -77,7 +42,11 @@ export default function CertificateGenerator() {
 
     const handleUpdate = () => loadRequests();
     window.addEventListener("erp-certificates-updated", handleUpdate);
-    return () => window.removeEventListener("erp-certificates-updated", handleUpdate);
+    window.addEventListener("erp-certificate-updated", handleUpdate);
+    return () => {
+      window.removeEventListener("erp-certificates-updated", handleUpdate);
+      window.removeEventListener("erp-certificate-updated", handleUpdate);
+    };
   }, [activeSchoolId]);
 
   const handleRequest = async (e) => {
@@ -120,6 +89,7 @@ export default function CertificateGenerator() {
 
       // 3. Dispatch global sync event
       window.dispatchEvent(new Event("erp-certificates-updated"));
+      window.dispatchEvent(new Event("erp-certificate-updated"));
 
       setRequests(updated);
       setReason("");
@@ -267,7 +237,7 @@ export default function CertificateGenerator() {
           <div className="p-6 border-b border-slate-700/60 flex justify-between items-center flex-wrap gap-3 bg-slate-800/40">
             <div>
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>📑</span> Application History & Live Status
+                <span>📑</span> My Submitted Requests
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
                 Real-time tracking of institutional document requests

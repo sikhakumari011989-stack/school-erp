@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
 import { Download, Upload, X, CheckCircle2, AlertCircle, FileSpreadsheet, Users } from "lucide-react";
 import { useToast } from "../context/ToastContext";
+import { getNextMemberId } from "../utils/idGenerator";
 
 const SAMPLE_CSV_CONTENT = `full_name,role,class_name,roll_number,phone
-Aarav Mehta,student,Class 10-ICSE,STU-1025,+91 9820112233
-Ananya Iyer,student,Class 10-ICSE,STU-1026,+91 9820112234
-Rohan Deshmukh,student,Class 9-A,STU-9012,+91 9820112235
-Prof. Neha Kulkarni,teacher,Class 10-ICSE,TCH-08,+91 9820998877
-Vikram Joshi,student,Class 12-Sci,STU-1204,+91 9820445566`;
+Aarav Mehta,student,Class 10-ICSE,STU-101,+91 9820112233
+Ananya Iyer,student,Class 10-ICSE,STU-102,+91 9820112234
+Rohan Deshmukh,student,Class 9-A,,+91 9820112235
+Prof. Neha Kulkarni,teacher,Mathematics,TCH-01,+91 9820998877
+Vikram Joshi,student,Class 12-Sci,,+91 9820445566`;
 
 export default function BulkImportModal({ isOpen, onClose, schoolId, onImportSuccess }) {
   const { showToast } = useToast();
@@ -21,7 +22,7 @@ export default function BulkImportModal({ isOpen, onClose, schoolId, onImportSuc
 
   if (!isOpen) return null;
 
-  const activeSchoolCode = String(schoolId || "OASIS-TUTORIALS").trim().toUpperCase();
+  const activeSchoolCode = String(schoolId || "CAMPUS-01").trim().toUpperCase();
 
   const handleDownloadSample = () => {
     const blob = new Blob([SAMPLE_CSV_CONTENT], { type: "text/csv;charset=utf-8;" });
@@ -54,6 +55,15 @@ export default function BulkImportModal({ isOpen, onClose, schoolId, onImportSuc
       throw new Error(`Missing required CSV columns: ${missing.join(", ")}`);
     }
 
+    const existingDirectory = (() => {
+      try {
+        return JSON.parse(localStorage.getItem(`erp_directory_${activeSchoolCode}`) || "[]");
+      } catch {
+        return [];
+      }
+    })();
+    const assignedSoFar = [...existingDirectory];
+
     return lines.slice(1).map((line, idx) => {
       const values = line.split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
       const rowObj = {};
@@ -62,7 +72,11 @@ export default function BulkImportModal({ isOpen, onClose, schoolId, onImportSuc
       });
 
       const roleClean = (rowObj.role || "student").toLowerCase() === "teacher" ? "teacher" : "student";
-      const rollClean = (rowObj.roll_number || "").trim().toUpperCase() || `${roleClean === "teacher" ? "TCH" : "STU"}-${1000 + idx}`;
+      let rollClean = (rowObj.roll_number || "").trim().toUpperCase();
+      if (!rollClean) {
+        rollClean = getNextMemberId(roleClean, assignedSoFar, []);
+      }
+      assignedSoFar.push({ roll_number: rollClean, role: roleClean });
 
       return {
         rowNumber: idx + 2,
@@ -195,6 +209,7 @@ export default function BulkImportModal({ isOpen, onClose, schoolId, onImportSuc
     }
 
     localStorage.setItem(`erp_directory_${activeSchoolCode}`, JSON.stringify(existingDirectory));
+    window.dispatchEvent(new Event("erp-directory-updated"));
 
     setIsImporting(false);
     const summaryResult = {

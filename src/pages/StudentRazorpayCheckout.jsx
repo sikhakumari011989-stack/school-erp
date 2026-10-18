@@ -34,7 +34,7 @@ export default function StudentRazorpayCheckout() {
   const activeSchoolCode = (
     user?.institution_code ||
     user?.school_id ||
-    "OASIS-TUTORIALS"
+    "CAMPUS-01"
   )
     .trim()
     .toUpperCase();
@@ -119,7 +119,7 @@ export default function StudentRazorpayCheckout() {
     setLoading(true);
 
     const today = new Date().toISOString().split("T")[0];
-    const studentName = user?.name || "Astik Kumar";
+    const studentName = user?.name || user?.full_name || "Enrolled Student";
     const rawPhone = user?.parent_phone || user?.phone || "9876543210";
     const studentPhone = rawPhone.replace(/[^0-9]/g, "").slice(-10) || "9876543210";
     const schoolId = user?.school_id || "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
@@ -368,7 +368,7 @@ export default function StudentRazorpayCheckout() {
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400 font-bold uppercase">Enrolled Student</span>
                 <span className="text-white font-bold">
-                  {user?.name || "Astik Kumar"} ({activeSchoolCode})
+                  {user?.name || user?.full_name || "Enrolled Student"} ({activeSchoolCode})
                 </span>
               </div>
               <div className="flex justify-between items-center text-xs">

@@ -37,7 +37,11 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
 
     const handleUpdate = () => loadRequests();
     window.addEventListener("erp-certificates-updated", handleUpdate);
-    return () => window.removeEventListener("erp-certificates-updated", handleUpdate);
+    window.addEventListener("erp-certificate-updated", handleUpdate);
+    return () => {
+      window.removeEventListener("erp-certificates-updated", handleUpdate);
+      window.removeEventListener("erp-certificate-updated", handleUpdate);
+    };
   }, [activeSchoolId]);
 
   const updateCertificateStatus = async (certId, newStatus) => {
@@ -66,10 +70,11 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
 
       // 3. Dispatch event & update state
       window.dispatchEvent(new Event("erp-certificates-updated"));
+      window.dispatchEvent(new Event("erp-certificate-updated"));
       setRequests(updated);
 
       showToast(
-        `Certificate ${certId} ${newStatus === "APPROVED" ? "Verified & Approved" : "Rejected"} successfully!`,
+        `Certificate ${certId} ${newStatus === "APPROVED" ? "approved" : "rejected"} successfully!`,
         newStatus === "APPROVED" ? "success" : "info"
       );
     } catch (err) {
@@ -128,11 +133,7 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
     return r.status === filter;
   });
 
-  const cardTitle =
-    title ||
-    (mode === "teacher"
-      ? "Student Certificate Requests"
-      : "Digital Certificate Signatures & Approvals");
+  const cardTitle = title || "📜 Pending Student Certificates";
 
   return (
     <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-slate-700/70 rounded-3xl shadow-2xl overflow-hidden mb-10">
@@ -264,7 +265,7 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
                               onClick={() => updateCertificateStatus(cert.id, "APPROVED")}
                               className="px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-xs font-bold rounded-xl transition-all cursor-pointer shadow disabled:opacity-50 flex items-center gap-1"
                             >
-                              <span>✅</span> Verify & Approve
+                              <span>✅</span> Approve
                             </button>
                             <button
                               disabled={processingId === cert.id}
@@ -275,14 +276,23 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
                             </button>
                           </>
                         ) : cert.status === "APPROVED" ? (
-                          <span className="text-xs font-bold text-emerald-400">Verified</span>
+                          <span className="text-xs font-bold text-emerald-400">Approved</span>
                         ) : (
-                          <span className="text-xs text-rose-400">Declined</span>
+                          <span className="text-xs text-rose-400">Rejected</span>
                         )}
                       </div>
                     ) : (
                       /* Principal / Trustee Action */
                       <div className="flex items-center justify-end gap-2">
+                        {cert.status === "PENDING" && (
+                          <button
+                            disabled={processingId === cert.id}
+                            onClick={() => updateCertificateStatus(cert.id, "APPROVED")}
+                            className="px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-xs font-bold rounded-xl transition-all cursor-pointer shadow disabled:opacity-50 flex items-center gap-1"
+                          >
+                            <span>✅</span> Approve
+                          </button>
+                        )}
                         <button
                           disabled={processingId === cert.id}
                           onClick={() => handleDigitallySignAndIssue(cert)}
@@ -294,10 +304,10 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
                           <button
                             disabled={processingId === cert.id}
                             onClick={() => updateCertificateStatus(cert.id, "REJECTED")}
-                            className="px-2 py-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                            className="px-2.5 py-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1"
                             title="Reject Request"
                           >
-                            <span>❌</span>
+                            <span>❌</span> Reject
                           </button>
                         )}
                       </div>

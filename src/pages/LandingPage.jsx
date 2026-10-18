@@ -381,13 +381,13 @@ export default function LandingPage() {
                 </p>
                 <p className="text-xs pt-1">
                   <span className="text-slate-500 block">Support Desk:</span>
-                  <a href="mailto:support@edusaas.app" className="text-blue-400 hover:underline">
-                    support@edusaas.app
+                  <a href="mailto:sikhakumari011989@gmail.com" className="text-blue-400 hover:underline">
+                    sikhakumari011989@gmail.com
                   </a>
                 </p>
                 <p className="text-xs">
                   <span className="text-slate-500 block">Phone Support:</span>
-                  <span className="text-slate-300 font-mono">+91 98765 43210</span>
+                  <span className="text-slate-300 font-mono">+91 9518388499</span>
                 </p>
               </address>
             </div>
@@ -396,17 +396,18 @@ export default function LandingPage() {
           {/* Bottom Bar */}
           <div className="pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
             <div>
-              &copy; {new Date().getFullYear()} EduSaaS ERP Technologies Private Limited. All rights reserved.
+              &copy; 2026 EduSaaS ERP. All rights reserved.
             </div>
             <div className="flex flex-wrap items-center gap-4 text-slate-400">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                PCI-DSS Level 1 Encrypted
-              </span>
+              <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
               <span>&bull;</span>
-              <span>PostgreSQL RLS Multi-Tenant</span>
+              <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
               <span>&bull;</span>
-              <span>Razorpay Standard Checkout</span>
+              <Link to="/contact" className="hover:text-white transition-colors">Support Desk</Link>
+              <span>&bull;</span>
+              <a href="mailto:sikhakumari011989@gmail.com" className="hover:text-white transition-colors">sikhakumari011989@gmail.com</a>
+              <span>&bull;</span>
+              <span className="font-mono text-slate-300">+91 9518388499</span>
             </div>
           </div>
         </div>

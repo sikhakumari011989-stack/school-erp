@@ -111,13 +111,10 @@ export default function ContactUs() {
                       Official Support Emails
                     </h3>
                     <p className="text-sm">
-                      Support: <a href="mailto:support@edusaas.app" className="text-blue-400 hover:underline">support@edusaas.app</a>
+                      Support: <a href="mailto:sikhakumari011989@gmail.com" className="text-blue-400 hover:underline">sikhakumari011989@gmail.com</a>
                     </p>
                     <p className="text-sm">
-                      Billing & Refunds: <a href="mailto:billing@edusaas.app" className="text-blue-400 hover:underline">billing@edusaas.app</a>
-                    </p>
-                    <p className="text-sm">
-                      Grievance Desk: <a href="mailto:grievance@edusaas.app" className="text-blue-400 hover:underline">grievance@edusaas.app</a>
+                      Helpdesk: <a href="mailto:sikhakumari011989@gmail.com" className="text-blue-400 hover:underline">sikhakumari011989@gmail.com</a>
                     </p>
                   </div>
                 </div>
@@ -131,10 +128,10 @@ export default function ContactUs() {
                       Direct Support Telephones
                     </h3>
                     <p className="text-slate-200 text-sm">
-                      Toll-Free / Central: <span className="font-mono text-white font-bold">+91 98765 43210</span>
+                      Support Hotline: <span className="font-mono text-white font-bold">+91 9518388499</span>
                     </p>
                     <p className="text-slate-200 text-sm">
-                      Landline Office: <span className="font-mono text-white font-bold">+91 (080) 4123-4567</span>
+                      WhatsApp Helpdesk: <span className="font-mono text-white font-bold">+91 9518388499</span>
                     </p>
                   </div>
                 </div>
@@ -164,7 +161,7 @@ export default function ContactUs() {
                 Verified Merchant KYC Profile
               </div>
               <p>
-                Our payment gateway is operated in certified partnership with Razorpay Software Pvt. Ltd. All transactions are protected by PCI-DSS Level 1 compliant architecture and RBI regulations.
+                Our payment gateway is operated in certified partnership with Razorpay Software Pvt. Ltd. All transactions are securely processed according to standard RBI guidelines.
               </p>
             </div>
           </div>
@@ -245,7 +242,7 @@ export default function ContactUs() {
                       <input
                         type="tel"
                         required
-                        placeholder="+91 98765 43210"
+                        placeholder="+91 9518388499"
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 text-sm"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -310,7 +307,7 @@ export default function ContactUs() {
 
         {/* Bottom Legal Navigation */}
         <div className="mt-12 flex flex-wrap gap-4 justify-between items-center text-xs text-slate-400 pt-6 border-t border-slate-800">
-          <div>&copy; 2026 EduSaaS ERP Technologies Pvt. Ltd. All rights reserved.</div>
+          <div>&copy; 2026 EduSaaS ERP. All rights reserved.</div>
           <div className="flex gap-4">
             <Link to="/terms" className="hover:text-white underline">Terms of Service</Link>
             <Link to="/privacy" className="hover:text-white underline">Privacy Policy</Link>

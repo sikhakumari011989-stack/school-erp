@@ -11,6 +11,7 @@ import SchoolUpiQrConfig from "../Components/SchoolUpiQrConfig";
 import SystemDiagnostic from "../Components/SystemDiagnostic";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
 import { buildStandardErpEmail } from "./Login";
+import { getNextMemberId, getDefaultSchoolDirectory } from "../utils/idGenerator";
 
 export default function TrusteeDashboard() {
   const { user } = useContext(AppContext) || {};
@@ -36,19 +37,75 @@ export default function TrusteeDashboard() {
     date: new Date().toISOString().split("T")[0],
   });
 
-  const institutionCode = user?.institution_code || user?.school_id || "OASIS-TUTORIALS";
+  const institutionCode = user?.institution_code || user?.school_id || "CAMPUS-01";
 
   const fetchStudents = async () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase
-        .from("students")
-        .select("*")
-        .eq("school_id", institutionCode);
+      let dbData = [];
+      try {
+        if (supabase) {
+          const { data, error: fetchError } = await supabase
+            .from("students")
+            .select("*")
+            .eq("school_id", institutionCode);
+          if (!fetchError && data) {
+            dbData = data;
+          }
+        }
+      } catch (dbErr) {
+        console.warn("Supabase fetch notice:", dbErr);
+      }
 
-      if (fetchError) throw fetchError;
-      setStudents(data || []);
+      // Merge with local tenant directory
+      let localDir = [];
+      try {
+        const raw = localStorage.getItem(`erp_directory_${institutionCode}`);
+        if (raw) {
+          localDir = JSON.parse(raw);
+        } else {
+          localDir = getDefaultSchoolDirectory(institutionCode);
+          localStorage.setItem(`erp_directory_${institutionCode}`, JSON.stringify(localDir));
+        }
+      } catch {
+        localDir = getDefaultSchoolDirectory(institutionCode);
+      }
+
+      const mergedMap = new Map();
+      dbData.forEach((s) => {
+        const key = s.roll_number || s.id;
+        if (key) {
+          mergedMap.set(key, {
+            ...s,
+            id: key,
+            name: s.name || s.full_name,
+            roll_number: key,
+            class_name: s.class_name || s.class || "Class 10-ICSE",
+            role: s.role || "student",
+          });
+        }
+      });
+
+      localDir.forEach((m) => {
+        const key = m.roll_number || m.role_code || m.personal_code || m.id;
+        if (key && !mergedMap.has(key)) {
+          mergedMap.set(key, {
+            id: key,
+            name: m.full_name || m.name,
+            full_name: m.full_name || m.name,
+            roll_number: key,
+            class_name: m.class_name || m.class || (m.role === "teacher" ? "Faculty" : "Class 10-ICSE"),
+            role: m.role || "student",
+            phone: m.phone || "+91 9800000000",
+            email: m.email,
+            status: "active",
+          });
+        }
+      });
+
+      const finalMembers = Array.from(mergedMap.values());
+      setStudents(finalMembers.length > 0 ? finalMembers : getDefaultSchoolDirectory(institutionCode));
     } catch (err) {
       console.error("Error fetching students:", err);
       setError(err.message || "Failed to fetch student records.");
@@ -79,7 +136,11 @@ export default function TrusteeDashboard() {
     fetchStudents();
     fetchClasses();
     fetchNotices();
-  }, [user?.institution_code, user?.school_id]);
+
+    const handleDirUpdate = () => fetchStudents();
+    window.addEventListener("erp-directory-updated", handleDirUpdate);
+    return () => window.removeEventListener("erp-directory-updated", handleDirUpdate);
+  }, [user?.institution_code, user?.school_id, institutionCode]);
 
   const handlePublishNotice = async (e) => {
     e.preventDefault();
@@ -138,7 +199,7 @@ export default function TrusteeDashboard() {
     const portalUrl = `${window.location.origin}/portal?school=${institutionCode}`;
     
     const credentialRows = [
-      ["Full Name", "Role", "Class", "Portal Link (/portal)", "Tier-1 School Code", "Tier-2 Personal ID", "Password"]
+      ["Full Name", "Role", "Class/Department", "Portal Link (/portal)", "Tier-1 School Code", "Tier-2 Personal ID", "Default Password"]
     ];
 
     // Master HOD
@@ -198,6 +259,15 @@ export default function TrusteeDashboard() {
     showToast(`Downloaded credentials sheet for ${credentialRows.length - 1} campus members!`, "success");
   };
 
+  const localDirForCalc = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(`erp_directory_${institutionCode}`) || "[]");
+    } catch {
+      return [];
+    }
+  })();
+  const nextSuggestedId = getNextMemberId(newStudent.role, localDirForCalc, students);
+
   const handleQuickAddMember = async (e) => {
     e.preventDefault();
     if (!newStudent.name || !newStudent.name.trim()) {
@@ -209,9 +279,7 @@ export default function TrusteeDashboard() {
     setFormError(null);
 
     const isTeacher = newStudent.role === "teacher";
-    const generatedCode = isTeacher 
-      ? `TCH-${String(101 + Math.floor(Math.random() * 899)).padStart(3, "0")}`
-      : `STU-${1000 + students.length + 1}`;
+    const generatedCode = nextSuggestedId;
     const defaultPassword = "password123";
     const mappedEmail = buildStandardErpEmail(institutionCode, generatedCode);
 
@@ -275,6 +343,7 @@ export default function TrusteeDashboard() {
         default_password: defaultPassword,
       });
       localStorage.setItem(`erp_directory_${institutionCode}`, JSON.stringify(localDir));
+      window.dispatchEvent(new Event("erp-directory-updated"));
 
       logSecurityAction({
         action: AUDIT_ACTIONS.STUDENT_ADMITTED,
@@ -291,6 +360,7 @@ export default function TrusteeDashboard() {
     } catch (err) {
       console.error("Error adding member:", err);
       setFormError(err.message || "Failed to add member.");
+      window.dispatchEvent(new Event("erp-directory-updated"));
       showToast("Notice: Saved to local campus directory: " + generatedCode, "info");
       fetchStudents();
     } finally {
@@ -439,9 +509,9 @@ export default function TrusteeDashboard() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 text-xs font-mono bg-purple-500/10 border border-purple-500/30 px-3 py-1.5 rounded-xl text-purple-300">
-                  <span>Auto-ID: </span>
+                  <span>Auto-ID Locked: </span>
                   <span className="font-extrabold text-white">
-                    {newStudent.role === "teacher" ? `TCH-10${Math.min(9, students.length + 1)}` : `STU-${1000 + students.length + 1}`}
+                    {nextSuggestedId}
                   </span>
                   <span className="text-slate-500">|</span>
                   <span>PIN: <strong className="text-emerald-400">password123</strong></span>
@@ -530,8 +600,7 @@ export default function TrusteeDashboard() {
                     className="text-xs bg-purple-600 hover:bg-purple-500 border border-purple-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
                     title="Export complete member login credentials sheet for easy distribution"
                   >
-                    <span>📥</span>
-                    <span>Download Credentials Sheet (CSV)</span>
+                    <span>📥 Export WhatsApp Credentials Sheet (CSV)</span>
                   </button>
                   <button
                     onClick={() => setIsBulkModalOpen(true)}
@@ -558,7 +627,7 @@ export default function TrusteeDashboard() {
                   <p className="text-sm">{error}</p>
                 </div>
               ) : students.length === 0 ? (
-                <div className="p-12 text-center text-slate-400 font-medium">No students or teachers enrolled yet for this institution.</div>
+                <div className="p-12 text-center text-slate-400 font-medium">No students enrolled yet. Use Bulk CSV Import or Quick Add to onboard students.</div>
               ) : (
                 <div className="overflow-x-auto w-full">
                   <table className="w-full text-left border-collapse min-w-[700px]">

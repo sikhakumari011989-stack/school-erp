@@ -9,8 +9,8 @@ export default function Attendance() {
     { id: 1, roll: "101", name: "Raj Kumar", status: "Present" },
     { id: 2, roll: "102", name: "Priya Singh", status: "Present" },
     { id: 3, roll: "105", name: "Aarush Verma", status: "Absent" },
-    { id: 4, roll: "106", name: "Satwik Sharma", status: "Present" },
-    { id: 5, roll: "108", name: "Astik Kumar", status: "Leave" },
+    { id: 4, roll: "106", name: "Kavita Rao", status: "Present" },
+    { id: 5, roll: "108", name: "Sameer Khan", status: "Leave" },
   ]);
 
   const handleStatusChange = (id, newStatus) => {

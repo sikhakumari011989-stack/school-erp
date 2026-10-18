@@ -20,7 +20,7 @@ export default function StudentFees() {
 
   const fetchStudentLedger = async () => {
     setLoading(true);
-    const schoolId = (user?.institution_code || user?.school_id || "OASIS-TUTORIALS").toUpperCase();
+    const schoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
 
     // Read local offline/demo fee records first
     let localRecords = [];
@@ -118,13 +118,13 @@ export default function StudentFees() {
   const handleDownloadInvoice = (fee) => {
     generateFeeInvoicePDF({
       tenant: {
-        name: user?.institution_name || "Apex International Academy",
-        code: user?.institution_code || "OASIS-TUTORIALS",
+        name: user?.institution_name || "Institutional Campus",
+        code: user?.institution_code || user?.school_id || "CAMPUS-01",
       },
       student: {
-        name: user?.name || "Astik Kumar",
-        roll_number: user?.personal_code || user?.roll_number || "STU-1024",
-        class: "Class 10 ICSE",
+        name: user?.name || user?.full_name || "Enrolled Student",
+        roll_number: user?.personal_code || user?.roll_number || "STU-101",
+        class: user?.class_name || "Class 10 ICSE",
       },
       payment: {
         title: fee.term,
@@ -142,13 +142,13 @@ export default function StudentFees() {
   const handleDownloadReportCard = (rc) => {
     generateReportCardPDF({
       tenant: {
-        name: user?.institution_name || "Apex International Academy",
-        code: user?.institution_code || "OASIS-TUTORIALS",
+        name: user?.institution_name || "Institutional Campus",
+        code: user?.institution_code || user?.school_id || "CAMPUS-01",
       },
       student: {
-        name: user?.name || "Astik Kumar",
-        roll_number: user?.personal_code || user?.roll_number || "STU-1024",
-        class: "Class 10 ICSE",
+        name: user?.name || user?.full_name || "Enrolled Student",
+        roll_number: user?.personal_code || user?.roll_number || "STU-101",
+        class: user?.class_name || "Class 10 ICSE",
       },
       academicTerm: rc.term,
     });

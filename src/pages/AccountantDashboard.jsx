@@ -238,7 +238,7 @@ export default function AccountantDashboard() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g., Astik Kumar"
+                  placeholder="e.g., Rohan Mehta"
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm"
                   value={formData.student_name}
                   onChange={(e) => setFormData({ ...formData, student_name: e.target.value })}

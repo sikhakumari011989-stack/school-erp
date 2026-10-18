@@ -6,6 +6,7 @@ import { supabase } from "../supabaseClient";
 import { logSecurityAction, AUDIT_ACTIONS } from "../utils/auditLogger";
 import { buildStandardErpEmail } from "./Login";
 import BrandLogo from "../Components/BrandLogo";
+import { getDefaultSchoolDirectory } from "../utils/idGenerator";
 
 export default function RegisterInstitution() {
   const { login } = useContext(AppContext);
@@ -136,21 +137,24 @@ export default function RegisterInstitution() {
         institution_name: formData.institutionName.trim(),
       };
 
-      // Set active tenant and sync HOD to local directory
+      // Set active tenant and sync HOD + default members to local directory
       localStorage.setItem("erp_active_tenant", cleanCode);
       try {
-        const existingDir = JSON.parse(
-          localStorage.getItem(`erp_directory_${cleanCode}`) || "[]"
-        );
-        existingDir.unshift({
-          full_name: formData.adminName.trim(),
-          role: "trustee",
-          role_code: "HOD-01",
-          roll_number: "HOD-01",
-          school_id: cleanCode,
-          email: mappedEmail,
-        });
+        const defaultMembers = getDefaultSchoolDirectory(cleanCode);
+        const existingDir = [
+          {
+            full_name: formData.adminName.trim(),
+            role: "trustee",
+            role_code: "HOD-01",
+            roll_number: "HOD-01",
+            personal_code: "HOD-01",
+            school_id: cleanCode,
+            email: mappedEmail,
+          },
+          ...defaultMembers,
+        ];
         localStorage.setItem(`erp_directory_${cleanCode}`, JSON.stringify(existingDir));
+        window.dispatchEvent(new Event("erp-directory-updated"));
       } catch (e) {
         console.warn("Local directory cache update notice:", e);
       }
@@ -355,7 +359,7 @@ export default function RegisterInstitution() {
                   </label>
                   <input
                     type="tel"
-                    placeholder="e.g., +91 98765 43210"
+                    placeholder="e.g., +91 9518388499"
                     className="w-full bg-slate-950/60 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}

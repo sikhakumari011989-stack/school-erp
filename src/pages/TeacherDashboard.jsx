@@ -16,12 +16,12 @@ export default function TeacherDashboard() {
   const handleGenerateSampleReport = () => {
     generateReportCardPDF({
       tenant: {
-        name: user?.institution_name || "Apex International Academy",
-        code: user?.institution_code || "OASIS-TUTORIALS",
+        name: user?.institution_name || "Institutional Campus",
+        code: user?.institution_code || "CAMPUS-01",
       },
       student: {
-        name: "Astik Kumar",
-        roll_number: "STU-1024",
+        name: "Rohan Deshmukh",
+        roll_number: "STU-101",
         class: "Class 10 ICSE",
       },
       academicTerm: "Term II Comprehensive Examination",
@@ -123,7 +123,7 @@ export default function TeacherDashboard() {
                 Faculty Portal
               </span>
               <span className="text-xs text-slate-400 font-bold">
-                {user?.institution_code || "OASIS-TUTORIALS"}
+                {user?.institution_code || user?.school_id || "Campus Portal"}
               </span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400">
@@ -133,10 +133,16 @@ export default function TeacherDashboard() {
               Manage student attendance, publish homework tasks, and monitor curriculum progress
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={() => navigate("/teacher/classes")}
+              className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/40 px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 shadow-lg cursor-pointer"
+            >
+              <span>🗓️</span> Weekly Master Timetable
+            </button>
             <button
               onClick={handleGenerateSampleReport}
-              className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/40 px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 shadow-lg"
+              className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/40 px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 shadow-lg cursor-pointer"
             >
               <span>📜</span> Export Term Report Card (PDF)
             </button>

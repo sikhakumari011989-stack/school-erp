@@ -16,12 +16,12 @@ export default function JoinSchool() {
 
   const [loading, setLoading] = useState(false);
   const [schools, setSchools] = useState([
-    { code: "OASIS-TUTORIALS", name: "Apex International Academy (Oasis)" },
+    { code: "CAMPUS-01", name: "Apex International Academy" },
     { code: "APEX-INTERNATIONAL", name: "Apex International School" },
   ]);
 
   const [formData, setFormData] = useState({
-    institutionCode: "OASIS-TUTORIALS",
+    institutionCode: "",
     role: "student",
     personalCode: "",
     fullName: "",
@@ -347,7 +347,7 @@ export default function JoinSchool() {
               <input
                 type="text"
                 required
-                placeholder="e.g., Astik Kumar"
+                placeholder="e.g., Aarav Mehta"
                 className="w-full bg-slate-950/60 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all text-sm"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}

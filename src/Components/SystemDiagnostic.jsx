@@ -271,7 +271,7 @@ Checks:
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
               Active Institutional Node:{" "}
-              <span className="text-blue-400 font-mono font-bold">{activeSchoolCode}</span> • ISO 27001 & RLS Guard Standards
+              <span className="text-blue-400 font-mono font-bold">{activeSchoolCode}</span> &bull; PostgreSQL RLS Guard Standards
             </p>
           </div>
         </div>
