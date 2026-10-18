@@ -10,10 +10,11 @@ export default function StudentDashboard() {
   const navigate = useNavigate();
 
   const [metrics, setMetrics] = useState({
-    attendanceRate: "95%",
+    attendanceRate: "0%",
+    totalClassesCount: 0,
     pendingHomework: 0,
     feeStatus: "Up to date",
-    grade: "A+",
+    grade: "Pending Evaluation",
   });
   const [loading, setLoading] = useState(true);
 
@@ -25,7 +26,7 @@ export default function StudentDashboard() {
         const [attRes, hwRes, feeRes] = await Promise.all([
           supabase.from("attendance").select("records").eq("school_id", schoolId).limit(10),
           supabase.from("homework").select("id", { count: "exact" }).eq("school_id", schoolId),
-          supabase.from("fee_ledger").select("status, amount").eq("school_id", schoolId),
+          supabase.from("fee_ledger").select("status, amount, student_name").eq("school_id", schoolId),
         ]);
 
         // Calculate attendance
@@ -41,19 +42,29 @@ export default function StudentDashboard() {
             }
           });
         }
-        const rate = totalClasses > 0 ? `${Math.round((attended / totalClasses) * 100)}%` : "94%";
+        const rate = totalClasses > 0 ? `${Math.round((attended / totalClasses) * 100)}%` : "0%";
 
         // Pending homework
-        const hwCount = hwRes.count ?? hwRes.data?.length ?? 1;
+        const hwCount = hwRes.count ?? hwRes.data?.length ?? 0;
 
         // Pending fees
-        const hasPending = feeRes.data?.some((f) => f.status === "pending");
+        let hasPending = feeRes.data?.some((f) => (f.status || "").toLowerCase() === "pending");
+        try {
+          const tenantFeeRaw = localStorage.getItem(`erp_fee_ledger_${schoolId}`);
+          if (tenantFeeRaw) {
+            const tenantFees = JSON.parse(tenantFeeRaw);
+            if (tenantFees.some((f) => (f.status || "").toLowerCase() === "pending")) {
+              hasPending = true;
+            }
+          }
+        } catch (e) {}
 
         setMetrics({
           attendanceRate: rate,
+          totalClassesCount: totalClasses,
           pendingHomework: hwCount,
           feeStatus: hasPending ? "Dues Pending" : "Up to date",
-          grade: "A+",
+          grade: "Pending Evaluation",
         });
       } catch (err) {
         console.error("Error fetching student dashboard stats:", err);
@@ -63,6 +74,12 @@ export default function StudentDashboard() {
     };
 
     fetchLiveStudentData();
+    window.addEventListener("erp-attendance-updated", fetchLiveStudentData);
+    window.addEventListener("erp-fee-ledger-updated", fetchLiveStudentData);
+    return () => {
+      window.removeEventListener("erp-attendance-updated", fetchLiveStudentData);
+      window.removeEventListener("erp-fee-ledger-updated", fetchLiveStudentData);
+    };
   }, [user?.institution_code, user?.school_id]);
 
   const studentActions = [
@@ -152,7 +169,7 @@ export default function StudentDashboard() {
           </div>
           <div className="text-right hidden sm:block bg-slate-900/60 border border-slate-800 p-4 rounded-2xl">
             <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Enrolled Classroom Batch</p>
-            <p className="text-xl font-black text-white">Class 10 - ICSE</p>
+            <p className="text-xl font-black text-white">{user?.class_name || user?.class || "General Batch"}</p>
           </div>
         </div>
 
@@ -176,7 +193,9 @@ export default function StudentDashboard() {
                     Live Attendance
                   </p>
                   <p className="text-2xl font-black text-emerald-400">{metrics.attendanceRate}</p>
-                  <span className="text-[10px] text-slate-400">Synced with teacher roll</span>
+                  <span className="text-[10px] text-slate-400">
+                    {metrics.totalClassesCount > 0 ? "Synced with roll call" : "No records logged yet"}
+                  </span>
                 </div>
               </div>
 
@@ -212,10 +231,10 @@ export default function StudentDashboard() {
                 </div>
                 <div>
                   <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0.5">
-                    Academic Rank
+                    Academic Evaluation
                   </p>
-                  <p className="text-2xl font-black text-purple-400">{metrics.grade}</p>
-                  <span className="text-[10px] text-slate-400">Top 5% batch percentile</span>
+                  <p className="text-base font-black text-purple-400">{metrics.grade}</p>
+                  <span className="text-[10px] text-slate-400">Awaiting term assessment</span>
                 </div>
               </div>
             </>

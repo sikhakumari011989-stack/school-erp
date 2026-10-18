@@ -22,28 +22,44 @@ export default function AccountantDashboard() {
     payment_mode: "Cash / Cheque",
   });
 
+  const schoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
+
   const fetchLedger = async () => {
     setLoading(true);
 
     let localRecords = [];
     try {
-      const savedRaw = localStorage.getItem("erp_fee_ledger");
-      if (savedRaw) {
-        localRecords = JSON.parse(savedRaw);
+      const savedTenantRaw = localStorage.getItem(`erp_fee_ledger_${schoolId}`);
+      if (savedTenantRaw) {
+        localRecords = JSON.parse(savedTenantRaw);
+      } else {
+        const savedRaw = localStorage.getItem("erp_fee_ledger");
+        if (savedRaw) {
+          const all = JSON.parse(savedRaw);
+          localRecords = all.filter(
+            (r) => String(r.school_id || "").toUpperCase() === schoolId
+          );
+        }
       }
     } catch (e) {
       console.warn("Local ledger read notice:", e);
     }
 
     try {
-      const { data, error } = await supabase
-        .from("fee_ledger")
-        .select("*")
-        .order("created_at", { ascending: false });
+      let combined = [];
+      if (supabase) {
+        const { data, error } = await supabase
+          .from("fee_ledger")
+          .select("*")
+          .eq("school_id", schoolId)
+          .order("created_at", { ascending: false });
 
-      let combined = data || [];
+        if (!error && data) {
+          combined = data;
+        }
+      }
 
-      // Merge local records
+      // Merge local records strictly for this active school
       localRecords.forEach((lr) => {
         const exists = combined.some(
           (c) =>
@@ -59,7 +75,7 @@ export default function AccountantDashboard() {
             status: lr.status,
             payment_mode: lr.payment_mode || `School UPI QR (UTR: ${lr.utr || "Verified"})`,
             date: lr.date,
-            school_id: lr.school_id,
+            school_id: schoolId,
           });
         }
       });
@@ -73,7 +89,7 @@ export default function AccountantDashboard() {
 
       combined.forEach((item) => {
         const val = Number(item.amount) || 0;
-        if (item.status === "paid") {
+        if ((item.status || "").toLowerCase() === "paid") {
           revenue += val;
           paidCount += 1;
         } else {
@@ -84,10 +100,20 @@ export default function AccountantDashboard() {
       setStats({ totalRevenue: revenue, pendingDues: pending, totalPaidCount: paidCount });
     } catch (err) {
       console.error("Error fetching financial ledger:", err);
-      if (localRecords.length > 0) {
-        setLedger(localRecords);
-      }
-      showToast("Financial records loaded from institutional node", "info");
+      setLedger(localRecords);
+      let revenue = 0;
+      let pending = 0;
+      let paidCount = 0;
+      localRecords.forEach((item) => {
+        const val = Number(item.amount) || 0;
+        if ((item.status || "").toLowerCase() === "paid") {
+          revenue += val;
+          paidCount += 1;
+        } else {
+          pending += val;
+        }
+      });
+      setStats({ totalRevenue: revenue, pendingDues: pending, totalPaidCount: paidCount });
     } finally {
       setLoading(false);
     }
@@ -95,7 +121,10 @@ export default function AccountantDashboard() {
 
   useEffect(() => {
     fetchLedger();
-  }, []);
+    const handleUpdate = () => fetchLedger();
+    window.addEventListener("erp-fee-ledger-updated", handleUpdate);
+    return () => window.removeEventListener("erp-fee-ledger-updated", handleUpdate);
+  }, [schoolId]);
 
   const handleAddTransaction = async (e) => {
     e.preventDefault();
@@ -105,36 +134,51 @@ export default function AccountantDashboard() {
     }
 
     setSubmitting(true);
+    const newTxn = {
+      id: `TXN-${Date.now()}`,
+      school_id: schoolId,
+      student_name: formData.student_name.trim(),
+      class_name: formData.class_name.trim() || "Class 10-A",
+      amount: Number(formData.amount),
+      status: formData.status,
+      payment_mode: formData.payment_mode,
+      date: new Date().toISOString().split("T")[0],
+    };
+
     try {
-      const { error } = await supabase.from("fee_ledger").insert([
-        {
-          school_id: user?.school_id || "school-demo-01",
-          student_name: formData.student_name.trim(),
-          class_name: formData.class_name.trim() || "10-A",
-          amount: Number(formData.amount),
-          status: formData.status,
-          payment_mode: formData.payment_mode,
-          date: new Date().toISOString().split("T")[0],
-        },
-      ]);
-
-      if (error) throw error;
-
-      showToast(`Transaction of ₹${Number(formData.amount).toLocaleString()} recorded!`, "success");
-      setFormData({
-        student_name: "",
-        class_name: "",
-        amount: "",
-        status: "paid",
-        payment_mode: "Cash / Cheque",
-      });
-      fetchLedger();
+      if (supabase) {
+        await supabase.from("fee_ledger").insert([newTxn]);
+      }
     } catch (err) {
-      console.error("Error logging transaction:", err);
-      showToast("Failed to record transaction to database.", "error");
-    } finally {
-      setSubmitting(false);
+      console.warn("Supabase fee_ledger insert notice:", err);
     }
+
+    try {
+      const tenantKey = `erp_fee_ledger_${schoolId}`;
+      const savedTenantRaw = localStorage.getItem(tenantKey);
+      const tenantList = savedTenantRaw ? JSON.parse(savedTenantRaw) : [];
+      tenantList.unshift(newTxn);
+      localStorage.setItem(tenantKey, JSON.stringify(tenantList));
+
+      const savedRaw = localStorage.getItem("erp_fee_ledger");
+      const globalList = savedRaw ? JSON.parse(savedRaw) : [];
+      globalList.unshift(newTxn);
+      localStorage.setItem("erp_fee_ledger", JSON.stringify(globalList));
+    } catch (e) {
+      console.warn("Local storage write notice:", e);
+    }
+
+    window.dispatchEvent(new Event("erp-fee-ledger-updated"));
+    showToast(`Transaction of ₹${Number(formData.amount).toLocaleString()} recorded!`, "success");
+    setFormData({
+      student_name: "",
+      class_name: "",
+      amount: "",
+      status: "paid",
+      payment_mode: "Cash / Cheque",
+    });
+    setSubmitting(false);
+    fetchLedger();
   };
 
   // Filtered transactions

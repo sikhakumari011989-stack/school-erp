@@ -13,7 +13,7 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
   const [filter, setFilter] = useState(mode === "teacher" ? "PENDING" : "ALL");
   const [processingId, setProcessingId] = useState(null);
 
-  const activeSchoolId = user?.institution_code || user?.school_id || tenant?.code || "OASIS-TUTORIALS";
+  const activeSchoolId = user?.institution_code || user?.school_id || tenant?.code || "CAMPUS-01";
 
   const loadRequests = () => {
     try {

@@ -19,6 +19,12 @@ export default function TrusteeDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [financialStats, setFinancialStats] = useState({
+    totalRevenue: 0,
+    totalTransactions: 0,
+    paidTransactions: 0,
+    collectionRate: "0%",
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -38,6 +44,77 @@ export default function TrusteeDashboard() {
   });
 
   const institutionCode = user?.institution_code || user?.school_id || "CAMPUS-01";
+
+  const fetchFinancialStats = async () => {
+    let localLedger = [];
+    try {
+      const tenantKey = `erp_fee_ledger_${institutionCode}`;
+      const savedTenant = localStorage.getItem(tenantKey);
+      if (savedTenant) {
+        localLedger = JSON.parse(savedTenant);
+      } else {
+        const savedGlobal = localStorage.getItem("erp_fee_ledger");
+        if (savedGlobal) {
+          const all = JSON.parse(savedGlobal);
+          localLedger = all.filter(
+            (r) => String(r.school_id || "").toUpperCase() === String(institutionCode).toUpperCase()
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("Local ledger read notice:", e);
+    }
+
+    try {
+      let dbLedger = [];
+      if (supabase) {
+        const { data, error } = await supabase
+          .from("fee_ledger")
+          .select("amount, status, razorpay_payment_id, id")
+          .eq("school_id", institutionCode);
+        if (!error && data) {
+          dbLedger = data;
+        }
+      }
+
+      // Merge local records
+      const mergedMap = new Map();
+      dbLedger.forEach((item, idx) => {
+        const key = item.razorpay_payment_id || item.id || `db-${idx}`;
+        mergedMap.set(key, item);
+      });
+      localLedger.forEach((lr, idx) => {
+        const key = lr.utr || lr.razorpay_payment_id || lr.id || `loc-${idx}`;
+        if (!mergedMap.has(key)) {
+          mergedMap.set(key, lr);
+        }
+      });
+
+      const allRecords = Array.from(mergedMap.values());
+      let revenue = 0;
+      let paid = 0;
+      allRecords.forEach((item) => {
+        const amount = Number(item.amount) || 0;
+        const isPaid = (item.status || "").toLowerCase() === "paid";
+        if (isPaid) {
+          revenue += amount;
+          paid += 1;
+        }
+      });
+
+      const totalCount = allRecords.length;
+      const rate = totalCount > 0 ? `${Math.round((paid / totalCount) * 100)}%` : "0%";
+
+      setFinancialStats({
+        totalRevenue: revenue,
+        totalTransactions: totalCount,
+        paidTransactions: paid,
+        collectionRate: rate,
+      });
+    } catch (e) {
+      console.warn("Financial stats calculation notice:", e);
+    }
+  };
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -105,7 +182,7 @@ export default function TrusteeDashboard() {
       });
 
       const finalMembers = Array.from(mergedMap.values());
-      setStudents(finalMembers.length > 0 ? finalMembers : getDefaultSchoolDirectory(institutionCode));
+      setStudents(finalMembers);
     } catch (err) {
       console.error("Error fetching students:", err);
       setError(err.message || "Failed to fetch student records.");
@@ -136,10 +213,18 @@ export default function TrusteeDashboard() {
     fetchStudents();
     fetchClasses();
     fetchNotices();
+    fetchFinancialStats();
 
-    const handleDirUpdate = () => fetchStudents();
+    const handleDirUpdate = () => {
+      fetchStudents();
+      fetchFinancialStats();
+    };
     window.addEventListener("erp-directory-updated", handleDirUpdate);
-    return () => window.removeEventListener("erp-directory-updated", handleDirUpdate);
+    window.addEventListener("erp-fee-ledger-updated", fetchFinancialStats);
+    return () => {
+      window.removeEventListener("erp-directory-updated", handleDirUpdate);
+      window.removeEventListener("erp-fee-ledger-updated", fetchFinancialStats);
+    };
   }, [user?.institution_code, user?.school_id, institutionCode]);
 
   const handlePublishNotice = async (e) => {
@@ -456,28 +541,42 @@ export default function TrusteeDashboard() {
         {activeTab === "overview" ? (
           <div className="space-y-8">
             {/* METRICS GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Tuition Revenue</p>
-                <p className="text-3xl font-extrabold text-emerald-400">₹4,50,000</p>
-                <span className="text-xs text-slate-400 mt-2 block">+18% growth this term</span>
-              </div>
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Active Enrolled Students</p>
-                <p className="text-3xl font-extrabold text-blue-400">{loading ? "..." : `${students.length} Enrolled`}</p>
-                <span className="text-xs text-slate-400 mt-2 block">100% attendance verified</span>
-              </div>
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Faculty Utilization</p>
-                <p className="text-3xl font-extrabold text-purple-400">96.5%</p>
-                <span className="text-xs text-slate-400 mt-2 block">8 Active Tutors</span>
-              </div>
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Fee Collection Rate</p>
-                <p className="text-3xl font-extrabold text-emerald-400">94.2%</p>
-                <span className="text-xs text-slate-400 mt-2 block">Razorpay automated sync</span>
-              </div>
-            </div>
+            {(() => {
+              const enrolledStudentsCount = students.filter(s => (s.role || "student").toLowerCase() === "student").length;
+              const facultyCount = students.filter(s => (s.role || "").toLowerCase() === "teacher" || (s.role || "").toLowerCase() === "faculty").length;
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Tuition Revenue</p>
+                    <p className="text-3xl font-extrabold text-emerald-400">₹{financialStats.totalRevenue.toLocaleString()}</p>
+                    <span className="text-xs text-slate-400 mt-2 block">
+                      {financialStats.totalRevenue > 0 ? `${financialStats.paidTransactions} settled transactions` : "0 recorded transactions"}
+                    </span>
+                  </div>
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Active Enrolled Students</p>
+                    <p className="text-3xl font-extrabold text-blue-400">{loading ? "..." : `${enrolledStudentsCount} Enrolled`}</p>
+                    <span className="text-xs text-slate-400 mt-2 block">
+                      {enrolledStudentsCount > 0 ? "Verified in directory" : "Awaiting student enrollment"}
+                    </span>
+                  </div>
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Faculty Strength</p>
+                    <p className="text-3xl font-extrabold text-purple-400">{facultyCount} Active Tutors</p>
+                    <span className="text-xs text-slate-400 mt-2 block">
+                      {facultyCount > 0 ? "Institutional faculty node" : "0 faculty onboarded"}
+                    </span>
+                  </div>
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Fee Collection Rate</p>
+                    <p className="text-3xl font-extrabold text-emerald-400">{financialStats.collectionRate}</p>
+                    <span className="text-xs text-slate-400 mt-2 block">
+                      {financialStats.totalTransactions > 0 ? "Live reconciled" : "0% collected"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* TRUSTEE AUDIT CARD */}
             <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-8 shadow-2xl">

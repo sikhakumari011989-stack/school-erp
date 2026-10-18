@@ -82,7 +82,7 @@ export async function publishNotice({ title, category, audience, content, date, 
     audience: audience || "All",
     date: date || new Date().toISOString().split("T")[0],
     content: content.trim(),
-    school_id: schoolId || "OASIS-TUTORIALS",
+    school_id: schoolId || "CAMPUS-01",
     author: user?.name || "Executive Administration",
     created_at: new Date().toISOString(),
   };

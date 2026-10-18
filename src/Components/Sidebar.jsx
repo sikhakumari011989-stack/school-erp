@@ -138,7 +138,7 @@ export default function Sidebar() {
             <div className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               <p className="text-[9px] text-blue-400 font-extrabold uppercase tracking-wider truncate">
-                {tenant?.code || user.institution_code || "OASIS-TUTORIALS"}
+                {tenant?.code || user.institution_code || "CAMPUS-01"}
               </p>
             </div>
           </div>
@@ -284,7 +284,7 @@ export default function Sidebar() {
                 </span>
               </div>
               <p className="text-[10px] text-blue-400 font-extrabold uppercase tracking-widest truncate mt-0.5">
-                {tenant?.code || user.institution_code || "OASIS-TUTORIALS"}
+                {tenant?.code || user.institution_code || "CAMPUS-01"}
               </p>
             </div>
           </div>

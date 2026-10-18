@@ -83,9 +83,9 @@ export const DEFAULT_DEMO_QR_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://w
   <path d="M145 150l3 3l7 -7" stroke="%2310B981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>`;
 
-export default function SchoolUpiQrConfig({ schoolId = "OASIS-TUTORIALS", institutionName = "Apex International Academy" }) {
+export default function SchoolUpiQrConfig({ schoolId = "CAMPUS-01", institutionName = "Institutional Campus" }) {
   const { showToast } = useToast();
-  const activeCode = (schoolId || "OASIS-TUTORIALS").trim().toUpperCase();
+  const activeCode = (schoolId || "CAMPUS-01").trim().toUpperCase();
 
   const storageKeyQr = `erp_school_qr_${activeCode}`;
   const storageKeyMeta = `erp_school_upi_${activeCode}`;

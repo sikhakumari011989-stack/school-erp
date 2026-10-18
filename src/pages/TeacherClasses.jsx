@@ -66,12 +66,42 @@ export default function TeacherClasses() {
 
   const activeSchoolId = user?.institution_code || user?.school_id || tenant?.code || "CAMPUS-01";
 
-  const [classesList] = useState([
-    { id: 1, name: "Class 10-ICSE", strength: 42, subject: "Mathematics & Statistics", timing: "08:30 AM - 09:15 AM", room: "Room 302" },
-    { id: 2, name: "Class 10-A", strength: 38, subject: "Linear Algebra & Trig", timing: "09:20 AM - 10:05 AM", room: "Room 304" },
-    { id: 3, name: "Class 10-B", strength: 40, subject: "Commercial & Applied Math", timing: "11:25 AM - 12:10 PM", room: "Room 302" },
-    { id: 4, name: "Class 9-A", strength: 45, subject: "Foundational Geometry", timing: "10:35 AM - 11:20 AM", room: "Room 201" },
-  ]);
+  const [classesList, setClassesList] = useState([]);
+
+  useEffect(() => {
+    const calculateBatches = () => {
+      let localDir = [];
+      try {
+        const raw = localStorage.getItem(`erp_directory_${activeSchoolId}`);
+        if (raw) localDir = JSON.parse(raw);
+      } catch (e) {}
+
+      const normalize = (b) => (b || "").toLowerCase().replace(/class\s*/i, "").replace(/[^a-z0-9]/g, "");
+
+      const baseBatches = [
+        { id: 1, name: "Class 10-ICSE", subject: "Mathematics & Statistics", timing: "08:30 AM - 09:15 AM", room: "Room 302" },
+        { id: 2, name: "Class 10-A", subject: "Linear Algebra & Trig", timing: "09:20 AM - 10:05 AM", room: "Room 304" },
+        { id: 3, name: "Class 10-B", subject: "Commercial & Applied Math", timing: "11:25 AM - 12:10 PM", room: "Room 302" },
+        { id: 4, name: "Class 9-A", subject: "Foundational Geometry", timing: "10:35 AM - 11:20 AM", room: "Room 201" },
+      ];
+
+      const withStrength = baseBatches.map((b) => {
+        const target = normalize(b.name);
+        const count = localDir.filter((item) => {
+          if ((item.role || "student").toLowerCase() !== "student") return false;
+          const sNorm = normalize(item.class_name || item.class);
+          return sNorm === target || sNorm.includes(target) || target.includes(sNorm);
+        }).length;
+        return { ...b, strength: count };
+      });
+
+      setClassesList(withStrength);
+    };
+
+    calculateBatches();
+    window.addEventListener("erp-directory-updated", calculateBatches);
+    return () => window.removeEventListener("erp-directory-updated", calculateBatches);
+  }, [activeSchoolId]);
 
   const [activeDay, setActiveDay] = useState("Monday");
   const [selectedRosterClass, setSelectedRosterClass] = useState(null);
@@ -96,26 +126,12 @@ export default function TeacherClasses() {
       const normalize = (b) => (b || "").toLowerCase().replace(/class\s*/i, "").replace(/[^a-z0-9]/g, "");
       const target = normalize(cls.name);
 
-      let filtered = localDir
+      const filtered = localDir
         .filter((item) => (item.role || "student").toLowerCase() === "student")
         .filter((item) => {
           const itemNorm = normalize(item.class_name || item.class);
           return itemNorm === target || itemNorm.includes(target) || target.includes(itemNorm);
         });
-
-      if (filtered.length === 0) {
-        const anyStudents = localDir.filter((item) => (item.role || "student").toLowerCase() === "student");
-        if (anyStudents.length > 0) {
-          filtered = anyStudents.map((d, idx) => ({
-            ...d,
-            roll_number: d.roll_number || d.personal_code || `STU-${101 + idx}`,
-            class_name: cls.name,
-            attendance_rate: `${(92 + (idx * 1.7) % 7).toFixed(1)}%`,
-          }));
-        } else {
-          filtered = [];
-        }
-      }
 
       setRosterStudents(filtered);
     } catch (err) {
@@ -384,7 +400,7 @@ export default function TeacherClasses() {
                           </td>
                           <td className="p-3.5">
                             <span className="font-mono font-bold text-emerald-400">
-                              {s.attendance_rate || `${(93 + (idx * 1.5) % 6).toFixed(1)}%`}
+                              {s.attendance_rate || "Active"}
                             </span>
                           </td>
                           <td className="p-3.5 text-xs font-mono text-slate-300">

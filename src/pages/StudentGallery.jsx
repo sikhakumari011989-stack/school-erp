@@ -80,7 +80,7 @@ export default function StudentGallery() {
   const { user, tenant } = useContext(AppContext) || {};
   const { showToast } = useToast();
 
-  const activeSchoolId = user?.institution_code || user?.school_id || tenant?.code || "OASIS-TUTORIALS";
+  const activeSchoolId = user?.institution_code || user?.school_id || tenant?.code || "CAMPUS-01";
   const userRole = (user?.role || "").toLowerCase();
   const canUpload = ["teacher", "principal", "trustee", "admin"].includes(userRole);
 

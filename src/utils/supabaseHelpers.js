@@ -9,11 +9,11 @@ export function isUUID(str) {
 }
 
 /**
- * Resolves an institution code (e.g. 'OASIS-TUTORIALS' or 'school-demo-01')
+ * Resolves an institution code (e.g. 'CAMPUS-01' or 'school-demo-01')
  * to its Supabase UUID in the schools table.
  * If none found, safely returns the canonical demo school UUID.
  */
-export async function resolveSchoolUuid(codeOrUuid = "OASIS-TUTORIALS") {
+export async function resolveSchoolUuid(codeOrUuid = "CAMPUS-01") {
   if (isUUID(codeOrUuid)) {
     return codeOrUuid;
   }

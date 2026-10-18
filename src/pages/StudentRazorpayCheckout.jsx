@@ -184,6 +184,15 @@ export default function StudentRazorpayCheckout() {
         };
         existingList.unshift(newRecord);
         localStorage.setItem("erp_fee_ledger", JSON.stringify(existingList));
+
+        // Also persist to tenant-specific ledger and broadcast live update event
+        if (schoolId) {
+          const tenantRaw = localStorage.getItem(`erp_fee_ledger_${schoolId}`);
+          const tenantList = tenantRaw ? JSON.parse(tenantRaw) : [];
+          tenantList.unshift(newRecord);
+          localStorage.setItem(`erp_fee_ledger_${schoolId}`, JSON.stringify(tenantList));
+        }
+        window.dispatchEvent(new Event("erp-fee-ledger-updated"));
       } catch (storageErr) {
         console.warn("LocalStorage ledger sync notice:", storageErr);
       }

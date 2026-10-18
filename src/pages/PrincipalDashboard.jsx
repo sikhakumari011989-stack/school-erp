@@ -1,6 +1,7 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
+import { supabase } from "../supabaseClient";
 import SchoolUpiQrConfig from "../Components/SchoolUpiQrConfig";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
 
@@ -9,9 +10,120 @@ export default function PrincipalDashboard() {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState("features"); // 'features' | 'upi_qr'
   const [activeFeature, setActiveFeature] = useState(null);
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    enrolledStudents: 0,
+    facultyCount: 0,
+    feeCollectionRate: "0%",
+    paidCount: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
 
-  const institutionCode = user?.institution_code || user?.school_id || "OASIS-TUTORIALS";
-  const institutionName = user?.institution_name || "Apex International Academy";
+  const institutionCode = user?.institution_code || user?.school_id || "CAMPUS-01";
+  const institutionName = user?.institution_name || "Institutional Campus";
+
+  useEffect(() => {
+    const fetchPrincipalStats = async () => {
+      setLoadingStats(true);
+      try {
+        // 1. Enrolled directory
+        let localDir = [];
+        try {
+          const raw = localStorage.getItem(`erp_directory_${institutionCode}`);
+          if (raw) localDir = JSON.parse(raw);
+        } catch (e) {}
+
+        let dbStudents = [];
+        if (supabase) {
+          try {
+            const { data } = await supabase
+              .from("students")
+              .select("id")
+              .eq("school_id", institutionCode);
+            if (data) dbStudents = data;
+          } catch (e) {}
+        }
+
+        const studentSet = new Set();
+        localDir.filter((m) => (m.role || "student").toLowerCase() === "student").forEach((m) => {
+          const id = m.roll_number || m.personal_code || m.id;
+          if (id) studentSet.add(id);
+        });
+        dbStudents.forEach((s) => {
+          if (s.id) studentSet.add(s.id);
+        });
+
+        const facultyCount = localDir.filter((m) => (m.role || "").toLowerCase() === "teacher" || (m.role || "").toLowerCase() === "faculty").length;
+
+        // 2. Financial ledger
+        let localLedger = [];
+        try {
+          const tenantKey = `erp_fee_ledger_${institutionCode}`;
+          const savedTenant = localStorage.getItem(tenantKey);
+          if (savedTenant) {
+            localLedger = JSON.parse(savedTenant);
+          } else {
+            const savedGlobal = localStorage.getItem("erp_fee_ledger");
+            if (savedGlobal) {
+              const all = JSON.parse(savedGlobal);
+              localLedger = all.filter((r) => String(r.school_id || "").toUpperCase() === String(institutionCode).toUpperCase());
+            }
+          }
+        } catch (e) {}
+
+        let dbLedger = [];
+        if (supabase) {
+          try {
+            const { data } = await supabase
+              .from("fee_ledger")
+              .select("amount, status, razorpay_payment_id, id")
+              .eq("school_id", institutionCode);
+            if (data) dbLedger = data;
+          } catch (e) {}
+        }
+
+        const ledgerMap = new Map();
+        dbLedger.forEach((d, i) => ledgerMap.set(d.razorpay_payment_id || d.id || `db-${i}`, d));
+        localLedger.forEach((l, i) => {
+          const k = l.utr || l.razorpay_payment_id || l.id || `loc-${i}`;
+          if (!ledgerMap.has(k)) ledgerMap.set(k, l);
+        });
+
+        const allLedger = Array.from(ledgerMap.values());
+        let rev = 0;
+        let paid = 0;
+        allLedger.forEach((item) => {
+          const amount = Number(item.amount) || 0;
+          if ((item.status || "").toLowerCase() === "paid") {
+            rev += amount;
+            paid += 1;
+          }
+        });
+
+        const rate = allLedger.length > 0 ? `${Math.round((paid / allLedger.length) * 100)}%` : "0%";
+
+        setStats({
+          totalRevenue: rev,
+          enrolledStudents: studentSet.size,
+          facultyCount,
+          feeCollectionRate: rate,
+          paidCount: paid,
+        });
+      } catch (err) {
+        console.warn("Principal stats fetch notice:", err);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchPrincipalStats();
+    window.addEventListener("erp-directory-updated", fetchPrincipalStats);
+    window.addEventListener("erp-fee-ledger-updated", fetchPrincipalStats);
+    return () => {
+      window.removeEventListener("erp-directory-updated", fetchPrincipalStats);
+      window.removeEventListener("erp-fee-ledger-updated", fetchPrincipalStats);
+    };
+  }, [institutionCode]);
 
   const handleCopyPortalLink = () => {
     const portalUrl = `${window.location.origin}/portal?school=${institutionCode}`;
@@ -133,22 +245,71 @@ export default function PrincipalDashboard() {
           <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-8 shadow-2xl">
             <button 
               onClick={() => setActiveFeature(null)} 
-              className="text-blue-400 hover:text-white font-bold mb-6 flex items-center gap-2"
+              className="text-blue-400 hover:text-white font-bold mb-6 flex items-center gap-2 cursor-pointer"
             >
               ← Back to Command Center
             </button>
-            <div className="text-center py-12 space-y-4">
+            <div className="text-center py-6 space-y-4">
               <span className="text-6xl">{activeFeature.icon}</span>
               <h2 className="text-2xl font-extrabold text-white">{activeFeature.name}</h2>
               <p className="text-slate-400 max-w-md mx-auto">{activeFeature.desc}</p>
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg mx-auto text-left">
-                <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">Module Status: Active</p>
-                <p className="text-sm text-slate-300">This executive feature is fully initialized and synced with the institutional secure node.</p>
-              </div>
             </div>
+
+            {activeFeature.id === 1 ? (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 my-8">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-left">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Tuition Revenue</p>
+                  <p className="text-2xl font-extrabold text-emerald-400">₹{stats.totalRevenue.toLocaleString()}</p>
+                  <span className="text-[11px] text-slate-500 mt-1 block">{stats.totalRevenue > 0 ? `${stats.paidCount} settled transactions` : "0 recorded transactions"}</span>
+                </div>
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-left">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Active Enrolled Students</p>
+                  <p className="text-2xl font-extrabold text-blue-400">{stats.enrolledStudents} Enrolled</p>
+                  <span className="text-[11px] text-slate-500 mt-1 block">{stats.enrolledStudents > 0 ? "Verified in roster" : "Awaiting student enrollment"}</span>
+                </div>
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-left">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Faculty Strength</p>
+                  <p className="text-2xl font-extrabold text-purple-400">{stats.facultyCount} Active Tutors</p>
+                  <span className="text-[11px] text-slate-500 mt-1 block">{stats.facultyCount > 0 ? "Teaching faculty" : "0 faculty onboarded"}</span>
+                </div>
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-left">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Fee Collection Rate</p>
+                  <p className="text-2xl font-extrabold text-emerald-400">{stats.feeCollectionRate}</p>
+                  <span className="text-[11px] text-slate-500 mt-1 block">{stats.paidCount > 0 ? "Reconciled" : "0% collected"}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg mx-auto text-left mb-6">
+                <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">Module Status: Active</p>
+                <p className="text-sm text-slate-300">This executive feature is fully initialized and synced with the institutional secure node ({institutionCode}).</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-10">
+            {/* REAL-TIME EXECUTIVE KPI METRICS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Tuition Revenue</p>
+                <p className="text-3xl font-extrabold text-emerald-400">₹{stats.totalRevenue.toLocaleString()}</p>
+                <span className="text-xs text-slate-400 mt-2 block">{stats.totalRevenue > 0 ? `${stats.paidCount} settled transactions` : "0 recorded transactions"}</span>
+              </div>
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Active Enrolled Students</p>
+                <p className="text-3xl font-extrabold text-blue-400">{stats.enrolledStudents} Enrolled</p>
+                <span className="text-xs text-slate-400 mt-2 block">{stats.enrolledStudents > 0 ? "Verified in directory" : "0 Enrolled"}</span>
+              </div>
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Faculty Strength</p>
+                <p className="text-3xl font-extrabold text-purple-400">{stats.facultyCount} Active Tutors</p>
+                <span className="text-xs text-slate-400 mt-2 block">{stats.facultyCount > 0 ? "Faculty roster active" : "0 Active Tutors"}</span>
+              </div>
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Fee Collection Rate</p>
+                <p className="text-3xl font-extrabold text-emerald-400">{stats.feeCollectionRate}</p>
+                <span className="text-xs text-slate-400 mt-2 block">{stats.paidCount > 0 ? "Live reconciled" : "0% collected"}</span>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {features.map((feat) => (
                 <div 

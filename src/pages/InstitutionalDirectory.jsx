@@ -24,6 +24,7 @@ export default function InstitutionalDirectory() {
             const { data } = await supabase
               .from("profiles")
               .select("id, full_name, role, role_code, phone, email")
+              .eq("school_id", activeSchoolId)
               .neq("role", "student")
               .limit(50);
 

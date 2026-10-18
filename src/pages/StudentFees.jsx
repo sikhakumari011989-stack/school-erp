@@ -13,10 +13,7 @@ export default function StudentFees() {
   const [fees, setFees] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [reportCards] = useState([
-    { id: 1, term: "Class 10 Mid-Term Examination", percentage: "94.2%", grade: "A+", status: "Verified & Sealed" },
-    { id: 2, term: "Class 9 Final Board Audit", percentage: "91.8%", grade: "A+", status: "Archived" },
-  ]);
+  const [reportCards, setReportCards] = useState([]);
 
   const fetchStudentLedger = async () => {
     setLoading(true);
@@ -25,37 +22,44 @@ export default function StudentFees() {
     // Read local offline/demo fee records first
     let localRecords = [];
     try {
-      const savedRaw = localStorage.getItem("erp_fee_ledger");
-      if (savedRaw) {
-        const all = JSON.parse(savedRaw);
-        localRecords = Array.isArray(all)
-          ? all.filter((r) => !r.school_id || String(r.school_id).toUpperCase() === schoolId)
-          : [];
+      const tenantKey = `erp_fee_ledger_${schoolId}`;
+      const savedTenant = localStorage.getItem(tenantKey);
+      if (savedTenant) {
+        localRecords = JSON.parse(savedTenant);
+      } else {
+        const savedRaw = localStorage.getItem("erp_fee_ledger");
+        if (savedRaw) {
+          const all = JSON.parse(savedRaw);
+          localRecords = Array.isArray(all)
+            ? all.filter((r) => String(r.school_id || "").toUpperCase() === schoolId)
+            : [];
+        }
       }
     } catch (e) {
       console.warn("Local ledger read notice:", e);
     }
 
     try {
-      const { data, error } = await supabase
-        .from("fee_ledger")
-        .select("*")
-        .eq("school_id", schoolId)
-        .order("created_at", { ascending: false });
-
       let combined = [];
+      if (supabase) {
+        const { data, error } = await supabase
+          .from("fee_ledger")
+          .select("*")
+          .eq("school_id", schoolId)
+          .order("created_at", { ascending: false });
 
-      if (data && data.length > 0) {
-        combined = data.map((d, index) => ({
-          id: d.id || `db-${index}`,
-          term: d.term || (d.student_name ? `${d.student_name} - ${d.class_name || "Term Fee"}` : "Term Tuition Fee"),
-          amount: Number(d.amount) || 15000,
-          date: d.date || "2026-10-10",
-          status: (d.status || "paid").toLowerCase() === "paid" ? "Paid" : "Pending",
-          mode: d.payment_mode || "School UPI QR",
-          utr: d.razorpay_payment_id || d.utr || null,
-          invoice_no: d.invoice_no || null,
-        }));
+        if (!error && data && data.length > 0) {
+          combined = data.map((d, index) => ({
+            id: d.id || `db-${index}`,
+            term: d.term || (d.student_name ? `${d.student_name} - ${d.class_name || "Term Fee"}` : "Term Tuition Fee"),
+            amount: Number(d.amount) || 0,
+            date: d.date || new Date().toISOString().split("T")[0],
+            status: (d.status || "paid").toLowerCase() === "paid" ? "Paid" : "Pending",
+            mode: d.payment_mode || "School UPI QR",
+            utr: d.razorpay_payment_id || d.utr || null,
+            invoice_no: d.invoice_no || null,
+          }));
+        }
       }
 
       // Prepend local recent records if not already in list
@@ -64,10 +68,10 @@ export default function StudentFees() {
         if (!exists) {
           combined.unshift({
             id: lr.id,
-            term: lr.term || lr.title || "Second Term Tuition Fee (2026-27)",
-            amount: Number(lr.amount) || 15000,
+            term: lr.term || lr.title || "Tuition Fee Settlement",
+            amount: Number(lr.amount) || 0,
             date: lr.date || new Date().toISOString().split("T")[0],
-            status: "Paid",
+            status: (lr.status || "paid").toLowerCase() === "paid" ? "Paid" : "Pending",
             mode: lr.payment_mode || `School UPI QR (UTR: ${lr.utr || "Verified"})`,
             utr: lr.utr || lr.razorpay_payment_id || null,
             invoice_no: lr.invoice_no || null,
@@ -75,36 +79,19 @@ export default function StudentFees() {
         }
       });
 
-      if (combined.length === 0) {
-        combined = [
-          { id: 1, term: "First Term Tuition Fee (2026-27)", amount: 15000, date: "2026-06-15", status: "Paid", mode: "School UPI QR (UTR: 202610158912)", utr: "202610158912" },
-          { id: 2, term: "Annual Laboratory & Library Fund", amount: 4500, date: "2026-06-15", status: "Paid", mode: "Online UPI", utr: "UPI98231145" },
-          { id: 3, term: "Second Term Tuition Fee (2026-27)", amount: 15000, date: "2026-10-12", status: "Paid", mode: "School UPI QR (UTR: 202610243419)", utr: "202610243419" },
-        ];
-      }
-
       setFees(combined);
     } catch (err) {
       console.error("Error fetching fees for student:", err);
-      // Fallback combined with local records
       const fallback = localRecords.map((lr) => ({
         id: lr.id,
-        term: lr.term || lr.title || "Second Term Tuition Fee (2026-27)",
-        amount: Number(lr.amount) || 15000,
+        term: lr.term || lr.title || "Tuition Fee Settlement",
+        amount: Number(lr.amount) || 0,
         date: lr.date || new Date().toISOString().split("T")[0],
-        status: "Paid",
+        status: (lr.status || "paid").toLowerCase() === "paid" ? "Paid" : "Pending",
         mode: lr.payment_mode || `School UPI QR (UTR: ${lr.utr || "Verified"})`,
         utr: lr.utr || null,
         invoice_no: lr.invoice_no || null,
       }));
-
-      if (fallback.length === 0) {
-        fallback.push(
-          { id: 1, term: "First Term Tuition Fee (2026-27)", amount: 15000, date: "2026-06-15", status: "Paid", mode: "School UPI QR (UTR: 202610158912)", utr: "202610158912" },
-          { id: 2, term: "Annual Laboratory & Library Fund", amount: 4500, date: "2026-06-15", status: "Paid", mode: "Online UPI", utr: "UPI98231145" },
-          { id: 3, term: "Second Term Tuition Fee (2026-27)", amount: 15000, date: "2026-10-12", status: "Paid", mode: "School UPI QR (UTR: 202610243419)", utr: "202610243419" }
-        );
-      }
       setFees(fallback);
     } finally {
       setLoading(false);
@@ -113,6 +100,9 @@ export default function StudentFees() {
 
   useEffect(() => {
     fetchStudentLedger();
+    const handleUpdate = () => fetchStudentLedger();
+    window.addEventListener("erp-fee-ledger-updated", handleUpdate);
+    return () => window.removeEventListener("erp-fee-ledger-updated", handleUpdate);
   }, [user]);
 
   const handleDownloadInvoice = (fee) => {
@@ -195,6 +185,11 @@ export default function StudentFees() {
             <div className="p-6">
               <TableSkeleton rows={3} cols={5} />
             </div>
+          ) : fees.length === 0 ? (
+            <div className="p-12 text-center text-slate-400">
+              <p className="font-bold text-white text-base">No fee payment history found.</p>
+              <p className="text-xs mt-1">Receipts for fees settled via UPI QR or Razorpay will appear here with downloadable official tax invoices.</p>
+            </div>
           ) : (
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left border-collapse">
@@ -250,38 +245,45 @@ export default function StudentFees() {
           <div className="p-6 border-b border-slate-700/60 bg-slate-800/50">
             <h2 className="text-lg font-bold text-white">Academic Performance & Grade Vault</h2>
           </div>
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-700/60 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/40">
-                  <th className="p-5">Examination Term</th>
-                  <th className="p-5">Percentage</th>
-                  <th className="p-5">Grade</th>
-                  <th className="p-5 text-center">Document Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700/50 text-sm">
-                {reportCards.map((rc) => (
-                  <tr key={rc.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="p-5">
-                      <p className="font-bold text-white">{rc.term}</p>
-                      <p className="text-xs text-blue-400">{rc.status}</p>
-                    </td>
-                    <td className="p-5 font-extrabold text-blue-400">{rc.percentage}</td>
-                    <td className="p-5 font-mono font-bold text-emerald-400">{rc.grade}</td>
-                    <td className="p-5 text-center">
-                      <button
-                        onClick={() => handleDownloadReportCard(rc)}
-                        className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/40 hover:text-white font-bold px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 mx-auto"
-                      >
-                        <span>📥</span> Download PDF Transcript
-                      </button>
-                    </td>
+          {reportCards.length === 0 ? (
+            <div className="p-12 text-center text-slate-400">
+              <p className="font-bold text-white text-base">No examination transcripts published yet.</p>
+              <p className="text-xs mt-1">Faculty and HOD signed term report cards will be archived here once evaluations are completed.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-700/60 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/40">
+                    <th className="p-5">Examination Term</th>
+                    <th className="p-5">Percentage</th>
+                    <th className="p-5">Grade</th>
+                    <th className="p-5 text-center">Document Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-700/50 text-sm">
+                  {reportCards.map((rc) => (
+                    <tr key={rc.id} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="p-5">
+                        <p className="font-bold text-white">{rc.term}</p>
+                        <p className="text-xs text-blue-400">{rc.status}</p>
+                      </td>
+                      <td className="p-5 font-extrabold text-blue-400">{rc.percentage}</td>
+                      <td className="p-5 font-mono font-bold text-emerald-400">{rc.grade}</td>
+                      <td className="p-5 text-center">
+                        <button
+                          onClick={() => handleDownloadReportCard(rc)}
+                          className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/40 hover:text-white font-bold px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 mx-auto"
+                        >
+                          <span>📥</span> Download PDF Transcript
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

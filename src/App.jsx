@@ -6,7 +6,6 @@ import ProtectedRoute from "./Components/ProtectedRoute";
 
 // Import Components & Pages
 import Sidebar from "./Components/Sidebar";
-import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
@@ -31,8 +30,6 @@ import StudentConduct from "./pages/StudentConduct";
 import StudentFees from "./pages/StudentFees";
 import StudentTransport from "./pages/StudentTransport";
 import StudentRazorpayCheckout from "./pages/StudentRazorpayCheckout";
-import RegisterInstitution from "./pages/RegisterInstitution";
-import JoinSchool from "./pages/JoinSchool";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import PricingPolicy from "./pages/PricingPolicy";
@@ -46,8 +43,6 @@ const PUBLIC_ROUTES = [
   "/",
   "/login",
   "/portal",
-  "/register",
-  "/join",
   "/system-check",
   "/terms",
   "/privacy",
@@ -147,13 +142,13 @@ export default function App() {
         <AppLayout>
           <ErrorBoundary>
             <Routes>
-              {/* PUBLIC ONBOARDING & AUTH ROUTES */}
-              <Route path="/" element={<LandingPage />} />
+              {/* ENTERPRISE PORTAL AUTHENTICATION & LEGAL ROUTES */}
+              <Route path="/" element={<Login />} />
               <Route path="/login" element={<Login />} />
               <Route path="/portal" element={<Login isDirectPortal={true} />} />
               <Route path="/system-check" element={<SystemDiagnosticPage />} />
-              <Route path="/register" element={<RegisterInstitution />} />
-              <Route path="/join" element={<JoinSchool />} />
+              <Route path="/register" element={<Navigate to="/login" replace />} />
+              <Route path="/join" element={<Navigate to="/login" replace />} />
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/pricing-policy" element={<PricingPolicy />} />

@@ -161,7 +161,7 @@ export async function createQuiz({
   try {
     await supabase.from("lms_quizzes").insert([
       {
-        school_id: schoolId || "OASIS-TUTORIALS",
+        school_id: schoolId || "CAMPUS-01",
         title: newQuiz.title,
         subject: newQuiz.subject,
         class_name: newQuiz.className,

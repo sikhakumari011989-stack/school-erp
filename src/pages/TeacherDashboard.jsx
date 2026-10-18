@@ -20,12 +20,12 @@ export default function TeacherDashboard() {
         code: user?.institution_code || "CAMPUS-01",
       },
       student: {
-        name: "Rohan Deshmukh",
+        name: user?.name || "Student Member",
         roll_number: "STU-101",
         class: "Class 10 ICSE",
       },
-      academicTerm: "Term II Comprehensive Examination",
-      attendanceRate: "96.4%",
+      academicTerm: "Term Comprehensive Examination",
+      attendanceRate: "100%",
     });
     showToast("Official Academic Transcript PDF generated successfully!", "success");
   };
@@ -40,17 +40,48 @@ export default function TeacherDashboard() {
   useEffect(() => {
     const fetchTeacherStats = async () => {
       setLoading(true);
+      const schoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
       try {
-        const [classesRes, studentsRes, hwRes] = await Promise.all([
-          supabase.from("classes").select("id", { count: "exact" }),
-          supabase.from("students").select("id", { count: "exact" }),
-          supabase.from("homework").select("id", { count: "exact" }),
-        ]);
+        // 1. Local directory check
+        let localDir = [];
+        try {
+          const raw = localStorage.getItem(`erp_directory_${schoolId}`);
+          if (raw) localDir = JSON.parse(raw);
+        } catch (e) {}
+
+        const localStudents = localDir.filter((m) => (m.role || "student").toLowerCase() === "student");
+        const studentSet = new Set(localStudents.map((s) => s.roll_number || s.personal_code || s.id));
+
+        // 2. Classes set
+        const classSet = new Set();
+        localStudents.forEach((s) => {
+          if (s.class_name) classSet.add(s.class_name);
+        });
+
+        let dbHomeworkCount = 0;
+
+        if (supabase) {
+          try {
+            const [studentsRes, hwRes] = await Promise.all([
+              supabase.from("students").select("id, roll_number, class_name").eq("school_id", schoolId),
+              supabase.from("homework").select("id", { count: "exact" }).eq("school_id", schoolId),
+            ]);
+            if (studentsRes.data) {
+              studentsRes.data.forEach((s) => {
+                if (s.roll_number || s.id) studentSet.add(s.roll_number || s.id);
+                if (s.class_name) classSet.add(s.class_name);
+              });
+            }
+            dbHomeworkCount = hwRes.count ?? hwRes.data?.length ?? 0;
+          } catch (dbErr) {
+            console.warn("Teacher stats query notice:", dbErr);
+          }
+        }
 
         setStats({
-          classesCount: classesRes.count || classesRes.data?.length || 3,
-          studentsCount: studentsRes.count || studentsRes.data?.length || 45,
-          homeworkCount: hwRes.count || hwRes.data?.length || 0,
+          classesCount: classSet.size,
+          studentsCount: studentSet.size,
+          homeworkCount: dbHomeworkCount,
         });
       } catch (err) {
         console.error("Error loading teacher stats:", err);
@@ -60,7 +91,9 @@ export default function TeacherDashboard() {
     };
 
     fetchTeacherStats();
-  }, []);
+    window.addEventListener("erp-directory-updated", fetchTeacherStats);
+    return () => window.removeEventListener("erp-directory-updated", fetchTeacherStats);
+  }, [user?.institution_code, user?.school_id]);
 
   const teacherActions = [
     {
