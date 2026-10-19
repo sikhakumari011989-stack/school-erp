@@ -211,6 +211,31 @@ export default function BulkImportModal({ isOpen, onClose, schoolId, onImportSuc
     localStorage.setItem(`erp_directory_${activeSchoolCode}`, JSON.stringify(existingDirectory));
     window.dispatchEvent(new Event("erp-directory-updated"));
 
+    // Synchronize complete directory to Supabase cloud
+    try {
+      if (supabase) {
+        const { data: schoolRecord } = await supabase
+          .from("schools")
+          .select("id")
+          .ilike("code", activeSchoolCode)
+          .maybeSingle();
+
+        if (schoolRecord) {
+          const updatedPayload = JSON.stringify({
+            physicalAddress: "Mahim Manohar Highway, Palghar 401404",
+            directory: existingDirectory,
+            lastUpdated: new Date().toISOString(),
+          });
+          await supabase
+            .from("schools")
+            .update({ address: updatedPayload })
+            .eq("id", schoolRecord.id);
+        }
+      }
+    } catch (e) {
+      console.warn("Cloud directory bulk sync notice:", e);
+    }
+
     setIsImporting(false);
     const summaryResult = {
       total: parsedRows.length,

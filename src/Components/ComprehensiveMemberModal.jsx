@@ -4,6 +4,7 @@ import { supabase } from "../supabaseClient";
 import { logSecurityAction, AUDIT_ACTIONS } from "../utils/auditLogger";
 import { buildStandardErpEmail } from "../pages/Login";
 import { getNextMemberId } from "../utils/idGenerator";
+import { enrollMemberInCloud } from "../utils/cloudSyncService";
 
 export default function ComprehensiveMemberModal({
   isOpen,
@@ -115,50 +116,6 @@ export default function ComprehensiveMemberModal({
     const mappedEmail = studentForm.email.trim() || buildStandardErpEmail(activeSchoolId, cleanCustomId);
 
     try {
-      // 1. Supabase database sync (both students & profiles tables)
-      if (supabase) {
-        try {
-          await supabase.from("students").insert([
-            {
-              school_id: activeSchoolId,
-              name: cleanName,
-              full_name: cleanName,
-              roll_number: cleanCustomId,
-              class_name: studentForm.className.trim(),
-              guardian_name: studentForm.guardianName.trim() || null,
-              phone: studentForm.phone.trim() || null,
-              email: mappedEmail,
-              dob: studentForm.dob || null,
-              address: studentForm.address.trim() || null,
-              status: "active",
-            },
-          ]);
-        } catch (dbErr) {
-          console.warn("Supabase students insert notice:", dbErr);
-        }
-
-        try {
-          await supabase.from("profiles").insert([
-            {
-              school_id: activeSchoolId,
-              full_name: cleanName,
-              role: "student",
-              role_code: cleanCustomId,
-              class_name: studentForm.className.trim(),
-              guardian_name: studentForm.guardianName.trim() || null,
-              phone: studentForm.phone.trim() || null,
-              email: mappedEmail,
-              dob: studentForm.dob || null,
-              address: studentForm.address.trim() || null,
-            },
-          ]);
-        } catch (profErr) {
-          console.warn("Supabase profiles insert notice:", profErr);
-        }
-      }
-
-      // 2. Synchronize with multi-tenant localStorage directory
-      const localDir = getLocalDirectory();
       const newStudentRecord = {
         id: `mem_stu_${Date.now()}`,
         name: cleanName,
@@ -180,13 +137,11 @@ export default function ComprehensiveMemberModal({
         created_at: new Date().toISOString(),
       };
 
-      // Filter out duplicate if same ID already existed locally
-      const filtered = localDir.filter(
-        (m) => (m.role_code || m.roll_number || m.personal_code || "").toUpperCase() !== cleanCustomId
-      );
-      const updatedDir = [newStudentRecord, ...filtered];
-      localStorage.setItem(`erp_directory_${activeSchoolId}`, JSON.stringify(updatedDir));
-      window.dispatchEvent(new Event("erp-directory-updated"));
+      // 1. Cloud-First Enrollment into Supabase (profiles, students, and cloud directory)
+      await enrollMemberInCloud({
+        schoolCode: activeSchoolId,
+        member: newStudentRecord,
+      });
 
       // 3. Security audit logging
       logSecurityAction({
@@ -242,29 +197,6 @@ export default function ComprehensiveMemberModal({
     const mappedEmail = teacherForm.email.trim() || buildStandardErpEmail(activeSchoolId, cleanCustomId);
 
     try {
-      // 1. Supabase database sync (profiles table)
-      if (supabase) {
-        try {
-          await supabase.from("profiles").insert([
-            {
-              school_id: activeSchoolId,
-              full_name: cleanName,
-              role: "teacher",
-              role_code: cleanCustomId,
-              department: teacherForm.subject.trim() || "General Faculty",
-              class_name: "Faculty",
-              phone: teacherForm.phone.trim() || null,
-              email: mappedEmail,
-              joining_date: teacherForm.joiningDate || null,
-            },
-          ]);
-        } catch (dbErr) {
-          console.warn("Supabase teacher insert notice:", dbErr);
-        }
-      }
-
-      // 2. Synchronize with multi-tenant localStorage directory
-      const localDir = getLocalDirectory();
       const newTeacherRecord = {
         id: `mem_tch_${Date.now()}`,
         name: cleanName,
@@ -285,12 +217,11 @@ export default function ComprehensiveMemberModal({
         created_at: new Date().toISOString(),
       };
 
-      const filtered = localDir.filter(
-        (m) => (m.role_code || m.roll_number || m.personal_code || "").toUpperCase() !== cleanCustomId
-      );
-      const updatedDir = [newTeacherRecord, ...filtered];
-      localStorage.setItem(`erp_directory_${activeSchoolId}`, JSON.stringify(updatedDir));
-      window.dispatchEvent(new Event("erp-directory-updated"));
+      // 1. Cloud-First Enrollment into Supabase (profiles, teachers, and cloud directory)
+      await enrollMemberInCloud({
+        schoolCode: activeSchoolId,
+        member: newTeacherRecord,
+      });
 
       // 3. Security audit logging
       logSecurityAction({

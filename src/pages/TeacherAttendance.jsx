@@ -7,6 +7,7 @@ import { TableSkeleton } from "../Components/Skeleton";
 import { notifyAttendanceAbsent } from "../utils/notifications";
 import { logSecurityAction, AUDIT_ACTIONS } from "../utils/auditLogger";
 import { getDefaultSchoolDirectory } from "../utils/idGenerator";
+import { fetchCloudDirectory } from "../utils/cloudSyncService";
 
 const STANDARD_BATCHES = [
   "Class 10-ICSE",
@@ -50,6 +51,11 @@ export default function TeacherAttendance() {
         console.warn("Classes query notice:", err);
       }
 
+      // Fetch latest cloud directory
+      try {
+        await fetchCloudDirectory(activeSchoolId);
+      } catch (e) {}
+
       // Check directory from localStorage
       try {
         const rawDir = localStorage.getItem(`erp_directory_${activeSchoolId}`);
@@ -89,18 +95,22 @@ export default function TeacherAttendance() {
       try {
         const today = new Date().toISOString().split("T")[0];
 
-        // 1. Read directory from localStorage
+        // 1. Read directory from cloud & localStorage
         let localDir = [];
         try {
-          const raw = localStorage.getItem(`erp_directory_${activeSchoolId}`);
-          if (raw) {
-            localDir = JSON.parse(raw);
-          } else {
+          localDir = await fetchCloudDirectory(activeSchoolId);
+        } catch {}
+        if (!localDir || localDir.length === 0) {
+          try {
+            const raw = localStorage.getItem(`erp_directory_${activeSchoolId}`);
+            if (raw) {
+              localDir = JSON.parse(raw);
+            } else {
+              localDir = getDefaultSchoolDirectory(activeSchoolId);
+            }
+          } catch {
             localDir = getDefaultSchoolDirectory(activeSchoolId);
-            localStorage.setItem(`erp_directory_${activeSchoolId}`, JSON.stringify(localDir));
           }
-        } catch {
-          localDir = getDefaultSchoolDirectory(activeSchoolId);
         }
 
         // 2. Fetch from Supabase students table

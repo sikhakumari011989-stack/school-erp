@@ -4,6 +4,7 @@ import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import BrandLogo from "../Components/BrandLogo";
+import { verifyCloudLogin } from "../utils/cloudSyncService";
 
 /**
  * Standardizes email generation pattern for 2-Tier institutional credentials:
@@ -88,206 +89,121 @@ export default function Login({ isDirectPortal = false }) {
     const emailAlt = `${cleanInst.toLowerCase().replace(/[^a-z0-9]/g, "")}.${cleanPersonal.toLowerCase().replace(/[^a-z0-9]/g, "")}@gmail.com`;
 
     try {
-      // 1. Check local multi-tenant directory (from Bulk CSV, Register, or /join)
-      const localRoster = JSON.parse(
-        localStorage.getItem(`erp_directory_${cleanInst}`) || "[]"
-      );
-      const matchedLocal = localRoster.find(
-        (m) =>
-          String(m.roll_number || m.role_code || m.personal_code || "").toUpperCase() === cleanPersonal ||
-          String(m.email).toLowerCase() === standardizedEmail.toLowerCase()
-      );
+      // 1. Cloud-First Verification: Query Supabase cloud first
+      // Inspects Supabase schools, cloud directory package, profiles, students, and teachers.
+      const cloudResult = await verifyCloudLogin({
+        institutionCode: cleanInst,
+        personalCode: cleanPersonal,
+        password: pass,
+      });
 
-      if (matchedLocal) {
-        const expectedPassword = matchedLocal.default_password || "password123";
-        if (pass === expectedPassword || pass === "password123" || pass === "password") {
-          const userRole = matchedLocal.role || inferRoleFromCode(cleanPersonal);
-          const sessionPayload = {
-            id: matchedLocal.id || `local-${cleanPersonal}-${Date.now()}`,
-            name: matchedLocal.full_name || matchedLocal.name || cleanPersonal,
-            full_name: matchedLocal.full_name || matchedLocal.name || cleanPersonal,
-            role: userRole,
-            role_code: cleanPersonal,
-            personal_code: cleanPersonal,
-            school_id: matchedLocal.school_id || cleanInst,
-            institution_code: cleanInst,
-            institution_name: cleanInst,
-            email: matchedLocal.email || standardizedEmail,
-            ...matchedLocal,
-          };
-          if (typeof setUser === "function") setUser(sessionPayload);
-          login(sessionPayload);
-          try {
-            localStorage.setItem("erp_session_user", JSON.stringify(sessionPayload));
-            localStorage.setItem("erp_demo_session", JSON.stringify(sessionPayload));
-          } catch (e) {}
-          showToast(`Access granted: ${sessionPayload.name}`, "success");
-          navigate(dashboardFor(userRole));
-          return;
-        } else {
-          const friendlyMsg = "Incorrect security password for this institutional account. Please check your password.";
-          setError(friendlyMsg);
-          showToast(friendlyMsg, "error");
-          return;
-        }
-      }
-
-      // Allow any institutional profile (Trustee, Principal, Teacher, Accountant, Student, Admin) to authenticate
-      const inferredRole = inferRoleFromCode(cleanPersonal);
-      if (pass === "password123" || pass === "password" || pass === "admin123") {
-        const roleLabels = {
-          trustee: "Executive Trustee",
-          principal: "Principal",
-          teacher: "Senior Faculty",
-          accountant: "Head Accountant",
-          staff: "Non-Teaching Support Staff",
-          admin: "System Administrator",
-          student: "Student",
-        };
+      if (cloudResult && cloudResult.success && cloudResult.user) {
+        const userObj = cloudResult.user;
+        const userRole = userObj.role || inferRoleFromCode(cleanPersonal);
         const sessionPayload = {
-          id: `${inferredRole}-${cleanInst}-${cleanPersonal}`.toLowerCase(),
-          name: `${cleanInst} ${roleLabels[inferredRole] || "Member"} (${cleanPersonal})`,
-          full_name: `${cleanInst} ${roleLabels[inferredRole] || "Member"} (${cleanPersonal})`,
-          role: inferredRole,
-          role_code: cleanPersonal,
-          personal_code: cleanPersonal,
-          school_id: cleanInst,
+          ...userObj,
+          role: userRole,
+          school_id: userObj.school_id || cleanInst,
           institution_code: cleanInst,
-          institution_name: cleanInst,
-          email: standardizedEmail,
-          class_name: inferredRole === "student" ? "Class 10-ICSE" : undefined,
+          institution_name: userObj.institution_name || cleanInst,
         };
-        // Auto-seed isolated directory with this member if not present
-        if (!localRoster.some((m) => String(m.personal_code || m.role_code || "").toUpperCase() === cleanPersonal)) {
-          localStorage.setItem(`erp_directory_${cleanInst}`, JSON.stringify([...localRoster, sessionPayload]));
-        }
+
         if (typeof setUser === "function") setUser(sessionPayload);
         login(sessionPayload);
         try {
           localStorage.setItem("erp_session_user", JSON.stringify(sessionPayload));
           localStorage.setItem("erp_demo_session", JSON.stringify(sessionPayload));
+          localStorage.setItem("erp_active_tenant", cleanInst);
         } catch (e) {}
-        showToast(`Access granted: ${sessionPayload.name}`, "success");
-        navigate(dashboardFor(inferredRole));
+
+        showToast(`Access granted: ${sessionPayload.name || sessionPayload.full_name || cleanPersonal}`, "success");
+        navigate(dashboardFor(userRole));
         return;
       }
 
-      // 2. Primary Supabase Auth with standardized email
-      let authResult = await supabase.auth.signInWithPassword({
-        email: standardizedEmail,
-        password: pass,
-      });
-
-      // If primary email had domain restrictions, try alt
-      if (
-        authResult.error &&
-        (authResult.error.message.includes("Invalid login") || authResult.error.message.includes("invalid"))
-      ) {
-        const altResult = await supabase.auth.signInWithPassword({
-          email: emailAlt,
-          password: pass,
-        });
-        if (!altResult.error) {
-          authResult = altResult;
-        }
+      // If cloud verification reported an explicit password mismatch
+      if (cloudResult && cloudResult.error && cloudResult.error.toLowerCase().includes("password")) {
+        setError(cloudResult.error);
+        showToast(cloudResult.error, "error");
+        return;
       }
 
-      // 3. Check if Supabase auth succeeded
-      if (!authResult.error && authResult.data?.user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id, role, role_code, full_name, school_id, schools ( code, name )")
-          .eq("id", authResult.data.user.id)
-          .maybeSingle();
-
-        // Strict Tenant Isolation Verification: Check school code match
-        const profileSchool = (profile?.schools?.code || profile?.school_id || "").toUpperCase();
-        if (profileSchool && profileSchool !== cleanInst) {
-          const msg = `Cross-tenant access denied: Account belongs to ${profileSchool}, not ${cleanInst}.`;
-          setError(msg);
-          showToast(msg, "error");
-          return;
-        }
-
-        const role = profile?.role || authResult.data.user.user_metadata?.role || inferRoleFromCode(cleanPersonal);
-        const fullName = profile?.full_name || authResult.data.user.user_metadata?.full_name || cleanPersonal;
-        const userObj = {
-          id: authResult.data.user.id,
-          name: fullName,
-          full_name: fullName,
-          role,
-          role_code: profile?.role_code || cleanPersonal,
-          personal_code: profile?.role_code || cleanPersonal,
-          school_id: profile?.school_id || cleanInst,
-          institution_code: profile?.schools?.code || cleanInst,
-          institution_name: profile?.schools?.name || cleanInst,
-          email: authResult.data.user.email,
-          authUid: authResult.data.user.id,
-        };
-
-        if (typeof setUser === "function") setUser(userObj);
-        login(userObj);
+      // 2. Primary Supabase Auth with standardized email (for auth accounts)
+      if (supabase) {
         try {
-          localStorage.setItem("erp_session_user", JSON.stringify(userObj));
-          localStorage.setItem("erp_demo_session", JSON.stringify(userObj));
-        } catch (e) {}
-        showToast(`Welcome back, ${fullName}!`, "success");
-        navigate(dashboardFor(role));
-        return;
-      }
+          let authResult = await supabase.auth.signInWithPassword({
+            email: standardizedEmail,
+            password: pass,
+          });
 
-      // 4. Fallback: Check profiles table in Supabase
-      try {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, role, role_code, full_name, school_id, schools ( code, name )")
-          .eq("role_code", cleanPersonal)
-          .limit(1);
-
-        if (profiles && profiles.length > 0) {
-          const profile = profiles[0];
-          const profileSchool = (profile?.schools?.code || profile?.school_id || "").toUpperCase();
-          if (profileSchool && profileSchool !== cleanInst) {
-            const msg = `Cross-tenant access denied: Account belongs to ${profileSchool}, not ${cleanInst}.`;
-            setError(msg);
-            showToast(msg, "error");
-            return;
+          // If primary email had domain restrictions, try alt
+          if (
+            authResult.error &&
+            (authResult.error.message.includes("Invalid login") || authResult.error.message.includes("invalid"))
+          ) {
+            const altResult = await supabase.auth.signInWithPassword({
+              email: emailAlt,
+              password: pass,
+            });
+            if (!altResult.error) {
+              authResult = altResult;
+            }
           }
 
-          const role = profile.role || inferRoleFromCode(cleanPersonal);
-          const fullName = profile.full_name || cleanPersonal;
-          const userObj = {
-            id: profile.id || `profile-${cleanPersonal}-${Date.now()}`,
-            name: fullName,
-            full_name: fullName,
-            role,
-            role_code: profile.role_code || cleanPersonal,
-            personal_code: profile.role_code || cleanPersonal,
-            school_id: profile.school_id || cleanInst,
-            institution_code: profile.schools?.code || cleanInst,
-            institution_name: profile.schools?.name || cleanInst,
-            email: standardizedEmail,
-          };
-          if (typeof setUser === "function") setUser(userObj);
-          login(userObj);
-          try {
-            localStorage.setItem("erp_session_user", JSON.stringify(userObj));
-            localStorage.setItem("erp_demo_session", JSON.stringify(userObj));
-          } catch (e) {}
-          showToast(`Access granted: ${fullName}`, "success");
-          navigate(dashboardFor(role));
-          return;
+          // Check if Supabase auth succeeded
+          if (!authResult.error && authResult.data?.user) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("id, role, role_code, full_name, school_id, schools ( code, name )")
+              .eq("id", authResult.data.user.id)
+              .maybeSingle();
+
+            const profileSchool = (profile?.schools?.code || profile?.school_id || "").toUpperCase();
+            if (profileSchool && profileSchool !== cleanInst) {
+              const msg = `Cross-tenant access denied: Account belongs to ${profileSchool}, not ${cleanInst}.`;
+              setError(msg);
+              showToast(msg, "error");
+              return;
+            }
+
+            const role = profile?.role || authResult.data.user.user_metadata?.role || inferRoleFromCode(cleanPersonal);
+            const fullName = profile?.full_name || authResult.data.user.user_metadata?.full_name || cleanPersonal;
+            const userObj = {
+              id: authResult.data.user.id,
+              name: fullName,
+              full_name: fullName,
+              role,
+              role_code: profile?.role_code || cleanPersonal,
+              personal_code: profile?.role_code || cleanPersonal,
+              school_id: profile?.school_id || cleanInst,
+              institution_code: profile?.schools?.code || cleanInst,
+              institution_name: profile?.schools?.name || cleanInst,
+              email: authResult.data.user.email,
+              authUid: authResult.data.user.id,
+            };
+
+            if (typeof setUser === "function") setUser(userObj);
+            login(userObj);
+            try {
+              localStorage.setItem("erp_session_user", JSON.stringify(userObj));
+              localStorage.setItem("erp_demo_session", JSON.stringify(userObj));
+              localStorage.setItem("erp_active_tenant", cleanInst);
+            } catch (e) {}
+            showToast(`Welcome back, ${fullName}!`, "success");
+            navigate(dashboardFor(role));
+            return;
+          }
+        } catch (authErr) {
+          console.warn("Supabase auth check notice:", authErr);
         }
-      } catch (profErr) {
-        console.warn("Profile table query notice:", profErr);
       }
 
-      const friendlyMsg = "Incorrect institution code or personal ID. Please check your school credentials.";
+      const friendlyMsg = cloudResult?.error || "Incorrect institution code or personal ID. Please check your school credentials.";
       setError(friendlyMsg);
       showToast(friendlyMsg, "error");
     } catch (err) {
       console.error("Login unexpected error:", err);
-      const friendlyMsg = "Incorrect institution code or personal ID. Please check your school credentials.";
+      const friendlyMsg = err.message || "Incorrect institution code or personal ID. Please check your school credentials.";
       setError(friendlyMsg);
       showToast(friendlyMsg, "error");
     } finally {

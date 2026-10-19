@@ -4,6 +4,7 @@ import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { logSecurityAction, AUDIT_ACTIONS } from "../utils/auditLogger";
 import { buildStandardErpEmail } from "./Login";
+import { provisionSchoolInCloud } from "../utils/cloudSyncService";
 import BrandLogo from "../Components/BrandLogo";
 
 export default function MasterSchoolSetup() {
@@ -57,126 +58,31 @@ export default function MasterSchoolSetup() {
     }
 
     setLoading(true);
-    const cleanCode = formData.institutionCode.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
-    const cleanAdminId = (formData.adminRoleCode || "HOD-01").trim().toUpperCase();
-    const cleanPassword = formData.password.trim() || "password123";
-    const mappedEmail = formData.email.trim() || buildStandardErpEmail(cleanCode, cleanAdminId);
 
     try {
-      // 1. Insert or update Supabase schools table
-      let createdSchoolId = cleanCode;
-      if (supabase) {
-        try {
-          const schoolPayload = {
-            name: formData.institutionName.trim(),
-            code: cleanCode,
-            contact_email: mappedEmail,
-            phone: formData.phone.trim(),
-            address: formData.address.trim(),
-            brand_color: "#3B82F6",
-          };
+      // Execute 100% cloud-first provisioning via Supabase
+      const outcomeData = await provisionSchoolInCloud({
+        institutionName: formData.institutionName,
+        institutionCode: formData.institutionCode,
+        adminName: formData.adminName,
+        adminId: formData.adminRoleCode,
+        password: formData.password,
+        phone: formData.phone,
+        email: formData.email,
+        address: formData.address,
+      });
 
-          const { data: schoolData, error: schoolErr } = await supabase
-            .from("schools")
-            .insert([schoolPayload])
-            .select("id, code, name")
-            .single();
-
-          if (!schoolErr && schoolData) {
-            createdSchoolId = schoolData.id || cleanCode;
-          }
-        } catch (dbErr) {
-          console.warn("Supabase school table notice:", dbErr);
-        }
-
-        // 2. Insert master HOD record into profiles
-        try {
-          await supabase.from("profiles").insert([
-            {
-              full_name: formData.adminName.trim(),
-              role: "trustee",
-              role_code: cleanAdminId,
-              school_id: cleanCode,
-              phone: formData.phone.trim(),
-              email: mappedEmail,
-            },
-          ]);
-        } catch (profErr) {
-          console.warn("Supabase profiles table notice:", profErr);
-        }
-      }
-
-      // 3. True Clean-Slate Multi-Tenant Initialization in localStorage
-      // Seed directory with ONLY the Master HOD (0 mock students or teachers)
-      const masterHodMember = {
-        id: `hod_${Date.now()}`,
-        name: formData.adminName.trim(),
-        full_name: formData.adminName.trim(),
-        role: "trustee",
-        role_code: cleanAdminId,
-        roll_number: cleanAdminId,
-        personal_code: cleanAdminId,
-        class_name: "Executive Management",
-        school_id: cleanCode,
-        institution_code: cleanCode,
-        institution_name: formData.institutionName.trim(),
-        email: mappedEmail,
-        phone: formData.phone.trim(),
-        address: formData.address.trim(),
-        default_password: cleanPassword,
-        created_at: new Date().toISOString(),
-      };
-
-      localStorage.setItem(`erp_directory_${cleanCode}`, JSON.stringify([masterHodMember]));
-      localStorage.setItem("erp_active_tenant", cleanCode);
-
-      // Track registered schools list locally for convenient portal lookup
-      try {
-        const schoolsListRaw = localStorage.getItem("erp_registered_schools") || "[]";
-        const schoolsList = JSON.parse(schoolsListRaw);
-        const filteredSchools = schoolsList.filter((s) => (s.code || "").toUpperCase() !== cleanCode);
-        filteredSchools.unshift({
-          code: cleanCode,
-          name: formData.institutionName.trim(),
-          adminName: formData.adminName.trim(),
-          adminId: cleanAdminId,
-          createdAt: new Date().toISOString(),
-        });
-        localStorage.setItem("erp_registered_schools", JSON.stringify(filteredSchools));
-      } catch (e) {}
-
-      // Clean-slate all data partitions for the new school
-      localStorage.removeItem(`erp_fee_structure_${cleanCode}`);
-      localStorage.removeItem(`erp_fee_ledger_${cleanCode}`);
-      localStorage.removeItem(`erp_notices_${cleanCode}`);
-      localStorage.removeItem(`erp_transport_fleet_${cleanCode}`);
-      localStorage.removeItem(`erp_cctv_nodes_${cleanCode}`);
-      localStorage.removeItem(`erp_non_teaching_staff_${cleanCode}`);
-      localStorage.removeItem(`erp_certificate_requests_${cleanCode}`);
-
-      window.dispatchEvent(new Event("erp-directory-updated"));
-
-      // 4. Security Audit Trail
+      // Security Audit Trail
       logSecurityAction({
         action: AUDIT_ACTIONS.TENANT_SWITCH || "INSTITUTION_PROVISIONED",
         entityType: "SCHOOL",
-        entityId: cleanCode,
-        details: `Platform Owner provisioned institutional node "${formData.institutionName}" (${cleanCode}) with Master Admin ${cleanAdminId}`,
-        schoolId: cleanCode,
+        entityId: outcomeData.institutionCode,
+        details: `Platform Owner provisioned institutional node "${outcomeData.institutionName}" (${outcomeData.institutionCode}) with Master Admin ${outcomeData.adminId}`,
+        schoolId: outcomeData.institutionCode,
       });
 
-      const outcomeData = {
-        institutionName: formData.institutionName.trim(),
-        institutionCode: cleanCode,
-        adminName: formData.adminName.trim(),
-        adminId: cleanAdminId,
-        password: cleanPassword,
-        mappedEmail: mappedEmail,
-        portalUrl: `${window.location.origin}/portal?school=${cleanCode}`,
-      };
-
       setSuccessData(outcomeData);
-      showToast(`Institution "${formData.institutionName}" (${cleanCode}) successfully provisioned!`, "success");
+      showToast(`Institution "${outcomeData.institutionName}" (${outcomeData.institutionCode}) successfully provisioned to cloud!`, "success");
     } catch (err) {
       console.error("Master setup error:", err);
       showToast("Provisioning completed in sandbox partition.", "info");

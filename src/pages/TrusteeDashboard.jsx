@@ -16,6 +16,7 @@ import FeeStructureConfigurator from "../Components/FeeStructureConfigurator";
 import ComprehensiveMemberModal from "../Components/ComprehensiveMemberModal";
 import { buildStandardErpEmail } from "./Login";
 import { getNextMemberId, getDefaultSchoolDirectory } from "../utils/idGenerator";
+import { enrollMemberInCloud, fetchCloudDirectory } from "../utils/cloudSyncService";
 
 export default function TrusteeDashboard() {
   const { user } = useContext(AppContext) || {};
@@ -141,18 +142,26 @@ export default function TrusteeDashboard() {
         console.warn("Supabase fetch notice:", dbErr);
       }
 
-      // Merge with local tenant directory
+      // Merge with cloud directory and local tenant directory
+      let cloudDir = [];
+      try {
+        cloudDir = await fetchCloudDirectory(institutionCode);
+      } catch (cErr) {
+        console.warn("Cloud directory fetch notice:", cErr);
+      }
+
       let localDir = [];
       try {
         const raw = localStorage.getItem(`erp_directory_${institutionCode}`);
         if (raw) {
           localDir = JSON.parse(raw);
+        } else if (cloudDir.length > 0) {
+          localDir = cloudDir;
         } else {
           localDir = getDefaultSchoolDirectory(institutionCode);
-          localStorage.setItem(`erp_directory_${institutionCode}`, JSON.stringify(localDir));
         }
       } catch {
-        localDir = getDefaultSchoolDirectory(institutionCode);
+        localDir = cloudDir.length > 0 ? cloudDir : getDefaultSchoolDirectory(institutionCode);
       }
 
       const mergedMap = new Map();
@@ -375,66 +384,30 @@ export default function TrusteeDashboard() {
     const mappedEmail = buildStandardErpEmail(institutionCode, generatedCode);
 
     try {
-      if (isTeacher) {
-        // Teacher profile record
-        try {
-          await supabase.from("profiles").insert([{
-            full_name: newStudent.name.trim(),
-            role: "teacher",
-            role_code: generatedCode,
-            school_id: institutionCode,
-            phone: newStudent.phone || "+91 9800000000",
-            email: mappedEmail,
-          }]);
-        } catch (dbE) {
-          console.warn("Profiles insert notice:", dbE);
-        }
-      } else {
-        // Student record
-        try {
-          const payload = {
-            school_id: institutionCode,
-            name: newStudent.name.trim(),
-            full_name: newStudent.name.trim(),
-            roll_number: generatedCode,
-            class_name: newStudent.class?.trim() || "Class 10-ICSE",
-            status: "active",
-          };
-          await supabase.from("students").insert([payload]);
-        } catch (sE) {
-          console.warn("Students table insert notice:", sE);
-        }
-
-        try {
-          await supabase.from("profiles").insert([{
-            full_name: newStudent.name.trim(),
-            role: "student",
-            role_code: generatedCode,
-            school_id: institutionCode,
-            class_name: newStudent.class?.trim() || "Class 10-ICSE",
-            phone: newStudent.phone || "+91 9800000000",
-            email: mappedEmail,
-          }]);
-        } catch (pE) {
-          console.warn("Profiles insert notice:", pE);
-        }
-      }
-
-      // Synchronize with local tenant directory
-      const localDir = JSON.parse(localStorage.getItem(`erp_directory_${institutionCode}`) || "[]");
-      localDir.unshift({
+      const memberRecord = {
+        id: `mem_${isTeacher ? "tch" : "stu"}_${Date.now()}`,
+        name: newStudent.name.trim(),
         full_name: newStudent.name.trim(),
-        role: newStudent.role,
+        role: newStudent.role || (isTeacher ? "teacher" : "student"),
         role_code: generatedCode,
         roll_number: generatedCode,
         personal_code: generatedCode,
         school_id: institutionCode,
         class_name: newStudent.class?.trim() || (isTeacher ? "Faculty" : "Class 10-ICSE"),
+        department: isTeacher ? (newStudent.subject?.trim() || "General Faculty") : undefined,
+        subject: isTeacher ? (newStudent.subject?.trim() || "General Faculty") : undefined,
+        phone: newStudent.phone || "+91 9800000000",
         email: mappedEmail,
         default_password: defaultPassword,
+        status: "active",
+        created_at: new Date().toISOString(),
+      };
+
+      // Cloud-First Enrollment into Supabase (profiles, students/teachers, schools cloud directory)
+      await enrollMemberInCloud({
+        schoolCode: institutionCode,
+        member: memberRecord,
       });
-      localStorage.setItem(`erp_directory_${institutionCode}`, JSON.stringify(localDir));
-      window.dispatchEvent(new Event("erp-directory-updated"));
 
       logSecurityAction({
         action: AUDIT_ACTIONS.STUDENT_ADMITTED,
@@ -451,9 +424,6 @@ export default function TrusteeDashboard() {
     } catch (err) {
       console.error("Error adding member:", err);
       setFormError(err.message || "Failed to add member.");
-      window.dispatchEvent(new Event("erp-directory-updated"));
-      showToast("Notice: Saved to local campus directory: " + generatedCode, "info");
-      fetchStudents();
     } finally {
       setSubmitting(false);
     }
