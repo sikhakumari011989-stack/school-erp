@@ -196,7 +196,6 @@ export default function ComprehensiveMemberModal({
     const defaultPassword = teacherForm.password.trim() || "password123";
     const mappedEmail = teacherForm.email.trim() || buildStandardErpEmail(activeSchoolId, cleanCustomId);
 
-    try {
       const newTeacherRecord = {
         id: `mem_tch_${Date.now()}`,
         name: cleanName,
