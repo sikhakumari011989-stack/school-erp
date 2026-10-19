@@ -15,6 +15,7 @@ import DisciplinaryLogManager from "../Components/DisciplinaryLogManager";
 import CustomReportBuilder from "../Components/CustomReportBuilder";
 import SystemAudit from "./SystemAudit";
 import BulkImportModal from "../Components/BulkImportModal";
+import ComprehensiveMemberModal from "../Components/ComprehensiveMemberModal";
 import FeeStructureConfigurator from "../Components/FeeStructureConfigurator";
 import NoticeBanner from "../Components/NoticeBanner";
 import { getNotices, publishNotice, deleteNotice } from "../utils/noticeService";
@@ -56,6 +57,7 @@ export default function PrincipalDashboard() {
   // Module 2: User Roster State
   const [rosterMembers, setRosterMembers] = useState([]);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+  const [comprehensiveModalRole, setComprehensiveModalRole] = useState("student");
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [quickAddForm, setQuickAddForm] = useState({
     name: "",
@@ -622,20 +624,33 @@ export default function PrincipalDashboard() {
                       Add students and teachers, bulk onboard from CSV spreadsheets, and export WhatsApp credential sheets.
                     </p>
                   </div>
-                  <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2.5 flex-wrap">
                     <button
-                      onClick={() => setIsBulkModalOpen(true)}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-1.5"
+                      onClick={() => {
+                        setComprehensiveModalRole("student");
+                        setShowQuickAddModal(true);
+                      }}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-1.5 border border-emerald-400/40"
                     >
-                      <span>📥</span>
-                      <span>Bulk CSV Onboarding</span>
+                      <span>🎓</span>
+                      <span>➕ Enroll New Student</span>
                     </button>
                     <button
-                      onClick={() => setShowQuickAddModal(true)}
-                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-blue-600/30 transition-all cursor-pointer flex items-center gap-1.5"
+                      onClick={() => {
+                        setComprehensiveModalRole("teacher");
+                        setShowQuickAddModal(true);
+                      }}
+                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-blue-600/30 transition-all cursor-pointer flex items-center gap-1.5 border border-blue-400/40"
                     >
-                      <span>➕</span>
-                      <span>Quick Add Member</span>
+                      <span>👨‍🏫</span>
+                      <span>➕ Onboard New Faculty</span>
+                    </button>
+                    <button
+                      onClick={() => setIsBulkModalOpen(true)}
+                      className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>📥</span>
+                      <span>Bulk CSV</span>
                     </button>
                     <button
                       onClick={handleExportWhatsAppSheet}
@@ -665,12 +680,28 @@ export default function PrincipalDashboard() {
                       <p className="text-xs text-slate-400 max-w-md mx-auto">
                         No students or faculty enrolled yet. Click "Quick Add Member" or "Bulk CSV Onboarding" above to get started.
                       </p>
-                      <button
-                        onClick={() => setShowQuickAddModal(true)}
-                        className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer mt-2"
-                      >
-                        + Onboard First Member
-                      </button>
+                      <div className="flex items-center justify-center gap-2 pt-2 flex-wrap">
+                        <button
+                          onClick={() => {
+                            setComprehensiveModalRole("student");
+                            setShowQuickAddModal(true);
+                          }}
+                          className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                        >
+                          <span>🎓</span>
+                          <span>+ Enroll Student</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setComprehensiveModalRole("teacher");
+                            setShowQuickAddModal(true);
+                          }}
+                          className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                        >
+                          <span>👨‍🏫</span>
+                          <span>+ Onboard Faculty</span>
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="overflow-x-auto w-full">
@@ -1117,99 +1148,16 @@ export default function PrincipalDashboard() {
           </div>
         )}
 
-        {/* MODAL 2: QUICK ADD MEMBER */}
-        {showQuickAddModal && (
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
-            <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
-              <h3 className="text-xl font-extrabold text-white mb-1">Quick Add Institutional Member 👥</h3>
-              <p className="text-xs text-slate-400 mb-6">Enrolls scholar or faculty with credentials (password123).</p>
-
-              <form onSubmit={handleQuickAddMember} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Ananya R. Deshmukh"
-                    value={quickAddForm.name}
-                    onChange={(e) => setQuickAddForm({ ...quickAddForm, name: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Member Role</label>
-                    <select
-                      value={quickAddForm.role}
-                      onChange={(e) => {
-                        const r = e.target.value;
-                        setQuickAddForm({
-                          ...quickAddForm,
-                          role: r,
-                          roleCode: r === "teacher" ? `TCH-${Date.now().toString().slice(-3)}` : `STU-${Date.now().toString().slice(-3)}`,
-                        });
-                      }}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="student">Student</option>
-                      <option value="teacher">Faculty Member</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Personal ID *</label>
-                    <input
-                      type="text"
-                      value={quickAddForm.roleCode}
-                      onChange={(e) => setQuickAddForm({ ...quickAddForm, roleCode: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {quickAddForm.role === "student" && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Class Batch</label>
-                    <input
-                      type="text"
-                      value={quickAddForm.className}
-                      onChange={(e) => setQuickAddForm({ ...quickAddForm, className: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Phone Number (WhatsApp)</label>
-                  <input
-                    type="tel"
-                    placeholder="e.g. +91 98200 45678"
-                    value={quickAddForm.phone}
-                    onChange={(e) => setQuickAddForm({ ...quickAddForm, phone: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setShowQuickAddModal(false)}
-                    className="px-4 py-2 rounded-xl text-slate-400 hover:text-white font-bold text-xs cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg transition-all cursor-pointer"
-                  >
-                    Enrol Member
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {/* MODAL 2: COMPREHENSIVE MEMBER ENROLLMENT & ONBOARDING */}
+        <ComprehensiveMemberModal
+          isOpen={showQuickAddModal}
+          onClose={() => setShowQuickAddModal(false)}
+          schoolId={institutionCode}
+          initialRole={comprehensiveModalRole}
+          onSuccess={() => {
+            fetchPrincipalStats();
+          }}
+        />
 
         {/* MODAL 3: BULK IMPORT */}
         <BulkImportModal

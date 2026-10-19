@@ -36,6 +36,7 @@ import PricingPolicy from "./pages/PricingPolicy";
 import RefundPolicy from "./pages/RefundPolicy";
 import ContactUs from "./pages/ContactUs";
 import SystemDiagnosticPage from "./pages/SystemDiagnosticPage";
+import MasterSchoolSetup from "./pages/MasterSchoolSetup";
 import OfflineIndicator from "./Components/OfflineIndicator";
 import ErrorBoundary from "./Components/ErrorBoundary";
 
@@ -44,6 +45,7 @@ const PUBLIC_ROUTES = [
   "/login",
   "/portal",
   "/system-check",
+  "/master-setup",
   "/terms",
   "/privacy",
   "/pricing-policy",
@@ -148,6 +150,7 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/portal" element={<Login isDirectPortal={true} />} />
               <Route path="/system-check" element={<SystemDiagnosticPage />} />
+              <Route path="/master-setup" element={<MasterSchoolSetup />} />
               <Route path="/register" element={<Navigate to="/login" replace />} />
               <Route path="/join" element={<Navigate to="/login" replace />} />
               <Route path="/terms" element={<TermsOfService />} />

@@ -100,12 +100,6 @@ export default function LandingPage() {
             <span>Direct Portal (/portal)</span>
           </Link>
           <Link
-            to="/register"
-            className="text-emerald-400 hover:text-emerald-300 font-extrabold text-xs sm:text-sm transition-all px-3 py-2 cursor-pointer"
-          >
-            Register School
-          </Link>
-          <Link
             to="/login?demo=true"
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/30 transition-all border border-blue-500/40 hover:scale-105 inline-flex items-center gap-1.5"
           >
@@ -135,11 +129,11 @@ export default function LandingPage() {
 
         <div className="flex justify-center items-center gap-4 flex-wrap">
           <Link
-            to="/register"
+            to="/portal"
             className="bg-gradient-to-r from-emerald-500 via-teal-600 to-emerald-600 hover:from-emerald-400 hover:to-teal-500 text-white font-extrabold px-8 py-4 rounded-2xl shadow-xl shadow-emerald-600/30 transition-all border border-emerald-400/50 text-base hover:scale-105 inline-flex items-center gap-2 cursor-pointer"
           >
-            <span>🚀</span>
-            <span>Register New School (2-Min Setup)</span>
+            <span>🔐</span>
+            <span>Sign In to Institutional Portal</span>
           </Link>
           <button
             onClick={() => setShowDemoModal(true)}
@@ -312,8 +306,8 @@ export default function LandingPage() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/register" className="hover:text-white transition-colors">
-                    Register Institution
+                  <Link to="/portal" className="hover:text-white transition-colors">
+                    Institutional Portal Login
                   </Link>
                 </li>
                 <li>

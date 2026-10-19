@@ -167,9 +167,23 @@ export default function StudentDashboard() {
               Track your daily classroom attendance, assigned homework, and Razorpay fee receipts
             </p>
           </div>
-          <div className="text-right hidden sm:block bg-slate-900/60 border border-slate-800 p-4 rounded-2xl">
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Enrolled Classroom Batch</p>
-            <p className="text-xl font-black text-white">{user?.class_name || user?.class || "General Batch"}</p>
+          <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl flex items-center gap-4 flex-wrap">
+            <div>
+              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Personal ID / Roll No</p>
+              <p className="text-sm font-mono font-black text-emerald-400">
+                {user?.role_code || user?.roll_number || user?.personal_code || "STU-101"}
+              </p>
+            </div>
+            <div className="border-l border-slate-800 pl-4">
+              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Classroom Batch</p>
+              <p className="text-sm font-black text-white">{user?.class_name || user?.class || "General Batch"}</p>
+            </div>
+            {user?.guardian_name && (
+              <div className="border-l border-slate-800 pl-4 hidden sm:block">
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Guardian</p>
+                <p className="text-xs font-semibold text-slate-300">{user.guardian_name}</p>
+              </div>
+            )}
           </div>
         </div>
 

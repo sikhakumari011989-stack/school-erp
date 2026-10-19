@@ -134,14 +134,14 @@ export default function PricingPolicy() {
                 </div>
               </div>
               <Link
-                to="/register"
+                to="/contact"
                 className={`w-full py-3 rounded-xl font-bold text-xs text-center transition-all ${
                   t.popular
                     ? "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30"
                     : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
                 }`}
               >
-                Get Started with {t.name} →
+                Inquire for {t.name} →
               </Link>
             </div>
           ))}

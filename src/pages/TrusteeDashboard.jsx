@@ -13,6 +13,7 @@ import CertificateManagementCard from "../Components/CertificateManagementCard";
 import TransportFleetManager from "../Components/TransportFleetManager";
 import NonTeachingStaffManager from "../Components/NonTeachingStaffManager";
 import FeeStructureConfigurator from "../Components/FeeStructureConfigurator";
+import ComprehensiveMemberModal from "../Components/ComprehensiveMemberModal";
 import { buildStandardErpEmail } from "./Login";
 import { getNextMemberId, getDefaultSchoolDirectory } from "../utils/idGenerator";
 
@@ -34,6 +35,8 @@ export default function TrusteeDashboard() {
   const [formError, setFormError] = useState(null);
   const [newStudent, setNewStudent] = useState({ name: "", class: "", subject: "", role: "student", phone: "" });
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [isComprehensiveModalOpen, setIsComprehensiveModalOpen] = useState(false);
+  const [comprehensiveModalRole, setComprehensiveModalRole] = useState("student");
   const [showDiagnosticModal, setShowDiagnosticModal] = useState(false);
 
   // Notices state
@@ -619,92 +622,69 @@ export default function TrusteeDashboard() {
           </div>
         ) : activeTab === "academics" ? (
           <div className="space-y-8">
-            {/* QUICK ADD SINGLE STUDENT / TEACHER FORM */}
-            <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 sm:p-8 shadow-2xl">
-              <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+            {/* COMPREHENSIVE MEMBER ONBOARDING CARDS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* CARD 1: ENROLL NEW STUDENT */}
+              <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-emerald-500/30 rounded-3xl p-6 sm:p-7 shadow-2xl flex flex-col justify-between relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Quick Add Single Student / Teacher</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Instantly provisions a member with an auto-generated Tier-2 Personal ID and default PIN
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-xl shadow-lg">
+                      🎓
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      Scholar Enrollment
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-white">Enroll New Student</h3>
+                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                    Customizable Roll ID / Admission No (STU-*), class batch, guardian contact, date of birth, residential address, and default credentials.
                   </p>
                 </div>
-                <div className="flex items-center gap-2 text-xs font-mono bg-purple-500/10 border border-purple-500/30 px-3 py-1.5 rounded-xl text-purple-300">
-                  <span>Auto-ID Locked: </span>
-                  <span className="font-extrabold text-white">
-                    {nextSuggestedId}
-                  </span>
-                  <span className="text-slate-500">|</span>
-                  <span>PIN: <strong className="text-emerald-400">password123</strong></span>
+                <div className="pt-6">
+                  <button
+                    onClick={() => {
+                      setComprehensiveModalRole("student");
+                      setIsComprehensiveModalOpen(true);
+                    }}
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-600/30 transition-all text-xs border border-emerald-400/40 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <span>➕</span>
+                    <span>Enroll New Student with Custom ID</span>
+                  </button>
                 </div>
               </div>
 
-              {formError && (
-                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/40 text-red-400 rounded-xl text-sm font-semibold">
-                  {formError}
-                </div>
-              )}
-
-              <form onSubmit={handleQuickAddMember} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* CARD 2: ONBOARD NEW FACULTY */}
+              <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-blue-500/30 rounded-3xl p-6 sm:p-7 shadow-2xl flex flex-col justify-between relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    Full Name *
-                  </label>
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="e.g., Aarav Sharma" 
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500"
-                    value={newStudent.name}
-                    onChange={(e) => setNewStudent({...newStudent, name: e.target.value})}
-                    disabled={submitting}
-                  />
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center text-xl shadow-lg">
+                      👨‍🏫
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                      Faculty Onboarding
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-white">Onboard Teaching Faculty</h3>
+                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                    Customizable Employee ID (TCH-*), department specialization, contact telephone, official email, and appointment date.
+                  </p>
                 </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    Role Category *
-                  </label>
-                  <select
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm font-semibold focus:outline-none focus:border-purple-500"
-                    value={newStudent.role}
-                    onChange={(e) => setNewStudent({...newStudent, role: e.target.value})}
-                    disabled={submitting}
+                <div className="pt-6">
+                  <button
+                    onClick={() => {
+                      setComprehensiveModalRole("teacher");
+                      setIsComprehensiveModalOpen(true);
+                    }}
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-3.5 px-4 rounded-xl shadow-lg shadow-blue-600/30 transition-all text-xs border border-blue-400/40 cursor-pointer flex items-center justify-center gap-2"
                   >
-                    <option value="student">🎓 Student (STU-*)</option>
-                    <option value="teacher">👨‍🏫 Teacher / Faculty (TCH-*)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {newStudent.role === "teacher" ? "Department / Subject" : "Batch / Class"} *
-                  </label>
-                  <input 
-                    type="text" 
-                    list="classList"
-                    placeholder={newStudent.role === "teacher" ? "e.g., Mathematics" : "e.g., Class 10 ICSE"} 
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500"
-                    value={newStudent.class}
-                    onChange={(e) => setNewStudent({...newStudent, class: e.target.value})}
-                    disabled={submitting}
-                  />
-                  <datalist id="classList">
-                    {classes.map((cls) => (
-                      <option key={cls.id} value={`Class ${cls.name}`} />
-                    ))}
-                  </datalist>
-                </div>
-
-                <div className="flex flex-col justify-end">
-                  <button 
-                    type="submit" 
-                    disabled={submitting}
-                    className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-purple-600/30 transition-all disabled:opacity-50 text-sm cursor-pointer"
-                  >
-                    {submitting ? "Enrolling Member..." : `+ Add ${newStudent.role === "teacher" ? "Teacher" : "Student"} 🚀`}
+                    <span>➕</span>
+                    <span>Onboard Faculty with Custom ID</span>
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
 
             {/* MEMBER ROSTER & CREDENTIALS TABLE */}
@@ -716,6 +696,26 @@ export default function TrusteeDashboard() {
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
+                    onClick={() => {
+                      setComprehensiveModalRole("student");
+                      setIsComprehensiveModalOpen(true);
+                    }}
+                    className="text-xs bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>🎓</span>
+                    <span>+ Enroll Student</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setComprehensiveModalRole("teacher");
+                      setIsComprehensiveModalOpen(true);
+                    }}
+                    className="text-xs bg-blue-600 hover:bg-blue-500 border border-blue-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>👨‍🏫</span>
+                    <span>+ Onboard Faculty</span>
+                  </button>
+                  <button
                     onClick={handleDownloadCredentialsSheet}
                     className="text-xs bg-purple-600 hover:bg-purple-500 border border-purple-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
                     title="Export complete member login credentials sheet for easy distribution"
@@ -724,7 +724,7 @@ export default function TrusteeDashboard() {
                   </button>
                   <button
                     onClick={() => setIsBulkModalOpen(true)}
-                    className="text-xs bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                    className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
                   >
                     <span>📥</span>
                     <span>Import CSV Roster</span>
@@ -747,7 +747,35 @@ export default function TrusteeDashboard() {
                   <p className="text-sm">{error}</p>
                 </div>
               ) : students.length === 0 ? (
-                <div className="p-12 text-center text-slate-400 font-medium">No students enrolled yet. Use Bulk CSV Import or Quick Add to onboard students.</div>
+                <div className="p-12 text-center text-slate-400 space-y-3">
+                  <span className="text-5xl block opacity-60">👥</span>
+                  <h4 className="text-lg font-bold text-white">Campus Directory is Empty (Clean Slate)</h4>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    No students or faculty enrolled yet. Click "Enroll Student", "Onboard Faculty", or "Import CSV Roster" above to get started.
+                  </p>
+                  <div className="flex items-center justify-center gap-2 pt-2 flex-wrap">
+                    <button
+                      onClick={() => {
+                        setComprehensiveModalRole("student");
+                        setIsComprehensiveModalOpen(true);
+                      }}
+                      className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>🎓</span>
+                      <span>+ Enroll Student</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setComprehensiveModalRole("teacher");
+                        setIsComprehensiveModalOpen(true);
+                      }}
+                      className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>👨‍🏫</span>
+                      <span>+ Onboard Faculty</span>
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="overflow-x-auto w-full">
                   <table className="w-full text-left border-collapse min-w-[700px]">
@@ -964,6 +992,18 @@ export default function TrusteeDashboard() {
           isOpen={showDiagnosticModal}
           onClose={() => setShowDiagnosticModal(false)}
           schoolId={institutionCode}
+        />
+
+        {/* COMPREHENSIVE MEMBER ONBOARDING MODAL */}
+        <ComprehensiveMemberModal
+          isOpen={isComprehensiveModalOpen}
+          onClose={() => setIsComprehensiveModalOpen(false)}
+          schoolId={institutionCode}
+          initialRole={comprehensiveModalRole}
+          classesList={classes}
+          onSuccess={() => {
+            fetchStudents();
+          }}
         />
       </div>
     </div>

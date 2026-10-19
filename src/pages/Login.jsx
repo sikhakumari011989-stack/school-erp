@@ -113,6 +113,7 @@ export default function Login({ isDirectPortal = false }) {
             institution_code: cleanInst,
             institution_name: cleanInst,
             email: matchedLocal.email || standardizedEmail,
+            ...matchedLocal,
           };
           if (typeof setUser === "function") setUser(sessionPayload);
           login(sessionPayload);

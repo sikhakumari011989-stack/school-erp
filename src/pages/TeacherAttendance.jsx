@@ -76,6 +76,8 @@ export default function TeacherAttendance() {
     };
 
     loadBatches();
+    window.addEventListener("erp-directory-updated", loadBatches);
+    return () => window.removeEventListener("erp-directory-updated", loadBatches);
   }, [activeSchoolId]);
 
   // Dynamically load the roster for the selected classroom batch
@@ -216,6 +218,8 @@ export default function TeacherAttendance() {
     };
 
     fetchRoster();
+    window.addEventListener("erp-directory-updated", fetchRoster);
+    return () => window.removeEventListener("erp-directory-updated", fetchRoster);
   }, [selectedBatch, activeSchoolId]);
 
   // Toggle individual student attendance status
