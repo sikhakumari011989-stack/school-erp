@@ -2,6 +2,42 @@ import { supabase } from "../supabaseClient";
 import { buildStandardErpEmail } from "../pages/Login";
 
 /**
+ * Role-Detection Helper Function
+ * Strictly assigns roles based on 2-Tier Personal ID prefix:
+ * - HOD-*, TR-*, TRUSTEE-* -> 'trustee'
+ * - PRIN-*, PRINCIPAL-* -> 'principal'
+ * - TCH-*, FAC-*, TEACHER-* -> 'teacher'
+ * - ACC-*, ACCOUNTANT-* -> 'accountant'
+ * - NON-*, STF-*, STAFF-* -> 'staff'
+ * - ADM-*, SUPER-* -> 'admin'
+ * Falls back to member's explicit role if valid, otherwise defaults to 'student'.
+ */
+export function detectRoleFromId(personalId = "", existingRole = "") {
+  const cleanId = String(personalId || "").trim().toUpperCase();
+  if (cleanId.startsWith("PRIN")) return "principal";
+  if (cleanId.startsWith("HOD") || cleanId.startsWith("TR-") || cleanId.startsWith("TRUSTEE")) return "trustee";
+  if (cleanId.startsWith("TCH") || cleanId.startsWith("FAC") || cleanId.startsWith("TEACHER")) return "teacher";
+  if (cleanId.startsWith("ACC")) return "accountant";
+  if (cleanId.startsWith("NON") || cleanId.startsWith("STF") || cleanId.startsWith("STAFF")) return "staff";
+  if (cleanId.startsWith("ADM") || cleanId.startsWith("SUPER")) return "admin";
+
+  const cleanRole = String(existingRole || "").trim().toLowerCase();
+  if (
+    cleanRole === "trustee" ||
+    cleanRole === "principal" ||
+    cleanRole === "teacher" ||
+    cleanRole === "accountant" ||
+    cleanRole === "staff" ||
+    cleanRole === "non_teaching" ||
+    cleanRole === "admin"
+  ) {
+    return cleanRole;
+  }
+
+  return "student";
+}
+
+/**
  * Cloud-First Synchronization Service for Multi-Tenant School ERP
  * Guarantees that any school, student, or faculty created on a laptop
  * is immediately accessible and authenticatable on mobile devices globally.
@@ -16,6 +52,7 @@ export async function provisionSchoolInCloud({
   institutionCode,
   adminName,
   adminId = "HOD-01",
+  adminRole,
   password = "password123",
   phone = "+91 9518388499",
   email = "",
@@ -26,12 +63,13 @@ export async function provisionSchoolInCloud({
   const cleanName = institutionName.trim();
   const cleanPass = password.trim() || "password123";
   const mappedEmail = email.trim() || buildStandardErpEmail(cleanCode, cleanAdminId);
+  const strictAdminRole = detectRoleFromId(cleanAdminId, adminRole || "trustee");
 
   const initialMasterAdmin = {
     id: `hod_${Date.now()}`,
     name: adminName.trim(),
     full_name: adminName.trim(),
-    role: "trustee",
+    role: strictAdminRole,
     role_code: cleanAdminId,
     roll_number: cleanAdminId,
     personal_code: cleanAdminId,
@@ -111,7 +149,7 @@ export async function provisionSchoolInCloud({
       await supabase.from("profiles").upsert([
         {
           full_name: adminName.trim(),
-          role: "trustee",
+          role: strictAdminRole,
           role_code: cleanAdminId,
           school_id: cloudSchoolId || undefined,
         },
@@ -170,7 +208,12 @@ export async function provisionSchoolInCloud({
 export async function enrollMemberInCloud({ schoolCode, member }) {
   const cleanCode = (schoolCode || "CAMPUS-01").trim().toUpperCase();
   const cleanId = (member.role_code || member.roll_number || member.personal_code || "").trim().toUpperCase();
-  const isTeacher = (member.role || "").toLowerCase() === "teacher";
+  const assignedRole = detectRoleFromId(cleanId, member.role);
+  const isTeacher = assignedRole === "teacher";
+  const memberWithRole = {
+    ...member,
+    role: assignedRole,
+  };
 
   let cloudSchoolUuid = null;
 
@@ -201,7 +244,7 @@ export async function enrollMemberInCloud({ schoolCode, member }) {
         const filteredDir = cloudDir.filter(
           (m) => (m.role_code || m.roll_number || m.personal_code || "").toUpperCase() !== cleanId
         );
-        const updatedCloudDir = [member, ...filteredDir];
+        const updatedCloudDir = [memberWithRole, ...filteredDir];
 
         const updatedPayload = JSON.stringify({
           physicalAddress: "Mahim Manohar Highway, Palghar 401404",
@@ -224,8 +267,8 @@ export async function enrollMemberInCloud({ schoolCode, member }) {
       await supabase.from("profiles").insert([
         {
           school_id: cloudSchoolUuid || undefined,
-          full_name: member.full_name || member.name,
-          role: member.role || (isTeacher ? "teacher" : "student"),
+          full_name: memberWithRole.full_name || memberWithRole.name,
+          role: assignedRole,
           role_code: cleanId,
         },
       ]);
@@ -239,10 +282,10 @@ export async function enrollMemberInCloud({ schoolCode, member }) {
         await supabase.from("teachers").insert([
           {
             school_id: cloudSchoolUuid || undefined,
-            name: member.full_name || member.name,
-            email: member.email || null,
-            phone: member.phone || null,
-            subject: member.subject || member.department || "General Faculty",
+            name: memberWithRole.full_name || memberWithRole.name,
+            email: memberWithRole.email || null,
+            phone: memberWithRole.phone || null,
+            subject: memberWithRole.subject || memberWithRole.department || "General Faculty",
           },
         ]);
       } catch (tchErr) {
@@ -253,7 +296,7 @@ export async function enrollMemberInCloud({ schoolCode, member }) {
         await supabase.from("students").insert([
           {
             school_id: cloudSchoolUuid || undefined,
-            name: member.full_name || member.name,
+            name: memberWithRole.full_name || memberWithRole.name,
             roll_number: cleanId,
           },
         ]);
@@ -270,14 +313,14 @@ export async function enrollMemberInCloud({ schoolCode, member }) {
     const filteredLocal = localDir.filter(
       (m) => (m.role_code || m.roll_number || m.personal_code || "").toUpperCase() !== cleanId
     );
-    const newLocal = [member, ...filteredLocal];
+    const newLocal = [memberWithRole, ...filteredLocal];
     localStorage.setItem(`erp_directory_${cleanCode}`, JSON.stringify(newLocal));
     window.dispatchEvent(new Event("erp-directory-updated"));
   } catch (e) {
     console.warn("[CloudSync] Local storage update notice:", e);
   }
 
-  return member;
+  return memberWithRole;
 }
 
 /**
@@ -334,13 +377,26 @@ export async function verifyCloudLogin({ institutionCode, personalCode, password
           try {
             const parsed = JSON.parse(cloudSchool.address);
             if (Array.isArray(parsed.directory)) {
-              matchedMember = parsed.directory.find(
+              const found = parsed.directory.find(
                 (m) =>
                   String(m.role_code || m.roll_number || m.personal_code || "").toUpperCase() === cleanPersonal
               );
+              if (found) {
+                matchedMember = {
+                  ...found,
+                  role: detectRoleFromId(cleanPersonal, found.role),
+                };
+              }
 
-              // Also sync cloud directory down to mobile device's local storage cache
-              localStorage.setItem(`erp_directory_${cleanInst}`, JSON.stringify(parsed.directory));
+              // Also normalize and sync cloud directory down to mobile device's local storage cache
+              const normalizedDir = parsed.directory.map((m) => {
+                const code = String(m.role_code || m.roll_number || m.personal_code || "").toUpperCase();
+                return {
+                  ...m,
+                  role: detectRoleFromId(code, m.role),
+                };
+              });
+              localStorage.setItem(`erp_directory_${cleanInst}`, JSON.stringify(normalizedDir));
             }
           } catch (e) {}
         }
@@ -364,7 +420,7 @@ export async function verifyCloudLogin({ institutionCode, personalCode, password
                 id: p.id,
                 name: p.full_name || cleanPersonal,
                 full_name: p.full_name || cleanPersonal,
-                role: p.role || "student",
+                role: detectRoleFromId(cleanPersonal, p.role),
                 role_code: p.role_code || cleanPersonal,
                 personal_code: p.role_code || cleanPersonal,
                 school_id: cleanInst,
@@ -500,6 +556,7 @@ export async function verifyCloudLogin({ institutionCode, personalCode, password
     );
 
     if (matchedLocal) {
+      const resolvedRole = detectRoleFromId(cleanPersonal, matchedLocal.role);
       const expectedPassword = matchedLocal.default_password || "password123";
       if (
         inputPass === expectedPassword ||
@@ -511,6 +568,7 @@ export async function verifyCloudLogin({ institutionCode, personalCode, password
           success: true,
           user: {
             ...matchedLocal,
+            role: resolvedRole,
             school_id: cleanInst,
             institution_code: cleanInst,
             institution_name: cleanInst,
@@ -555,9 +613,16 @@ export async function fetchCloudDirectory(schoolCode) {
         try {
           const parsed = JSON.parse(schoolRecord.address);
           if (Array.isArray(parsed.directory) && parsed.directory.length > 0) {
+            const normalizedDir = parsed.directory.map((m) => {
+              const code = String(m.role_code || m.roll_number || m.personal_code || "").toUpperCase();
+              return {
+                ...m,
+                role: detectRoleFromId(code, m.role),
+              };
+            });
             // Synchronize down to local cache
-            localStorage.setItem(`erp_directory_${cleanCode}`, JSON.stringify(parsed.directory));
-            return parsed.directory;
+            localStorage.setItem(`erp_directory_${cleanCode}`, JSON.stringify(normalizedDir));
+            return normalizedDir;
           }
         } catch (parseErr) {}
       }
@@ -569,7 +634,18 @@ export async function fetchCloudDirectory(schoolCode) {
   // Fallback to local storage
   try {
     const raw = localStorage.getItem(`erp_directory_${cleanCode}`);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map((m) => {
+          const code = String(m.role_code || m.roll_number || m.personal_code || "").toUpperCase();
+          return {
+            ...m,
+            role: detectRoleFromId(code, m.role),
+          };
+        });
+      }
+    }
   } catch (e) {}
 
   return [];

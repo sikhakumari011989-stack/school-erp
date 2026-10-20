@@ -1,5 +1,5 @@
-import MasterSchoolSetup from "./MasterSchoolSetup";
+import MasterSchoolSetup, { detectRoleFromId } from "./MasterSchoolSetup";
 
 export default MasterSchoolSetup;
-export { MasterSchoolSetup };
+export { MasterSchoolSetup, detectRoleFromId };
 

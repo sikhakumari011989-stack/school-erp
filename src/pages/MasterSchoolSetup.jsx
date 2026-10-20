@@ -4,8 +4,10 @@ import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { logSecurityAction, AUDIT_ACTIONS } from "../utils/auditLogger";
 import { buildStandardErpEmail } from "./Login";
-import { provisionSchoolInCloud } from "../utils/cloudSyncService";
+import { provisionSchoolInCloud, detectRoleFromId } from "../utils/cloudSyncService";
 import BrandLogo from "../Components/BrandLogo";
+
+export { detectRoleFromId };
 
 export default function MasterSchoolSetup() {
   const { showToast } = useToast();
@@ -60,12 +62,14 @@ export default function MasterSchoolSetup() {
     setLoading(true);
 
     try {
+      const explicitRole = detectRoleFromId(formData.adminRoleCode, "trustee");
       // Execute 100% cloud-first provisioning via Supabase
       const outcomeData = await provisionSchoolInCloud({
         institutionName: formData.institutionName,
         institutionCode: formData.institutionCode,
         adminName: formData.adminName,
         adminId: formData.adminRoleCode,
+        adminRole: explicitRole,
         password: formData.password,
         phone: formData.phone,
         email: formData.email,

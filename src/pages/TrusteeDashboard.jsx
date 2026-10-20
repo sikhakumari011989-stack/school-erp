@@ -16,7 +16,9 @@ import FeeStructureConfigurator from "../Components/FeeStructureConfigurator";
 import ComprehensiveMemberModal from "../Components/ComprehensiveMemberModal";
 import { buildStandardErpEmail } from "./Login";
 import { getNextMemberId, getDefaultSchoolDirectory } from "../utils/idGenerator";
-import { enrollMemberInCloud, fetchCloudDirectory } from "../utils/cloudSyncService";
+import { enrollMemberInCloud, fetchCloudDirectory, detectRoleFromId } from "../utils/cloudSyncService";
+
+export { detectRoleFromId };
 
 export default function TrusteeDashboard() {
   const { user } = useContext(AppContext) || {};
@@ -168,13 +170,14 @@ export default function TrusteeDashboard() {
       dbData.forEach((s) => {
         const key = s.roll_number || s.id;
         if (key) {
+          const resolvedRole = detectRoleFromId(key, s.role);
           mergedMap.set(key, {
             ...s,
             id: key,
             name: s.name || s.full_name,
             roll_number: key,
-            class_name: s.class_name || s.class || "Class 10-ICSE",
-            role: s.role || "student",
+            class_name: s.class_name || s.class || (resolvedRole === "trustee" || resolvedRole === "principal" ? "Executive Management" : resolvedRole === "teacher" ? "Faculty" : "Class 10-ICSE"),
+            role: resolvedRole,
           });
         }
       });
@@ -182,13 +185,14 @@ export default function TrusteeDashboard() {
       localDir.forEach((m) => {
         const key = m.roll_number || m.role_code || m.personal_code || m.id;
         if (key && !mergedMap.has(key)) {
+          const resolvedRole = detectRoleFromId(key, m.role);
           mergedMap.set(key, {
             id: key,
             name: m.full_name || m.name,
             full_name: m.full_name || m.name,
             roll_number: key,
-            class_name: m.class_name || m.class || (m.role === "teacher" ? "Faculty" : "Class 10-ICSE"),
-            role: m.role || "student",
+            class_name: m.class_name || m.class || (resolvedRole === "trustee" || resolvedRole === "principal" ? "Executive Management" : resolvedRole === "teacher" ? "Faculty" : "Class 10-ICSE"),
+            role: resolvedRole,
             phone: m.phone || "+91 9800000000",
             email: m.email,
             status: "active",
@@ -318,10 +322,11 @@ export default function TrusteeDashboard() {
       const code = (m.role_code || m.roll_number || m.personal_code || "").toUpperCase();
       if (code && !seenCodes.has(code)) {
         seenCodes.add(code);
+        const resolvedRole = detectRoleFromId(code, m.role);
         credentialRows.push([
           m.full_name || m.name || "Campus Member",
-          m.role || "student",
-          m.class_name || m.class || "General",
+          resolvedRole,
+          m.class_name || m.class || (resolvedRole === "trustee" || resolvedRole === "principal" ? "Executive Management" : "General"),
           portalUrl,
           institutionCode,
           code,
@@ -334,10 +339,11 @@ export default function TrusteeDashboard() {
       const code = (st.roll_number || st.personal_code || `STU-${1001 + idx}`).toUpperCase();
       if (!seenCodes.has(code)) {
         seenCodes.add(code);
+        const resolvedRole = detectRoleFromId(code, st.role);
         credentialRows.push([
           st.name || st.full_name,
-          st.role || "student",
-          st.class_name || st.class || "General",
+          resolvedRole,
+          st.class_name || st.class || (resolvedRole === "trustee" || resolvedRole === "principal" ? "Executive Management" : "General"),
           portalUrl,
           institutionCode,
           code,
@@ -536,8 +542,11 @@ export default function TrusteeDashboard() {
           <div className="space-y-8">
             {/* METRICS GRID */}
             {(() => {
-              const enrolledStudentsCount = students.filter(s => (s.role || "student").toLowerCase() === "student").length;
-              const facultyCount = students.filter(s => (s.role || "").toLowerCase() === "teacher" || (s.role || "").toLowerCase() === "faculty").length;
+              const enrolledStudentsCount = students.filter(s => detectRoleFromId(s.roll_number || s.personal_code || s.role_code, s.role) === "student").length;
+              const facultyCount = students.filter(s => {
+                const r = detectRoleFromId(s.roll_number || s.personal_code || s.role_code, s.role);
+                return r === "teacher" || r === "faculty";
+              }).length;
               return (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
@@ -766,7 +775,7 @@ export default function TrusteeDashboard() {
                           ? `Class ${matchedClass.name}`
                           : st.class_name || st.class || (st.roll_number ? `Roll #${st.roll_number}` : "General");
                         const personalCode = (st.roll_number || st.personal_code || `STU-${1001 + idx}`).toUpperCase();
-                        const isTeacher = personalCode.startsWith("TCH") || st.role === "teacher";
+                        const effectiveRole = detectRoleFromId(personalCode, st.role);
                         const mappedEmail = buildStandardErpEmail(institutionCode, personalCode);
 
                         return (
@@ -775,13 +784,19 @@ export default function TrusteeDashboard() {
                               {st.name || st.full_name}
                             </td>
                             <td className="p-4">
-                              <span className={`px-2.5 py-1 rounded-full text-[11px] font-black uppercase ${
-                                isTeacher 
-                                  ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" 
-                                  : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                              }`}>
-                                {isTeacher ? "Teacher" : "Student"}
-                              </span>
+                              {effectiveRole === "trustee" || effectiveRole === "principal" || effectiveRole === "admin" ? (
+                                <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-bold uppercase">
+                                  Trustee / Principal
+                                </span>
+                              ) : effectiveRole === "teacher" ? (
+                                <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-bold uppercase">
+                                  Teacher
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase">
+                                  Student
+                                </span>
+                              )}
                             </td>
                             <td className="p-4 font-mono font-bold text-purple-400 text-xs">
                               {personalCode}
