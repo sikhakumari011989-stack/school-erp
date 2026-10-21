@@ -18,6 +18,82 @@ export default function TeacherHomework() {
   const [homeworkList, setHomeworkList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [hwCompletions, setHwCompletions] = useState({});
+  const [verifyingHw, setVerifyingHw] = useState(null); // when open modal for student verification
+  const [enrolledStudents, setEnrolledStudents] = useState([]);
+
+  const activeSchool = (user?.school_id || user?.institution_code || "CAMPUS-01").toUpperCase();
+
+  const loadHwCompletions = () => {
+    try {
+      const saved = localStorage.getItem(`erp_hw_completion_${activeSchool}`);
+      if (saved) {
+        setHwCompletions(JSON.parse(saved));
+      } else {
+        setHwCompletions({});
+      }
+    } catch {
+      setHwCompletions({});
+    }
+
+    try {
+      const rawDir = localStorage.getItem(`erp_directory_${activeSchool}`);
+      if (rawDir) {
+        const list = JSON.parse(rawDir);
+        setEnrolledStudents(list.filter((m) => (m.role || "").toLowerCase() === "student"));
+      } else {
+        setEnrolledStudents([]);
+      }
+    } catch {
+      setEnrolledStudents([]);
+    }
+  };
+
+  const handleToggleVerification = (hwId, hwTitle) => {
+    const isCurrentlyDone = Boolean(
+      hwCompletions[hwId] === true ||
+      (typeof hwCompletions[hwId] === "object" && hwCompletions[hwId]?.all === true)
+    );
+
+    const nextState = !isCurrentlyDone;
+    const updated = {
+      ...hwCompletions,
+      [hwId]: nextState,
+    };
+
+    setHwCompletions(updated);
+    try {
+      localStorage.setItem(`erp_hw_completion_${activeSchool}`, JSON.stringify(updated));
+      window.dispatchEvent(new Event("erp-homework-verification-updated"));
+    } catch (e) {}
+
+    showToast(
+      nextState
+        ? `Marked "${hwTitle}" as verified completed for all students! ✓`
+        : `Reverted "${hwTitle}" to pending verification.`,
+      "success"
+    );
+  };
+
+  const handleToggleStudentVerification = (hwId, studentRoll) => {
+    const currentEntry = typeof hwCompletions[hwId] === "object" ? hwCompletions[hwId] : {};
+    const currentStudentState = Boolean(currentEntry[studentRoll]);
+    const updatedEntry = {
+      ...currentEntry,
+      [studentRoll]: !currentStudentState,
+    };
+
+    const updated = {
+      ...hwCompletions,
+      [hwId]: updatedEntry,
+    };
+
+    setHwCompletions(updated);
+    try {
+      localStorage.setItem(`erp_hw_completion_${activeSchool}`, JSON.stringify(updated));
+      window.dispatchEvent(new Event("erp-homework-verification-updated"));
+    } catch (e) {}
+  };
 
   const [formData, setFormData] = useState({
     title: "",
@@ -51,6 +127,7 @@ export default function TeacherHomework() {
     fetchClasses();
     fetchHomework();
     fetchQuizzes();
+    loadHwCompletions();
   }, []);
 
   const fetchClasses = async () => {
@@ -445,36 +522,65 @@ export default function TeacherHomework() {
                           <th className="p-5">Subject & Title</th>
                           <th className="p-5">Class Batch</th>
                           <th className="p-5">Deadline</th>
+                          <th className="p-5 text-center">Faculty Verification</th>
                           <th className="p-5 text-right">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-700/50 text-sm">
-                        {homeworkList.map((hw) => (
-                          <tr key={hw.id} className="hover:bg-slate-800/30 transition-colors">
-                            <td className="p-5">
-                              <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider block mb-0.5">
-                                {hw.subject}
-                              </span>
-                              <p className="font-bold text-white text-base">{hw.title}</p>
-                              <p className="text-xs text-slate-400 mt-1 line-clamp-1">{hw.description}</p>
-                            </td>
-                            <td className="p-5">
-                              <span className="bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1 rounded-lg text-xs font-bold">
-                                {getClassName(hw.class_id)}
-                              </span>
-                            </td>
-                            <td className="p-5 font-bold text-amber-400">{hw.due_date || "No deadline"}</td>
-                            <td className="p-5 text-right">
-                              <button
-                                onClick={() => handleDeleteHomework(hw.id)}
-                                className="text-rose-400 hover:text-rose-300 p-2 text-xs font-bold hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
-                                title="Delete Assignment"
-                              >
-                                🗑️
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                        {homeworkList.map((hw) => {
+                          const isVerified = Boolean(
+                            hwCompletions[hw.id] === true ||
+                            (typeof hwCompletions[hw.id] === "object" && hwCompletions[hw.id]?.all === true)
+                          );
+
+                          return (
+                            <tr key={hw.id} className="hover:bg-slate-800/30 transition-colors">
+                              <td className="p-5">
+                                <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider block mb-0.5">
+                                  {hw.subject}
+                                </span>
+                                <p className="font-bold text-white text-base">{hw.title}</p>
+                                <p className="text-xs text-slate-400 mt-1 line-clamp-1">{hw.description}</p>
+                              </td>
+                              <td className="p-5">
+                                <span className="bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1 rounded-lg text-xs font-bold">
+                                  {getClassName(hw.class_id)}
+                                </span>
+                              </td>
+                              <td className="p-5 font-bold text-amber-400">{hw.due_date || "No deadline"}</td>
+                              <td className="p-5 text-center">
+                                <div className="inline-flex flex-col items-center gap-1.5">
+                                  <button
+                                    onClick={() => handleToggleVerification(hw.id, hw.title)}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 ${
+                                      isVerified
+                                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
+                                        : "bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
+                                    }`}
+                                    title="Toggle verified completion status for student portal"
+                                  >
+                                    <span>{isVerified ? "✓ Verified Completed" : "⏳ Mark Verified"}</span>
+                                  </button>
+                                  <button
+                                    onClick={() => setVerifyingHw(hw)}
+                                    className="text-[11px] text-blue-400 hover:text-blue-300 underline font-semibold cursor-pointer"
+                                  >
+                                    Verify per Student
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="p-5 text-right">
+                                <button
+                                  onClick={() => handleDeleteHomework(hw.id)}
+                                  className="text-rose-400 hover:text-rose-300 p-2 text-xs font-bold hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                                  title="Delete Assignment"
+                                >
+                                  🗑️
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -744,6 +850,87 @@ export default function TeacherHomework() {
           </div>
         )}
       </div>
+
+      {/* STUDENT SUBMISSION VERIFICATION MODAL */}
+      {verifyingHw && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400">Submission Verification Panel</span>
+                <h3 className="text-xl font-extrabold text-white">{verifyingHw.title}</h3>
+                <p className="text-xs text-slate-400 mt-0.5">{verifyingHw.subject} &bull; Deadline: {verifyingHw.due_date || "Open"}</p>
+              </div>
+              <button
+                onClick={() => setVerifyingHw(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex justify-between items-center my-4 bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
+              <span className="text-xs text-slate-300 font-bold">
+                Enrolled Scholars: {enrolledStudents.length}
+              </span>
+              <button
+                onClick={() => handleToggleVerification(verifyingHw.id, verifyingHw.title)}
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer shadow-md shadow-blue-600/20"
+              >
+                Toggle All Scholars Verified ✓
+              </button>
+            </div>
+
+            {enrolledStudents.length === 0 ? (
+              <div className="p-8 text-center text-slate-400">
+                <p className="text-sm font-bold text-white">No enrolled students in active directory.</p>
+                <p className="text-xs mt-1">Use the Quick Verification button in the table to verify batch-wide.</p>
+              </div>
+            ) : (
+              <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+                {enrolledStudents.map((st) => {
+                  const studentRoll = st.roll_number || st.role_code || st.id;
+                  const isDone = Boolean(
+                    hwCompletions[verifyingHw.id] === true ||
+                    (typeof hwCompletions[verifyingHw.id] === "object" && (hwCompletions[verifyingHw.id]?.[studentRoll] || hwCompletions[verifyingHw.id]?.all))
+                  );
+
+                  return (
+                    <div
+                      key={st.id || studentRoll}
+                      className="flex items-center justify-between p-3 rounded-xl bg-slate-900/40 border border-slate-800 hover:border-slate-700 transition-colors"
+                    >
+                      <div>
+                        <p className="font-bold text-white text-sm">{st.full_name || st.name}</p>
+                        <p className="text-xs text-slate-400 font-mono">{studentRoll} &bull; {st.class_name || "General Batch"}</p>
+                      </div>
+                      <button
+                        onClick={() => handleToggleStudentVerification(verifyingHw.id, studentRoll)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          isDone
+                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                            : "bg-slate-800 text-slate-400 hover:text-white border border-slate-700"
+                        }`}
+                      >
+                        {isDone ? "✓ Verified Completed" : "⏳ Pending"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-5 border-t border-slate-800 mt-4">
+              <button
+                onClick={() => setVerifyingHw(null)}
+                className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

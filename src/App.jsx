@@ -28,7 +28,6 @@ import StudentCalendar from "./pages/StudentCalendar";
 import StudentGallery from "./pages/StudentGallery";
 import StudentConduct from "./pages/StudentConduct";
 import StudentFees from "./pages/StudentFees";
-import StudentTransport from "./pages/StudentTransport";
 import StudentRazorpayCheckout from "./pages/StudentRazorpayCheckout";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -351,14 +350,6 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={["student", "admin"]}>
                   <StudentConduct />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/student/transport"
-              element={
-                <ProtectedRoute allowedRoles={["student", "admin"]}>
-                  <StudentTransport />
                 </ProtectedRoute>
               }
             />

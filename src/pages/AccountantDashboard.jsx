@@ -3,6 +3,7 @@ import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { StatSkeleton, TableSkeleton } from "../Components/Skeleton";
+import { generateFeeInvoicePDF } from "../utils/pdfGenerator";
 
 export default function AccountantDashboard() {
   const { user } = useContext(AppContext);
@@ -179,6 +180,69 @@ export default function AccountantDashboard() {
     });
     setSubmitting(false);
     fetchLedger();
+  };
+
+  const getSchoolUpi = () => {
+    try {
+      const raw = localStorage.getItem(`erp_school_upi_${schoolId}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.upiId) return parsed.upiId;
+      }
+    } catch (e) {}
+    return `${schoolId.toLowerCase().replace(/[^a-z0-9]/g, "")}.edu@okaxis`;
+  };
+
+  const handleSendWhatsAppReminder = (item) => {
+    const upi = getSchoolUpi();
+    const instName = user?.school_name || schoolId;
+    const msg = `📢 *Institutional Fee Notice - ${instName}*\n\nDear Parent/Student *${item.student_name}* (${item.class_name}),\n\nThis is a notification that your academic fee balance of *₹${Number(item.amount).toLocaleString()}* is pending settlement.\n\n💳 *Payment Details:*\n• Official School UPI ID: \`${upi}\`\n• Reference / Note: Student Name & Roll No.\n\nKindly complete the settlement and forward the 12-digit UTR bank reference number to the Accounts Department.\n\n*Accounts & Finance Office*\n${instName}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+  };
+
+  const handleBroadcastWhatsApp = () => {
+    const pendingRows = ledger.filter((r) => (r.status || "").toLowerCase() !== "paid");
+    if (pendingRows.length === 0) {
+      showToast("No pending fee defaulters found in the ledger!", "info");
+      return;
+    }
+    const upi = getSchoolUpi();
+    const instName = user?.school_name || schoolId;
+    const totalPending = pendingRows.reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+    const msg = `📢 *Institutional Fee Dues Advisory - ${instName}*\n\nAttention Parents and Guardians,\n\nOur treasury reconciliation shows pending fee balances across *${pendingRows.length} student records* totaling *₹${totalPending.toLocaleString()}*.\n\n💳 *Direct Settlement Mode:*\n• School UPI ID: \`${upi}\`\n• Online Portal: Pay via Razorpay SSL Gateway\n\nPlease ensure pending dues are cleared promptly to maintain uninterrupted academic portal access.\n\n*Accounts & Treasury Office*\n${instName}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+  };
+
+  const handleDownloadTaxInvoice = (item) => {
+    try {
+      generateFeeInvoicePDF({
+        tenant: {
+          name: user?.school_name || "Apex International Academy",
+          code: schoolId,
+          address: user?.address || "Flat number 201, Jivdani Chaya, Mahim Highway, Palghar 401404",
+          email: user?.email || "accounts@campus.edu",
+        },
+        student: {
+          name: item.student_name,
+          roll_number: item.roll_number || item.id || "STU-001",
+          class: item.class_name || "Class 10",
+        },
+        payment: {
+          invoiceNo: `INV-${String(item.id || Date.now()).slice(-6)}`,
+          date: item.date || new Date().toISOString().split("T")[0],
+          amount: item.amount,
+          payment_mode: item.payment_mode || "Cash / Cheque",
+          transactionId: item.razorpay_payment_id || item.id || `TXN-${Date.now()}`,
+          title: "Tuition & Institutional Fee Settlement",
+        },
+      });
+      showToast(`Tax invoice generated for ${item.student_name}!`, "success");
+    } catch (err) {
+      console.error("Tax invoice error:", err);
+      showToast("Failed to generate PDF tax invoice", "error");
+    }
   };
 
   // Filtered transactions
@@ -361,7 +425,17 @@ export default function AccountantDashboard() {
           <div className="lg:col-span-2 bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl shadow-2xl overflow-hidden h-fit">
             <div className="p-6 border-b border-slate-700/60 bg-slate-800/50 space-y-4">
               <div className="flex justify-between items-center flex-wrap gap-4">
-                <h2 className="text-lg font-bold text-white">Live Institutional Fee Ledger</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-lg font-bold text-white">Live Institutional Fee Ledger</h2>
+                  <button
+                    onClick={handleBroadcastWhatsApp}
+                    title="Send WhatsApp notice to all pending fee defaulters"
+                    className="bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-bold px-3 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-900/20 cursor-pointer"
+                  >
+                    <span>📢</span>
+                    <span>Broadcast WhatsApp Reminder</span>
+                  </button>
+                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setFilterStatus("all")}
@@ -419,6 +493,7 @@ export default function AccountantDashboard() {
                       <th className="p-4">Payment Mode</th>
                       <th className="p-4 text-center">Status</th>
                       <th className="p-4">Date</th>
+                      <th className="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/50 text-sm">
@@ -448,6 +523,27 @@ export default function AccountantDashboard() {
                           </span>
                         </td>
                         <td className="p-4 text-slate-400 text-xs font-mono">{item.date}</td>
+                        <td className="p-4 text-right">
+                          {item.status === "paid" ? (
+                            <button
+                              onClick={() => handleDownloadTaxInvoice(item)}
+                              className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                              title="Download Tax Invoice PDF"
+                            >
+                              <span>🧾</span>
+                              <span>Tax Invoice</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleSendWhatsAppReminder(item)}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 shadow-md shadow-emerald-900/20"
+                              title="Send Reminder via WhatsApp"
+                            >
+                              <span>📲</span>
+                              <span>Remind WhatsApp</span>
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

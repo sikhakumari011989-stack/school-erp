@@ -13,9 +13,8 @@ export default function StaffDashboard() {
   const [clockedIn, setClockedIn] = useState(false);
   const [clockTime, setClockTime] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
-  const [transportRoutes, setTransportRoutes] = useState([]);
   const [myLeaves, setMyLeaves] = useState([]);
-  const [activeTab, setActiveTab] = useState("roster"); // 'roster' | 'transport' | 'leaves' | 'contacts'
+  const [activeTab, setActiveTab] = useState("roster"); // 'roster' | 'leaves' | 'contacts'
 
   // Leave Form
   const [leaveForm, setLeaveForm] = useState({
@@ -72,19 +71,7 @@ export default function StaffDashboard() {
       }
     } catch (e) {}
 
-    // 3. Load live transport fleet
-    try {
-      const rawRoutes = localStorage.getItem(`erp_transport_routes_${schoolId}`);
-      if (rawRoutes) {
-        setTransportRoutes(JSON.parse(rawRoutes));
-      } else {
-        setTransportRoutes([]);
-      }
-    } catch (e) {
-      setTransportRoutes([]);
-    }
-
-    // 4. Load leave requests for this staff
+    // 3. Load leave requests for this staff
     try {
       const rawLeaves = localStorage.getItem(`erp_leave_requests_${schoolId}`);
       if (rawLeaves) {
@@ -250,16 +237,6 @@ export default function StaffDashboard() {
             📋 Weekly Duty Schedule
           </button>
           <button
-            onClick={() => setActiveTab("transport")}
-            className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "transport"
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            🚌 Campus Transport Roster ({transportRoutes.length})
-          </button>
-          <button
             onClick={() => setActiveTab("leaves")}
             className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === "leaves"
@@ -330,69 +307,7 @@ export default function StaffDashboard() {
           </div>
         )}
 
-        {/* TAB 2: TRANSPORT DUTY ROSTER */}
-        {activeTab === "transport" && (
-          <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-slate-700/70 rounded-3xl shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-slate-700/60 bg-slate-800/40 flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-bold text-white">Campus Bus Fleet & Transport Roster</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Live bus lines configured for student transport</p>
-              </div>
-              <span className="text-xs bg-slate-900 border border-slate-700 text-blue-300 font-bold px-3 py-1 rounded-full">
-                {transportRoutes.length} Active Bus Lines
-              </span>
-            </div>
-
-            {transportRoutes.length === 0 ? (
-              <div className="p-12 text-center text-slate-400">
-                <span className="text-4xl block mb-2 opacity-60">🚌</span>
-                <p className="font-bold text-white text-base">No transport routes configured yet.</p>
-                <p className="text-xs text-slate-400 mt-1">Bus schedules created by the administration will appear here.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto w-full">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-700/70 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/40">
-                      <th className="p-4 pl-6">Route & Plate</th>
-                      <th className="p-4">Morning Pickup Stop</th>
-                      <th className="p-4">Afternoon Drop Stop</th>
-                      <th className="p-4">Assigned Driver</th>
-                      <th className="p-4 text-center">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60 text-sm">
-                    {transportRoutes.map((r) => (
-                      <tr key={r.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="p-4 pl-6">
-                          <p className="font-bold text-white">{r.routeNo || r.route_number}</p>
-                          <span className="text-[11px] font-mono bg-slate-900 text-blue-300 border border-slate-700 px-2 py-0.5 rounded mt-1 inline-block">
-                            {r.busPlate || r.bus_plate}
-                          </span>
-                        </td>
-                        <td className="p-4 text-xs text-slate-300">{r.morningStop || r.morning_timing}</td>
-                        <td className="p-4 text-xs text-slate-300">{r.afternoonStop || r.afternoon_timing}</td>
-                        <td className="p-4">
-                          <p className="font-bold text-white text-xs">{r.driver || r.driver_name}</p>
-                          <a href={`tel:${r.phone || r.driver_phone}`} className="text-blue-400 text-xs font-mono">
-                            {r.phone || r.driver_phone}
-                          </a>
-                        </td>
-                        <td className="p-4 text-center">
-                          <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-bold">
-                            Active Route
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 3: LEAVE APPLICATIONS */}
+        {/* TAB 2: LEAVE APPLICATIONS */}
         {activeTab === "leaves" && (
           <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-slate-700/70 rounded-3xl shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-slate-700/60 bg-slate-800/40 flex justify-between items-center">

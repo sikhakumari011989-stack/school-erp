@@ -3,6 +3,7 @@ import { supabase } from "../supabaseClient";
 import { Download, Upload, X, CheckCircle2, AlertCircle, FileSpreadsheet, Users } from "lucide-react";
 import { useToast } from "../context/ToastContext";
 import { getNextMemberId } from "../utils/idGenerator";
+import { enrollMemberInCloud } from "../utils/cloudSyncService";
 
 const SAMPLE_CSV_CONTENT = `full_name,role,class_name,roll_number,phone
 Aarav Mehta,student,Class 10-ICSE,STU-101,+91 9820112233
@@ -128,87 +129,71 @@ export default function BulkImportModal({ isOpen, onClose, schoolId, onImportSuc
     const errors = [];
 
     // Retrieve existing local tenant storage
-    const existingDirectory = JSON.parse(
+    let existingDirectory = JSON.parse(
       localStorage.getItem(`erp_directory_${activeSchoolCode}`) || "[]"
     );
 
-    const CHUNK_SIZE = 25;
+    const CHUNK_SIZE = 10;
     for (let i = 0; i < parsedRows.length; i += CHUNK_SIZE) {
       const chunk = parsedRows.slice(i, i + CHUNK_SIZE);
 
-      const validChunk = chunk.filter((r) => {
+      for (const r of chunk) {
         if (!r.full_name || r.full_name.length < 2) {
           errorCount++;
           errors.push(`Row ${r.rowNumber}: Missing full_name`);
-          return false;
+          continue;
         }
-        return true;
-      });
 
-      const profilePayloads = validChunk.map((r) => ({
-        full_name: r.full_name,
-        role: r.role,
-        role_code: r.roll_number.toUpperCase(),
-        school_id: activeSchoolCode,
-        class_name: r.class_name,
-        phone: r.phone,
-        email: `${activeSchoolCode.toLowerCase()}.${r.roll_number.toLowerCase()}@erp-login.com`,
-        created_at: new Date().toISOString(),
-      }));
-
-      const studentPayloads = validChunk
-        .filter((r) => r.role === "student")
-        .map((r) => ({
+        const memberPayload = {
           name: r.full_name,
           full_name: r.full_name,
-          school_id: activeSchoolCode,
+          role: r.role,
+          role_code: r.roll_number.toUpperCase(),
           roll_number: r.roll_number.toUpperCase(),
+          personal_code: r.roll_number.toUpperCase(),
+          school_id: activeSchoolCode,
+          institution_code: activeSchoolCode,
           class_name: r.class_name,
           phone: r.phone,
-          status: "active",
-        }));
+          email: `${activeSchoolCode.toLowerCase()}.${r.roll_number.toLowerCase()}@erp-login.com`,
+          created_at: new Date().toISOString(),
+        };
 
-      // Synchronize with Supabase database
-      try {
-        if (supabase) {
-          // 1. Insert into students table
-          if (studentPayloads.length > 0) {
-            const { error: stuError } = await supabase.from("students").insert(studentPayloads);
-            if (stuError) console.warn("Supabase students batch insert notice:", stuError.message);
+        try {
+          await enrollMemberInCloud({
+            schoolCode: activeSchoolCode,
+            member: memberPayload,
+          });
+          successCount++;
+        } catch (enrollErr) {
+          console.warn("Direct cloud enroll fallback notice:", enrollErr);
+          // Fallback to local insertion if cloud temporarily unavailable
+          const existingIdx = existingDirectory.findIndex(
+            (m) =>
+              (m.roll_number || m.role_code) === memberPayload.roll_number &&
+              m.school_id === activeSchoolCode
+          );
+          if (existingIdx >= 0) {
+            existingDirectory[existingIdx] = { ...existingDirectory[existingIdx], ...memberPayload };
+          } else {
+            existingDirectory.unshift(memberPayload);
           }
-
-          // 2. Insert into profiles table
-          try {
-            await supabase.from("profiles").upsert(profilePayloads, {
-              onConflict: "role_code,school_id",
-              ignoreDuplicates: true,
-            });
-          } catch (pErr) {
-            console.warn("Profiles upsert notice:", pErr);
-          }
+          successCount++;
         }
-      } catch (dbErr) {
-        console.warn("Supabase batch sync fallback to local tenant directory:", dbErr);
       }
 
-      // Add to local tenant directory for instantaneous zero-latency lookups
-      profilePayloads.forEach((item) => {
-        const existingIdx = existingDirectory.findIndex(
-          (m) => m.roll_number === item.roll_number && m.school_id === item.school_id
-        );
-        if (existingIdx >= 0) {
-          existingDirectory[existingIdx] = { ...existingDirectory[existingIdx], ...item };
-        } else {
-          existingDirectory.unshift(item);
-        }
-      });
-
-      successCount += validChunk.length;
       setProcessedCount(Math.min(i + CHUNK_SIZE, parsedRows.length));
-      await new Promise((res) => setTimeout(res, 80));
+      await new Promise((res) => setTimeout(res, 60));
     }
 
-    localStorage.setItem(`erp_directory_${activeSchoolCode}`, JSON.stringify(existingDirectory));
+    // Refresh active local directory
+    try {
+      const refreshedRaw = localStorage.getItem(`erp_directory_${activeSchoolCode}`);
+      if (refreshedRaw) {
+        existingDirectory = JSON.parse(refreshedRaw);
+      }
+    } catch (e) {}
+
     window.dispatchEvent(new Event("erp-directory-updated"));
 
     // Synchronize complete directory to Supabase cloud

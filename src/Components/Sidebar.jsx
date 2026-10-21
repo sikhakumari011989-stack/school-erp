@@ -76,7 +76,6 @@ export default function Sidebar() {
         { name: "Campus Calendar", path: "/student/calendar", icon: "📅" },
         { name: "Campus Gallery", path: "/student/gallery", icon: "📸" },
         { name: "Conduct & Discipline", path: "/student/conduct", icon: "⚖️" },
-        { name: "Campus Bus Routes & Schedule", path: "/student/transport", icon: "🚌" },
       ];
     }
     return [];

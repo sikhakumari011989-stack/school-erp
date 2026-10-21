@@ -9,18 +9,27 @@ export default function StudentHomework() {
   const { showToast } = useToast();
   const [homeworkList, setHomeworkList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [completedIds, setCompletedIds] = useState(() => {
+  const [completions, setCompletions] = useState({});
+
+  const schoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
+  const studentId = (user?.personal_code || user?.role_code || user?.roll_number || user?.id || "STU-101").toUpperCase();
+
+  const loadCompletions = () => {
     try {
-      const saved = localStorage.getItem("completed_hw_ids");
-      return saved ? JSON.parse(saved) : [];
+      const saved = localStorage.getItem(`erp_hw_completion_${schoolId}`);
+      if (saved) {
+        setCompletions(JSON.parse(saved));
+      } else {
+        setCompletions({});
+      }
     } catch {
-      return [];
+      setCompletions({});
     }
-  });
+  };
 
   const fetchHomework = async () => {
     setLoading(true);
-    const schoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
+    loadCompletions();
     try {
       const { data, error } = await supabase
         .from("homework")
@@ -32,7 +41,13 @@ export default function StudentHomework() {
       setHomeworkList(data || []);
     } catch (err) {
       console.error("Error fetching student homework:", err);
-      showToast("Could not load latest assignments", "error");
+      // Fallback to local storage if offline
+      try {
+        const local = JSON.parse(localStorage.getItem(`erp_homework_${schoolId}`) || "[]");
+        setHomeworkList(local);
+      } catch (e) {
+        setHomeworkList([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -40,23 +55,23 @@ export default function StudentHomework() {
 
   useEffect(() => {
     fetchHomework();
+    const handleUpdate = () => loadCompletions();
+    window.addEventListener("erp-homework-verification-updated", handleUpdate);
+    return () => window.removeEventListener("erp-homework-verification-updated", handleUpdate);
   }, [user?.institution_code, user?.school_id]);
 
-  const toggleComplete = (id, title) => {
-    setCompletedIds((prev) => {
-      const isDone = prev.includes(id);
-      const next = isDone ? prev.filter((item) => item !== id) : [...prev, id];
-      try {
-        localStorage.setItem("completed_hw_ids", JSON.stringify(next));
-      } catch (e) {
-        console.warn(e);
-      }
-      showToast(isDone ? `Reopened "${title}"` : `Marked "${title}" as completed! 🎉`, "success");
-      return next;
-    });
+  const isHwCompleted = (hwId) => {
+    if (!completions) return false;
+    // Check if verified specifically for this student, or verified globally for the assignment
+    if (completions[hwId] === true) return true;
+    if (completions[hwId] && typeof completions[hwId] === "object" && (completions[hwId][studentId] === true || completions[hwId]["all"] === true)) {
+      return true;
+    }
+    return false;
   };
 
-  const pendingCount = homeworkList.length - completedIds.filter((id) => homeworkList.some((h) => h.id === id)).length;
+  const completedCount = homeworkList.filter((h) => isHwCompleted(h.id)).length;
+  const pendingCount = homeworkList.length - completedCount;
 
   return (
     <div className="relative text-slate-200 min-h-full pb-10 font-sans">
@@ -70,16 +85,19 @@ export default function StudentHomework() {
             </p>
             <h1 className="text-3xl font-extrabold text-white">Curriculum Assignments & Homework 📚</h1>
             <p className="text-slate-400 text-sm mt-1">
-              Real-time synchronization with faculty assignment registers
+              Strict faculty verification system &bull; Student status: <span className="font-mono text-blue-400 font-bold">{studentId}</span>
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <span className="bg-slate-800 border border-slate-700 text-emerald-300 px-4 py-2 rounded-xl text-sm font-bold">
+              ✓ Verified: {completedCount}
+            </span>
             <span className="bg-slate-800 border border-slate-700 text-amber-300 px-4 py-2 rounded-xl text-sm font-bold">
               ⏳ Pending: {pendingCount}
             </span>
             <button
               onClick={fetchHomework}
-              className="text-xs bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 px-3.5 py-2 rounded-xl font-bold transition-all"
+              className="text-xs bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 px-3.5 py-2 rounded-xl font-bold transition-all cursor-pointer"
             >
               🔄 Refresh
             </button>
@@ -101,13 +119,13 @@ export default function StudentHomework() {
         ) : (
           <div className="space-y-4">
             {homeworkList.map((hw) => {
-              const isCompleted = completedIds.includes(hw.id);
+              const isCompleted = isHwCompleted(hw.id);
               return (
                 <div
                   key={hw.id}
                   className={`bg-[#1E293B]/70 backdrop-blur-xl border rounded-3xl p-6 shadow-xl transition-all duration-300 ${
                     isCompleted
-                      ? "border-emerald-500/30 bg-emerald-950/10 opacity-80"
+                      ? "border-emerald-500/40 bg-emerald-950/20"
                       : "border-slate-700/60 hover:border-blue-500/40"
                   }`}
                 >
@@ -130,20 +148,23 @@ export default function StudentHomework() {
                     {hw.description || "No specific instructions provided."}
                   </p>
 
-                  <div className="flex justify-between items-center pt-2">
-                    <span className="text-xs text-slate-400">
+                  <div className="flex justify-between items-center pt-2 flex-wrap gap-3">
+                    <span className="text-xs text-slate-400 font-mono">
                       Posted: {new Date(hw.created_at).toLocaleDateString()}
                     </span>
-                    <button
-                      onClick={() => toggleComplete(hw.id, hw.title)}
-                      className={`px-5 py-2 rounded-xl text-xs font-extrabold transition-all shadow-md ${
-                        isCompleted
-                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/30"
-                          : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30"
-                      }`}
-                    >
-                      {isCompleted ? "Completed ✓ (Click to Undo)" : "Mark as Completed ✓"}
-                    </button>
+                    <div>
+                      {isCompleted ? (
+                        <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-lg shadow-emerald-900/20">
+                          <span>✓</span>
+                          <span>Verified Completed by Faculty</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-lg shadow-amber-900/20">
+                          <span>⏳</span>
+                          <span>Pending Faculty Verification</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

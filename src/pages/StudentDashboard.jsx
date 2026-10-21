@@ -132,13 +132,6 @@ export default function StudentDashboard() {
       color: "from-cyan-500/20 to-teal-500/10 text-cyan-400 border-cyan-500/30",
       path: "/student/gallery",
     },
-    {
-      name: "Campus Bus Routes & Schedule",
-      desc: "Daily bus timings, stops & driver contact",
-      icon: "🚌",
-      color: "from-emerald-500/20 to-green-500/10 text-emerald-400 border-emerald-500/30",
-      path: "/student/transport",
-    },
   ];
 
   return (

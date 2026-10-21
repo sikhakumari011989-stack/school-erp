@@ -45,6 +45,16 @@ export default function ComprehensiveMemberModal({
     password: "password123",
   });
 
+  // Accountant Form State
+  const [accountantForm, setAccountantForm] = useState({
+    name: "",
+    customId: "",
+    phone: "",
+    email: "",
+    designation: "Head of Accounts & Treasury",
+    password: "password123",
+  });
+
   // Helper to get local directory
   const getLocalDirectory = () => {
     try {
@@ -64,7 +74,7 @@ export default function ComprehensiveMemberModal({
   useEffect(() => {
     if (isOpen) {
       setErrorMessage("");
-      const targetRole = initialRole === "teacher" ? "teacher" : "student";
+      const targetRole = initialRole === "accountant" ? "accountant" : initialRole === "teacher" ? "teacher" : "student";
       setActiveTab(targetRole);
 
       // Pre-populate student ID if empty
@@ -81,6 +91,13 @@ export default function ComprehensiveMemberModal({
         ...prev,
         customId: prev.customId ? prev.customId : suggestedTeacher,
       }));
+
+      // Pre-populate accountant ID if empty
+      const suggestedAcc = generateSuggestedId("accountant");
+      setAccountantForm((prev) => ({
+        ...prev,
+        customId: prev.customId ? prev.customId : suggestedAcc,
+      }));
     }
   }, [isOpen, initialRole, activeSchoolId]);
 
@@ -93,6 +110,8 @@ export default function ComprehensiveMemberModal({
       setStudentForm((prev) => ({ ...prev, customId: generateSuggestedId("student") }));
     } else if (tab === "teacher" && !teacherForm.customId) {
       setTeacherForm((prev) => ({ ...prev, customId: generateSuggestedId("teacher") }));
+    } else if (tab === "accountant" && !accountantForm.customId) {
+      setAccountantForm((prev) => ({ ...prev, customId: generateSuggestedId("accountant") }));
     }
   };
 
@@ -255,6 +274,94 @@ export default function ComprehensiveMemberModal({
     }
   };
 
+  const handleAccountantSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMessage("");
+
+    const cleanName = accountantForm.name.trim();
+    let cleanCustomId = (accountantForm.customId || "").trim().toUpperCase();
+
+    if (!cleanName) {
+      setErrorMessage("Please enter the accountant full name.");
+      return;
+    }
+
+    if (!cleanCustomId) {
+      cleanCustomId = generateSuggestedId("accountant");
+    }
+
+    // Check duplicate ID
+    const dir = getLocalDirectory();
+    const isDuplicate = dir.some(
+      (m) =>
+        (m.role_code || m.roll_number || m.personal_code || "").toUpperCase() === cleanCustomId &&
+        (m.school_id || "").toUpperCase() === activeSchoolId
+    );
+    if (isDuplicate) {
+      setErrorMessage(`Accountant ID "${cleanCustomId}" is already assigned in ${activeSchoolId}. Please pick a unique ID.`);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const mappedEmail = accountantForm.email.trim() || buildStandardErpEmail(activeSchoolId, cleanCustomId);
+      const defaultPassword = accountantForm.password.trim() || "password123";
+
+      const newAccountantRecord = {
+        id: `mem_acc_${Date.now()}`,
+        name: cleanName,
+        full_name: cleanName,
+        role: "accountant",
+        role_code: cleanCustomId,
+        roll_number: cleanCustomId,
+        personal_code: cleanCustomId,
+        class_name: "Financial Treasury",
+        department: "Accounts & Finance Department",
+        designation: accountantForm.designation.trim() || "Accounts Officer",
+        phone: accountantForm.phone.trim(),
+        email: mappedEmail,
+        default_password: defaultPassword,
+        school_id: activeSchoolId,
+        status: "active",
+        created_at: new Date().toISOString(),
+      };
+
+      // 1. Cloud-First Enrollment
+      await enrollMemberInCloud({
+        schoolCode: activeSchoolId,
+        member: newAccountantRecord,
+      });
+
+      // 2. Security audit logging
+      logSecurityAction({
+        action: "ACCOUNTANT_ONBOARDED",
+        entityType: "ACCOUNTANT",
+        entityId: cleanCustomId,
+        details: `Onboarded institutional accountant "${cleanName}" with ID ${cleanCustomId}`,
+        schoolId: activeSchoolId,
+      });
+
+      showToast(`Onboarded accountant ${cleanName} (${cleanCustomId})! Login Password: ${defaultPassword}`, "success");
+
+      setAccountantForm({
+        name: "",
+        customId: generateSuggestedId("accountant"),
+        phone: "",
+        email: "",
+        designation: "Head of Accounts & Treasury",
+        password: "password123",
+      });
+
+      if (onSuccess) onSuccess(newAccountantRecord);
+      onClose();
+    } catch (err) {
+      console.error("Error onboarding accountant:", err);
+      setErrorMessage(err.message || "Failed to onboard accountant.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in overflow-y-auto">
       <div className="bg-[#1E293B] border border-slate-700/80 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl relative my-8">
@@ -265,7 +372,11 @@ export default function ComprehensiveMemberModal({
               <span>🏛️</span> Institutional Directory Management ({activeSchoolId})
             </div>
             <h2 className="text-2xl font-black text-white tracking-tight">
-              {activeTab === "student" ? "➕ Enroll New Student" : "➕ Onboard New Faculty"}
+              {activeTab === "student"
+                ? "➕ Enroll New Student"
+                : activeTab === "teacher"
+                ? "➕ Onboard New Faculty"
+                : "➕ Onboard New Accountant"}
             </h2>
             <p className="text-xs text-slate-400 mt-1">
               Create complete biographical profiles with customizable 2-Tier access credentials.
@@ -281,30 +392,42 @@ export default function ComprehensiveMemberModal({
         </div>
 
         {/* Tab Switcher */}
-        <div className="grid grid-cols-2 gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 mb-6">
+        <div className="grid grid-cols-3 gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 mb-6">
           <button
             type="button"
             onClick={() => handleTabSwitch("student")}
-            className={`py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+            className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === "student"
                 ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-600/30 border border-emerald-400/40"
                 : "text-slate-400 hover:text-white"
             }`}
           >
             <span>🎓</span>
-            <span>Enroll Student (STU)</span>
+            <span className="truncate">Student (STU)</span>
           </button>
           <button
             type="button"
             onClick={() => handleTabSwitch("teacher")}
-            className={`py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+            className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === "teacher"
                 ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 border border-blue-400/40"
                 : "text-slate-400 hover:text-white"
             }`}
           >
             <span>👨‍🏫</span>
-            <span>Onboard Faculty (TCH)</span>
+            <span className="truncate">Faculty (TCH)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabSwitch("accountant")}
+            className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              activeTab === "accountant"
+                ? "bg-gradient-to-r from-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30 border border-amber-400/40"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <span>💰</span>
+            <span className="truncate">Accountant (ACC)</span>
           </button>
         </div>
 
@@ -664,6 +787,147 @@ export default function ComprehensiveMemberModal({
                   </>
                 ) : (
                   <span>➕ Onboard Faculty & Issue Credentials</span>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* TAB 3: ONBOARD NEW ACCOUNTANT */}
+        {activeTab === "accountant" && (
+          <form onSubmit={handleAccountantSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Full Name */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Accountant Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ramesh S. Nair"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500"
+                  value={accountantForm.name}
+                  onChange={(e) => setAccountantForm({ ...accountantForm, name: e.target.value })}
+                />
+              </div>
+
+              {/* Custom Accountant ID */}
+              <div>
+                <div className="flex justify-between items-center mb-1.5 ml-1">
+                  <label className="text-[11px] font-extrabold text-slate-300 uppercase tracking-wider">
+                    Custom Accountant ID / Code *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAccountantForm((prev) => ({
+                        ...prev,
+                        customId: generateSuggestedId("accountant"),
+                      }))
+                    }
+                    className="text-[10px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer"
+                  >
+                    ⚡ Suggest Next
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. ACC-01 or ACC-02"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-amber-400 font-mono font-bold text-sm focus:outline-none focus:border-amber-500 uppercase tracking-wider"
+                  value={accountantForm.customId}
+                  onChange={(e) =>
+                    setAccountantForm({
+                      ...accountantForm,
+                      customId: e.target.value.toUpperCase().replace(/\s+/g, "-"),
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Designation / Department */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Official Designation
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Head of Accounts & Treasury"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500"
+                  value={accountantForm.designation}
+                  onChange={(e) => setAccountantForm({ ...accountantForm, designation: e.target.value })}
+                />
+              </div>
+
+              {/* Contact Phone */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Direct Contact Number
+                </label>
+                <input
+                  type="tel"
+                  placeholder="e.g. +91 98200 44556"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500 font-mono"
+                  value={accountantForm.phone}
+                  onChange={(e) => setAccountantForm({ ...accountantForm, phone: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Email Address */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Institutional Email
+                </label>
+                <input
+                  type="email"
+                  placeholder={buildStandardErpEmail(activeSchoolId, accountantForm.customId || "ACC-01")}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500 font-mono text-xs"
+                  value={accountantForm.email}
+                  onChange={(e) => setAccountantForm({ ...accountantForm, email: e.target.value })}
+                />
+              </div>
+
+              {/* Security Password */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Security Password / PIN
+                </label>
+                <input
+                  type="text"
+                  placeholder="password123"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-amber-300 font-mono text-sm focus:outline-none focus:border-amber-500"
+                  value={accountantForm.password}
+                  onChange={(e) => setAccountantForm({ ...accountantForm, password: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold text-xs cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-black px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-600/30 transition-all cursor-pointer flex items-center gap-2 border border-amber-400/40"
+              >
+                {submitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Onboarding Accountant...</span>
+                  </>
+                ) : (
+                  <span>➕ Onboard Accountant & Issue Credentials</span>
                 )}
               </button>
             </div>

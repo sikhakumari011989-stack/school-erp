@@ -4,7 +4,6 @@ import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import SchoolUpiQrConfig from "../Components/SchoolUpiQrConfig";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
-import TransportFleetManager from "../Components/TransportFleetManager";
 import NonTeachingStaffManager from "../Components/NonTeachingStaffManager";
 import CctvFeedManager from "../Components/CctvFeedManager";
 import StaffLeaveManager from "../Components/StaffLeaveManager";
@@ -434,7 +433,6 @@ export default function PrincipalDashboard() {
     { id: 8, name: "Master Timetable & Period Scheduler", icon: "⏰", category: "Curriculum", desc: "Monday–Saturday curriculum timeline configuration grid (Period timings, room numbers, subjects)." },
     { id: 9, name: "Staff Evaluation & Syllabus Progress", icon: "⭐", category: "Pedagogy", desc: "Monitor faculty teaching milestones and lesson plan completion status." },
     { id: 10, name: "System Security Audit Vault", icon: "⚙️", category: "Compliance", desc: "Immutable activity logs tracking real administrative and user sign-ins, fee collections, and role changes." },
-    { id: 11, name: "Transport Fleet & Bus Route Manager", icon: "🚌", category: "Logistics", desc: "Add/remove school bus routes (Route Number, Bus Plate, Driver Name, Phone, Pickup/Drop Timings)." },
     { id: 12, name: "Inventory & Asset Master", icon: "📦", category: "Plant & Assets", desc: "Track school uniforms, textbooks, library books, laboratory chemicals, and computer hardware." },
     { id: 13, name: "Digital Certificate Signatures", icon: "✍️", category: "Registrar", desc: "Review and digitally sign student certificate requests (Bonafide, Transfer, Character) with instant sync." },
     { id: 14, name: "Disciplinary & Conduct Log", icon: "⚖️", category: "Student Affairs", desc: "Record and manage student merit commendations, sportsmanship awards, and disciplinary infractions." },
@@ -988,9 +986,6 @@ export default function PrincipalDashboard() {
 
             {/* MODULE 10: SYSTEM SECURITY AUDIT VAULT */}
             {activeModuleId === 10 && <SystemAudit />}
-
-            {/* MODULE 11: TRANSPORT FLEET & BUS ROUTES */}
-            {activeModuleId === 11 && <TransportFleetManager schoolId={institutionCode} />}
 
             {/* MODULE 12: INVENTORY & ASSET MASTER */}
             {activeModuleId === 12 && <InventoryAssetManager schoolId={institutionCode} />}

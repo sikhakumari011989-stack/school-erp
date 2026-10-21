@@ -7,12 +7,26 @@
  */
 
 export function getNextMemberId(role = "student", directory = [], existingMembers = []) {
-  const isTeacher = (role || "").toLowerCase() === "teacher";
-  const prefix = isTeacher ? "TCH" : "STU";
+  const r = (role || "").toLowerCase();
+  let prefix = "STU";
+  let maxNum = 100;
+
+  if (r === "teacher") {
+    prefix = "TCH";
+    maxNum = 0;
+  } else if (r === "accountant") {
+    prefix = "ACC";
+    maxNum = 0;
+  } else if (r === "staff" || r === "non_teaching") {
+    prefix = "NON";
+    maxNum = 0;
+  } else if (r === "trustee" || r === "principal") {
+    prefix = "PRIN";
+    maxNum = 0;
+  }
 
   // Combine all known records
   const allItems = [...(directory || []), ...(existingMembers || [])];
-  let maxNum = isTeacher ? 0 : 100;
 
   allItems.forEach((item) => {
     if (!item) return;
@@ -34,12 +48,12 @@ export function getNextMemberId(role = "student", directory = [], existingMember
   });
 
   const nextNum = maxNum + 1;
-  if (isTeacher) {
-    // Format TCH-01, TCH-02 ... TCH-10
-    return `TCH-${String(nextNum).padStart(2, "0")}`;
-  } else {
+  if (prefix === "STU") {
     // Format STU-101, STU-102 ...
     return `STU-${nextNum}`;
+  } else {
+    // Format TCH-01, ACC-01, NON-01, PRIN-01 ...
+    return `${prefix}-${String(nextNum).padStart(2, "0")}`;
   }
 }
 

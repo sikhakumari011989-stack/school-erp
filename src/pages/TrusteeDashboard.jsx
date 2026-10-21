@@ -10,7 +10,6 @@ import BulkImportModal from "../Components/BulkImportModal";
 import SchoolUpiQrConfig from "../Components/SchoolUpiQrConfig";
 import SystemDiagnostic from "../Components/SystemDiagnostic";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
-import TransportFleetManager from "../Components/TransportFleetManager";
 import NonTeachingStaffManager from "../Components/NonTeachingStaffManager";
 import FeeStructureConfigurator from "../Components/FeeStructureConfigurator";
 import ComprehensiveMemberModal from "../Components/ComprehensiveMemberModal";
@@ -505,15 +504,6 @@ export default function TrusteeDashboard() {
                 <span>Digital Certificate Signatures</span>
               </button>
               <button
-                onClick={() => setActiveTab("transport")}
-                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === "transport" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30" : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <span>🚌</span>
-                <span>Bus Fleet Manager</span>
-              </button>
-              <button
                 onClick={() => setActiveTab("non_teaching")}
                 className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeTab === "non_teaching" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30" : "text-slate-400 hover:text-white"
@@ -942,8 +932,6 @@ export default function TrusteeDashboard() {
               </div>
             </div>
           </div>
-        ) : activeTab === "transport" ? (
-          <TransportFleetManager schoolId={institutionCode} />
         ) : activeTab === "non_teaching" ? (
           <NonTeachingStaffManager schoolId={institutionCode} />
         ) : activeTab === "certificates" ? (

@@ -2,19 +2,22 @@ import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { publishStudyMaterial } from "../utils/studyMaterialService";
+import { generateReportCardPDF } from "../utils/pdfGenerator";
 
 export default function TeacherAnalytics() {
   const { user } = useContext(AppContext);
   const { showToast } = useToast();
   const schoolId = user?.school_id || user?.institution_code || "CAMPUS-01";
 
-  const [activeTab, setActiveTab] = useState("analytics");
+  const [activeTab, setActiveTab] = useState("marks"); // 'marks' | 'analytics' | 'papers'
   const [papers, setPapers] = useState([]);
   const [supportStudents, setSupportStudents] = useState([]);
+  const [examMarks, setExamMarks] = useState([]);
 
   // Modals
   const [showWatchlistModal, setShowWatchlistModal] = useState(false);
   const [showPaperModal, setShowPaperModal] = useState(false);
+  const [showMarksModal, setShowMarksModal] = useState(false);
 
   // Forms
   const [watchForm, setWatchForm] = useState({
@@ -28,6 +31,16 @@ export default function TeacherAnalytics() {
     title: "",
     className: "Class 10-A",
     format: "PDF",
+  });
+
+  const [marksForm, setMarksForm] = useState({
+    student_name: "",
+    roll_number: "",
+    class_name: "Class 10-A",
+    maths: 85,
+    science: 88,
+    english: 90,
+    term: "Term II Final Examination (2026-27)",
   });
 
   useEffect(() => {
@@ -45,11 +58,157 @@ export default function TeacherAnalytics() {
       } else {
         setPapers([]);
       }
+
+      const rawMarks = localStorage.getItem(`erp_exam_marks_${schoolId}`);
+      if (rawMarks) {
+        setExamMarks(JSON.parse(rawMarks));
+      } else {
+        // Initialize from enrolled student directory if available
+        const rawDir = localStorage.getItem(`erp_directory_${schoolId}`);
+        if (rawDir) {
+          const dirList = JSON.parse(rawDir);
+          const stuList = dirList.filter((m) => (m.role || "").toLowerCase() === "student");
+          if (stuList.length > 0) {
+            const initialList = stuList.map((s, idx) => ({
+              id: `exam_${s.roll_number || idx}`,
+              student_name: s.full_name || s.name || "Student",
+              roll_number: s.roll_number || `STU-${100 + idx}`,
+              class_name: s.class_name || "Class 10-A",
+              maths: 85,
+              science: 90,
+              english: 88,
+              term: "Term II Final Examination (2026-27)",
+            }));
+            setExamMarks(initialList);
+            localStorage.setItem(`erp_exam_marks_${schoolId}`, JSON.stringify(initialList));
+          } else {
+            setExamMarks([]);
+          }
+        } else {
+          setExamMarks([]);
+        }
+      }
     } catch (e) {
       setSupportStudents([]);
       setPapers([]);
+      setExamMarks([]);
     }
   }, [schoolId]);
+
+  const calcGrade = (percentage) => {
+    const p = Number(percentage) || 0;
+    if (p >= 90) return "A+";
+    if (p >= 80) return "A";
+    if (p >= 70) return "B+";
+    if (p >= 60) return "B";
+    if (p >= 50) return "C";
+    if (p >= 40) return "D";
+    return "F";
+  };
+
+  const handleUpdateMarks = (id, subject, val) => {
+    const num = Math.min(100, Math.max(0, Number(val) || 0));
+    const updated = examMarks.map((row) => {
+      if (row.id === id) {
+        return { ...row, [subject]: num };
+      }
+      return row;
+    });
+    setExamMarks(updated);
+    try {
+      localStorage.setItem(`erp_exam_marks_${schoolId}`, JSON.stringify(updated));
+    } catch (e) {}
+  };
+
+  const handleAddMarksRow = (e) => {
+    e.preventDefault();
+    if (!marksForm.student_name.trim()) {
+      showToast("Please enter student name", "error");
+      return;
+    }
+
+    const newRow = {
+      id: `exam_${Date.now()}`,
+      student_name: marksForm.student_name.trim(),
+      roll_number: marksForm.roll_number.trim().toUpperCase() || `STU-${Date.now().toString().slice(-3)}`,
+      class_name: marksForm.class_name.trim() || "Class 10-A",
+      maths: Math.min(100, Math.max(0, Number(marksForm.maths) || 0)),
+      science: Math.min(100, Math.max(0, Number(marksForm.science) || 0)),
+      english: Math.min(100, Math.max(0, Number(marksForm.english) || 0)),
+      term: marksForm.term || "Term II Final Examination (2026-27)",
+    };
+
+    const updated = [newRow, ...examMarks];
+    setExamMarks(updated);
+    try {
+      localStorage.setItem(`erp_exam_marks_${schoolId}`, JSON.stringify(updated));
+    } catch (e) {}
+
+    showToast(`Added ${newRow.student_name} to exam marks matrix!`, "success");
+    setMarksForm({
+      student_name: "",
+      roll_number: "",
+      class_name: "Class 10-A",
+      maths: 85,
+      science: 88,
+      english: 90,
+      term: "Term II Final Examination (2026-27)",
+    });
+    setShowMarksModal(false);
+  };
+
+  const handleCompilePDFReportCard = (row) => {
+    try {
+      const maths = Number(row.maths) || 0;
+      const science = Number(row.science) || 0;
+      const english = Number(row.english) || 0;
+      const total = maths + science + english;
+      const pct = (total / 3).toFixed(1);
+
+      generateReportCardPDF({
+        tenant: {
+          name: user?.school_name || "Apex International Academy",
+          code: schoolId,
+          address: user?.address || "Mahim Manohar Highway, Palghar 401404",
+          email: user?.email || "principal@campus.edu",
+        },
+        student: {
+          name: row.student_name,
+          roll_number: row.roll_number,
+          class: row.class_name,
+        },
+        academicTerm: row.term || "Term II Examination (2026-27)",
+        grades: [
+          {
+            subject: "Mathematics",
+            maxMarks: 100,
+            marksObtained: maths,
+            grade: calcGrade(maths),
+            remarks: maths >= 80 ? "Exemplary analytical capability" : "Regular practice recommended",
+          },
+          {
+            subject: "Science (Physics, Chem, Bio)",
+            maxMarks: 100,
+            marksObtained: science,
+            grade: calcGrade(science),
+            remarks: science >= 80 ? "Outstanding theoretical & practical understanding" : "Focus on conceptual clarity",
+          },
+          {
+            subject: "English Language & Literature",
+            maxMarks: 100,
+            marksObtained: english,
+            grade: calcGrade(english),
+            remarks: english >= 80 ? "Fluent expression and strong vocabulary" : "Grammar precision improving",
+          },
+        ],
+        attendanceRate: "96.8%",
+      });
+      showToast(`Compiled official PDF Report Card for ${row.student_name}!`, "success");
+    } catch (err) {
+      console.error("Report card PDF compilation error:", err);
+      showToast("Failed to compile PDF Report Card", "error");
+    }
+  };
 
   const handleAddWatchlist = (e) => {
     e.preventDefault();
@@ -147,10 +306,18 @@ export default function TeacherAnalytics() {
             <h1 className="text-3xl font-extrabold text-white">Performance Analytics & Question Bank 📊</h1>
             <p className="text-slate-400 text-sm mt-1">Class monitoring, remedial intervention lists, and test papers</p>
           </div>
-          <div className="flex gap-2 bg-slate-800/80 p-1.5 rounded-2xl border border-slate-700">
+          <div className="flex gap-2 bg-slate-800/80 p-1.5 rounded-2xl border border-slate-700 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab("marks")}
+              className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "marks" ? "bg-purple-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
+              }`}
+            >
+              📝 Marks Grid & Reports ({examMarks.length})
+            </button>
             <button
               onClick={() => setActiveTab("analytics")}
-              className={`px-5 py-2 rounded-xl font-bold text-sm transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === "analytics" ? "bg-purple-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
               }`}
             >
@@ -158,7 +325,7 @@ export default function TeacherAnalytics() {
             </button>
             <button
               onClick={() => setActiveTab("papers")}
-              className={`px-5 py-2 rounded-xl font-bold text-sm transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === "papers" ? "bg-purple-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
               }`}
             >
@@ -167,7 +334,151 @@ export default function TeacherAnalytics() {
           </div>
         </div>
 
-        {activeTab === "analytics" ? (
+        {/* TAB 1: EXAM MARKS GRID & REPORT CARDS */}
+        {activeTab === "marks" && (
+          <div className="space-y-6">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span>📝</span> 1-Click Exam Marks Entry Grid & Report Compiler
+                </h2>
+                <p className="text-slate-400 text-xs mt-1">
+                  Enter student assessment scores (Maths, Science, English out of 100). Aggregates, percentages, and letter grades calculate live.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowMarksModal(true)}
+                className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-purple-600/30 transition-all cursor-pointer flex items-center gap-2 text-xs sm:text-sm"
+              >
+                <span>➕</span>
+                <span>Add Student Exam Entry</span>
+              </button>
+            </div>
+
+            {/* MARKS GRID TABLE */}
+            <div className="bg-[#1E293B] border border-slate-700 rounded-3xl shadow-2xl overflow-hidden">
+              <div className="p-6 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center flex-wrap gap-4">
+                <div>
+                  <h3 className="text-lg font-bold text-white">Term Assessment Marks Matrix</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Continuous evaluation & instant official PDF report generation</p>
+                </div>
+                <span className="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1 rounded-full font-bold">
+                  {examMarks.length} Students Evaluated
+                </span>
+              </div>
+
+              {examMarks.length === 0 ? (
+                <div className="p-12 text-center text-slate-400">
+                  <span className="text-4xl block mb-2 opacity-60">📊</span>
+                  <p className="font-bold text-white text-base">No exam marks entered yet (Clean Slate).</p>
+                  <p className="text-xs text-slate-400 mt-1">Click "Add Student Exam Entry" to record scores and generate official PDF report cards.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto w-full">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/40">
+                        <th className="p-4 pl-6">Student & Roll No</th>
+                        <th className="p-4">Batch / Class</th>
+                        <th className="p-4 text-center">Maths (/100)</th>
+                        <th className="p-4 text-center">Science (/100)</th>
+                        <th className="p-4 text-center">English (/100)</th>
+                        <th className="p-4 text-center">Total (/300)</th>
+                        <th className="p-4 text-center">Percentage</th>
+                        <th className="p-4 text-center">Grade</th>
+                        <th className="p-4 text-right pr-6">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700/50 text-sm">
+                      {examMarks.map((row) => {
+                        const m = Number(row.maths) || 0;
+                        const s = Number(row.science) || 0;
+                        const e = Number(row.english) || 0;
+                        const total = m + s + e;
+                        const pct = (total / 3).toFixed(1);
+                        const grade = calcGrade(pct);
+
+                        return (
+                          <tr key={row.id} className="hover:bg-slate-800/30 transition-colors">
+                            <td className="p-4 pl-6 font-bold text-white">
+                              <div>{row.student_name}</div>
+                              <span className="text-[11px] font-mono text-purple-400 font-semibold">{row.roll_number}</span>
+                            </td>
+                            <td className="p-4 text-slate-300 text-xs">{row.class_name}</td>
+                            <td className="p-4 text-center">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={row.maths}
+                                onChange={(evt) => handleUpdateMarks(row.id, "maths", evt.target.value)}
+                                className="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-center font-mono font-bold text-white text-xs focus:outline-none focus:border-purple-500"
+                              />
+                            </td>
+                            <td className="p-4 text-center">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={row.science}
+                                onChange={(evt) => handleUpdateMarks(row.id, "science", evt.target.value)}
+                                className="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-center font-mono font-bold text-white text-xs focus:outline-none focus:border-purple-500"
+                              />
+                            </td>
+                            <td className="p-4 text-center">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={row.english}
+                                onChange={(evt) => handleUpdateMarks(row.id, "english", evt.target.value)}
+                                className="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-center font-mono font-bold text-white text-xs focus:outline-none focus:border-purple-500"
+                              />
+                            </td>
+                            <td className="p-4 text-center font-mono font-bold text-white">
+                              {total} <span className="text-[10px] text-slate-500">/300</span>
+                            </td>
+                            <td className="p-4 text-center font-mono font-bold text-amber-300">
+                              {pct}%
+                            </td>
+                            <td className="p-4 text-center">
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-xs font-black ${
+                                  pct >= 80
+                                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                    : pct >= 60
+                                    ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                                    : pct >= 40
+                                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                    : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                                }`}
+                              >
+                                {grade}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right pr-6">
+                              <button
+                                onClick={() => handleCompilePDFReportCard(row)}
+                                className="bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 font-bold px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer inline-flex items-center gap-1 shadow-md shadow-purple-900/20"
+                                title="Generate and Download Official PDF Report Card"
+                              >
+                                <span>📄</span>
+                                <span>Compile PDF Report Card</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: ACADEMIC WATCHLIST */}
+        {activeTab === "analytics" && (
           <div className="space-y-8">
             {/* STATS OVERVIEW */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -245,7 +556,10 @@ export default function TeacherAnalytics() {
               )}
             </div>
           </div>
-        ) : (
+        )}
+
+        {/* TAB 3: QUESTION BANK */}
+        {activeTab === "papers" && (
           <div className="space-y-6">
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
@@ -448,6 +762,120 @@ export default function TeacherAnalytics() {
                   className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg transition-all cursor-pointer"
                 >
                   Save Paper
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MARKS ENTRY MODAL */}
+      {showMarksModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl">
+            <h3 className="text-xl font-extrabold text-white mb-1">Add Student Exam Record 📝</h3>
+            <p className="text-xs text-slate-400 mb-6">Enter student assessment marks for automatic grading & PDF report card compilation.</p>
+
+            <form onSubmit={handleAddMarksRow} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Student Full Name *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Aarav Mehta"
+                    value={marksForm.student_name}
+                    onChange={(e) => setMarksForm({ ...marksForm, student_name: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Roll / Student ID</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. STU-101"
+                    value={marksForm.roll_number}
+                    onChange={(e) => setMarksForm({ ...marksForm, roll_number: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Class / Batch</label>
+                  <input
+                    type="text"
+                    value={marksForm.class_name}
+                    onChange={(e) => setMarksForm({ ...marksForm, class_name: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Academic Term</label>
+                  <input
+                    type="text"
+                    value={marksForm.term}
+                    onChange={(e) => setMarksForm({ ...marksForm, term: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500 text-xs"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 pt-2">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Maths (/100)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={marksForm.maths}
+                    onChange={(e) => setMarksForm({ ...marksForm, maths: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-purple-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Science (/100)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={marksForm.science}
+                    onChange={(e) => setMarksForm({ ...marksForm, science: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-purple-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">English (/100)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={marksForm.english}
+                    onChange={(e) => setMarksForm({ ...marksForm, english: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-purple-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowMarksModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-purple-600/30 transition-all cursor-pointer"
+                >
+                  Save & Add to Grid
                 </button>
               </div>
             </form>
