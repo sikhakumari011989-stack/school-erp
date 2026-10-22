@@ -57,6 +57,7 @@ export async function provisionSchoolInCloud({
   phone = "+91 9518388499",
   email = "",
   address = "Mahim Manohar Highway, Palghar 401404",
+  institutionMode = "school", // 'school' | 'tuition'
 }) {
   const cleanCode = (institutionCode || "CAMPUS-01").trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
   const cleanAdminId = (adminId || "HOD-01").trim().toUpperCase();
@@ -160,8 +161,14 @@ export async function provisionSchoolInCloud({
   }
 
   // D. Update Local Storage for Instant Responsiveness
+  const defaultExpiry = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   localStorage.setItem(`erp_directory_${cleanCode}`, JSON.stringify([initialMasterAdmin]));
   localStorage.setItem("erp_active_tenant", cleanCode);
+  localStorage.setItem(`erp_institution_type_${cleanCode}`, institutionMode);
+  localStorage.setItem(
+    `erp_school_sub_${cleanCode}`,
+    JSON.stringify({ status: "active", expiryDate: defaultExpiry })
+  );
 
   try {
     const rawSchools = localStorage.getItem("erp_registered_schools") || "[]";
@@ -172,6 +179,11 @@ export async function provisionSchoolInCloud({
       name: cleanName,
       adminName: adminName.trim(),
       adminId: cleanAdminId,
+      institutionMode,
+      institutionType: institutionMode,
+      subscriptionStatus: "active",
+      status: "active",
+      expiryDate: defaultExpiry,
       createdAt: new Date().toISOString(),
       cloudId: cloudSchoolId,
     });
@@ -193,6 +205,7 @@ export async function provisionSchoolInCloud({
     institutionCode: cleanCode,
     adminName: adminName.trim(),
     adminId: cleanAdminId,
+    institutionMode,
     password: cleanPass,
     mappedEmail,
     portalUrl: `${typeof window !== "undefined" ? window.location.origin : ""}/portal?school=${cleanCode}`,
@@ -649,5 +662,283 @@ export async function fetchCloudDirectory(schoolCode) {
   } catch (e) {}
 
   return [];
+}
+
+/**
+ * 5. MASTER SUBSCRIPTION & EXPIRY CONTROLLER
+ * Controls institution licensing, custom expiry dates, and the master kill-switch.
+ */
+export function getSchoolSubscription(schoolCode) {
+  const cleanCode = String(schoolCode || "").trim().toUpperCase();
+  if (!cleanCode) {
+    return {
+      status: "active",
+      expiryDate: "2027-12-31",
+      isExpired: false,
+      isSuspended: false,
+      isBlocked: false,
+    };
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+  let status = "active";
+  let expiryDate = "2027-12-31";
+
+  // Check explicit tenant subscription key
+  try {
+    const rawSub = localStorage.getItem(`erp_school_sub_${cleanCode}`);
+    if (rawSub) {
+      const parsed = JSON.parse(rawSub);
+      if (parsed.status) status = parsed.status;
+      if (parsed.expiryDate) expiryDate = parsed.expiryDate;
+    } else {
+      // Check erp_registered_schools
+      const rawSchools = localStorage.getItem("erp_registered_schools");
+      if (rawSchools) {
+        const list = JSON.parse(rawSchools);
+        const match = list.find((s) => (s.code || "").toUpperCase() === cleanCode);
+        if (match) {
+          if (match.subscriptionStatus) status = match.subscriptionStatus;
+          if (match.expiryDate) expiryDate = match.expiryDate;
+        }
+      }
+    }
+  } catch (e) {}
+
+  const isSuspended = status.toLowerCase() === "suspended";
+  const isExpired = Boolean(expiryDate && today > expiryDate);
+  const isBlocked = isSuspended || isExpired;
+
+  return {
+    status,
+    expiryDate,
+    isSuspended,
+    isExpired,
+    isBlocked,
+    today,
+  };
+}
+
+export async function updateSchoolSubscription({ schoolCode, status, expiryDate }) {
+  const cleanCode = String(schoolCode || "").trim().toUpperCase();
+  if (!cleanCode) return;
+
+  const validStatus = status === "suspended" ? "suspended" : "active";
+  const validExpiry = expiryDate || "2027-12-31";
+
+  // Save to tenant key
+  localStorage.setItem(
+    `erp_school_sub_${cleanCode}`,
+    JSON.stringify({ status: validStatus, expiryDate: validExpiry })
+  );
+
+  // Update erp_registered_schools
+  try {
+    const raw = localStorage.getItem("erp_registered_schools") || "[]";
+    const list = JSON.parse(raw);
+    const updated = list.map((s) => {
+      if ((s.code || "").toUpperCase() === cleanCode) {
+        return {
+          ...s,
+          subscriptionStatus: validStatus,
+          status: validStatus,
+          expiryDate: validExpiry,
+        };
+      }
+      return s;
+    });
+    localStorage.setItem("erp_registered_schools", JSON.stringify(updated));
+  } catch (e) {}
+
+  // Sync to Supabase cloud if connected
+  if (supabase) {
+    try {
+      const { data: schoolRecord } = await supabase
+        .from("schools")
+        .select("id, address")
+        .ilike("code", cleanCode)
+        .maybeSingle();
+
+      if (schoolRecord && schoolRecord.address && schoolRecord.address.startsWith("{")) {
+        const payload = JSON.parse(schoolRecord.address);
+        payload.subscriptionStatus = validStatus;
+        payload.expiryDate = validExpiry;
+        payload.lastSubscriptionUpdate = new Date().toISOString();
+        await supabase
+          .from("schools")
+          .update({ address: JSON.stringify(payload) })
+          .eq("id", schoolRecord.id);
+      }
+    } catch (err) {
+      console.warn("[CloudSync] Subscription cloud sync notice:", err);
+    }
+  }
+
+  window.dispatchEvent(new Event("erp-schools-updated"));
+  return { status: validStatus, expiryDate: validExpiry };
+}
+
+export async function checkSchoolSubscriptionStatus(schoolCode) {
+  const cleanCode = String(schoolCode || "").trim().toUpperCase();
+  if (!cleanCode) return { isBlocked: false, isSuspended: false, isExpired: false };
+
+  // First check cloud if online
+  if (supabase) {
+    try {
+      const { data: schoolRecord } = await supabase
+        .from("schools")
+        .select("id, address")
+        .ilike("code", cleanCode)
+        .maybeSingle();
+
+      if (schoolRecord && schoolRecord.address && schoolRecord.address.startsWith("{")) {
+        const payload = JSON.parse(schoolRecord.address);
+        if (payload.subscriptionStatus || payload.expiryDate) {
+          const cloudStatus = payload.subscriptionStatus || "active";
+          const cloudExpiry = payload.expiryDate || "2027-12-31";
+          const today = new Date().toISOString().split("T")[0];
+          const isSuspended = cloudStatus.toLowerCase() === "suspended";
+          const isExpired = Boolean(cloudExpiry && today > cloudExpiry);
+
+          // Sync locally
+          localStorage.setItem(
+            `erp_school_sub_${cleanCode}`,
+            JSON.stringify({ status: cloudStatus, expiryDate: cloudExpiry })
+          );
+
+          return {
+            status: cloudStatus,
+            expiryDate: cloudExpiry,
+            isSuspended,
+            isExpired,
+            isBlocked: isSuspended || isExpired,
+            today,
+          };
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Fallback to local subscription evaluator
+  return getSchoolSubscription(cleanCode);
+}
+
+export async function getAllRegisteredSchools() {
+  const schoolsMap = new Map();
+
+  // 1. Seed standard defaults so the directory is never empty
+  const defaultSchools = [
+    {
+      code: "PALGHAR-01",
+      name: "Apex International Academy",
+      adminName: "Dr. Vikramaditya Singhania",
+      adminId: "HOD-01",
+      institutionMode: "school",
+      subscriptionStatus: "active",
+      expiryDate: "2027-12-31",
+      createdAt: "2026-01-15T09:00:00.000Z",
+    },
+    {
+      code: "TUITION-01",
+      name: "Zenith IIT-JEE & Medical Hub",
+      adminName: "Prof. Rajesh Verma",
+      adminId: "HOD-01",
+      institutionMode: "tuition",
+      subscriptionStatus: "active",
+      expiryDate: "2027-12-31",
+      createdAt: "2026-02-01T10:30:00.000Z",
+    },
+  ];
+
+  defaultSchools.forEach((s) => schoolsMap.set(s.code, s));
+
+  // 2. Read local storage registered schools
+  try {
+    const raw = localStorage.getItem("erp_registered_schools");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((s) => {
+          if (s.code) {
+            const cleanCode = s.code.toUpperCase();
+            const sub = getSchoolSubscription(cleanCode);
+            schoolsMap.set(cleanCode, {
+              ...s,
+              code: cleanCode,
+              name: s.name || cleanCode,
+              institutionMode: s.institutionMode || s.institutionType || "school",
+              subscriptionStatus: sub.status,
+              expiryDate: sub.expiryDate,
+              isBlocked: sub.isBlocked,
+              isSuspended: sub.isSuspended,
+              isExpired: sub.isExpired,
+            });
+          }
+        });
+      }
+    }
+  } catch (e) {}
+
+  // 3. Merge Supabase cloud schools
+  if (supabase) {
+    try {
+      const { data: cloudSchools } = await supabase
+        .from("schools")
+        .select("id, code, name, address, created_at");
+
+      if (cloudSchools && Array.isArray(cloudSchools)) {
+        cloudSchools.forEach((cs) => {
+          if (cs.code) {
+            const cleanCode = cs.code.toUpperCase();
+            let adminName = "Institution Trustee";
+            let adminId = "HOD-01";
+            let mode = "school";
+            let subStatus = "active";
+            let expDate = "2027-12-31";
+
+            if (cs.address && cs.address.startsWith("{")) {
+              try {
+                const parsed = JSON.parse(cs.address);
+                if (parsed.masterAdminName) adminName = parsed.masterAdminName;
+                if (parsed.masterAdminId) adminId = parsed.masterAdminId;
+                if (parsed.institutionMode) mode = parsed.institutionMode;
+                if (parsed.subscriptionStatus) subStatus = parsed.subscriptionStatus;
+                if (parsed.expiryDate) expDate = parsed.expiryDate;
+              } catch (e) {}
+            }
+
+            const existing = schoolsMap.get(cleanCode);
+            schoolsMap.set(cleanCode, {
+              code: cleanCode,
+              name: cs.name || existing?.name || cleanCode,
+              adminName: existing?.adminName || adminName,
+              adminId: existing?.adminId || adminId,
+              institutionMode: existing?.institutionMode || mode,
+              subscriptionStatus: existing?.subscriptionStatus || subStatus,
+              expiryDate: existing?.expiryDate || expDate,
+              createdAt: cs.created_at || existing?.createdAt || new Date().toISOString(),
+              cloudId: cs.id,
+            });
+          }
+        });
+      }
+    } catch (err) {}
+  }
+
+  // Ensure each school has up-to-date subscription status
+  const result = Array.from(schoolsMap.values()).map((s) => {
+    const sub = getSchoolSubscription(s.code);
+    return {
+      ...s,
+      subscriptionStatus: sub.status,
+      status: sub.status,
+      expiryDate: s.expiryDate || sub.expiryDate,
+      isBlocked: sub.isBlocked,
+      isSuspended: sub.isSuspended,
+      isExpired: sub.isExpired,
+    };
+  });
+
+  return result;
 }
 

@@ -388,6 +388,17 @@ export default function TrusteeDashboard() {
     const defaultPassword = "password123";
     const mappedEmail = buildStandardErpEmail(institutionCode, generatedCode);
 
+    // Collision Guard: verify unique Personal ID
+    const isDuplicate = students.some(
+      (s) => (s.roll_number || s.personal_code || s.role_code || "").toUpperCase() === generatedCode.toUpperCase()
+    );
+    if (isDuplicate) {
+      showToast(`Collision Guard: Member ID "${generatedCode}" already exists in ${institutionCode}.`, "error");
+      setFormError(`Collision Guard: Member ID "${generatedCode}" already exists.`);
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const memberRecord = {
         id: `mem_${isTeacher ? "tch" : "stu"}_${Date.now()}`,
@@ -431,6 +442,47 @@ export default function TrusteeDashboard() {
       setFormError(err.message || "Failed to add member.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleToggleArchiveMember = async (st) => {
+    const personalCode = (st.roll_number || st.personal_code || st.role_code || "").toUpperCase();
+    const isArchived = (st.status || "").toLowerCase().includes("archived") || (st.status || "").toLowerCase().includes("inactive");
+    const nextStatus = isArchived ? "Active" : "Archived / Inactive";
+
+    try {
+      const rawDir = localStorage.getItem(`erp_directory_${institutionCode}`);
+      let dir = rawDir ? JSON.parse(rawDir) : [];
+      dir = dir.map((m) => {
+        const mCode = (m.roll_number || m.personal_code || m.role_code || "").toUpperCase();
+        if (mCode === personalCode) {
+          return { ...m, status: nextStatus };
+        }
+        return m;
+      });
+      localStorage.setItem(`erp_directory_${institutionCode}`, JSON.stringify(dir));
+
+      logSecurityAction({
+        action: isArchived ? "MEMBER_REACTIVATED" : "MEMBER_ARCHIVED",
+        entityType: (st.role || "MEMBER").toUpperCase(),
+        entityId: personalCode,
+        details: `Trustee ${isArchived ? "reactivated" : "safely archived"} ${st.role || "member"} "${st.name || st.full_name}" (${personalCode}) - historical logs preserved`,
+        user,
+        schoolId: institutionCode,
+      });
+
+      showToast(
+        isArchived
+          ? `Reactivated ${st.name || personalCode}! Active status restored.`
+          : `Safely archived ${st.name || personalCode}. Historical audit and fee records preserved.`,
+        "success"
+      );
+
+      fetchStudents();
+      window.dispatchEvent(new Event("erp-directory-updated"));
+    } catch (err) {
+      console.error("Archive error:", err);
+      showToast("Failed to update member status", "error");
     }
   };
 
@@ -756,6 +808,7 @@ export default function TrusteeDashboard() {
                         <th className="p-4">Batch / Class</th>
                         <th className="p-4">Login Identifier</th>
                         <th className="p-4 text-center">Status</th>
+                        <th className="p-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-700/50 text-sm">
@@ -767,11 +820,12 @@ export default function TrusteeDashboard() {
                         const personalCode = (st.roll_number || st.personal_code || `STU-${1001 + idx}`).toUpperCase();
                         const effectiveRole = detectRoleFromId(personalCode, st.role);
                         const mappedEmail = buildStandardErpEmail(institutionCode, personalCode);
+                        const isArchived = (st.status || "").toLowerCase().includes("archived") || (st.status || "").toLowerCase().includes("inactive");
 
                         return (
                           <tr key={st.id || idx} className="hover:bg-slate-800/30 transition-colors">
                             <td className="p-4 font-bold text-white text-base">
-                              {st.name || st.full_name}
+                              <span className={isArchived ? "line-through text-slate-500" : ""}>{st.name || st.full_name}</span>
                             </td>
                             <td className="p-4">
                               {effectiveRole === "trustee" || effectiveRole === "principal" || effectiveRole === "admin" ? (
@@ -796,9 +850,32 @@ export default function TrusteeDashboard() {
                               {mappedEmail}
                             </td>
                             <td className="p-4 text-center">
-                              <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-0.5 rounded-full text-xs font-extrabold uppercase">
+                              <span
+                                className={`px-3 py-0.5 rounded-full text-xs font-extrabold uppercase border ${
+                                  isArchived
+                                    ? "bg-slate-800 text-slate-400 border-slate-700"
+                                    : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                }`}
+                              >
                                 {st.status || "Active"}
                               </span>
+                            </td>
+                            <td className="p-4 text-right">
+                              <button
+                                onClick={() => handleToggleArchiveMember(st)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                  isArchived
+                                    ? "bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/40"
+                                    : "bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40"
+                                }`}
+                                title={
+                                  isArchived
+                                    ? "Restore member to active directory"
+                                    : "Safely deactivate/archive member (historical logs preserved)"
+                                }
+                              >
+                                {isArchived ? "✓ Reactivate" : "📦 Archive"}
+                              </button>
                             </td>
                           </tr>
                         );

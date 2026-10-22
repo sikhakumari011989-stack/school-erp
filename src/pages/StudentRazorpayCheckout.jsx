@@ -30,6 +30,8 @@ export default function StudentRazorpayCheckout() {
   const [utrNumber, setUtrNumber] = useState("");
   const [screenshotName, setScreenshotName] = useState("");
   const [screenshotData, setScreenshotData] = useState(null);
+  const [paymentSplitType, setPaymentSplitType] = useState("full"); // "full" | "partial"
+  const [customInstallment, setCustomInstallment] = useState("");
 
   const activeSchoolCode = (
     user?.institution_code ||
@@ -149,27 +151,65 @@ export default function StudentRazorpayCheckout() {
       return;
     }
 
+    // 1. Guard against duplicate UTR submission (Roll Number & UTR collision prevention)
+    let isDuplicate = false;
+    try {
+      const tenantKey = `erp_fee_ledger_${activeSchoolCode}`;
+      const savedTenant = localStorage.getItem(tenantKey);
+      if (savedTenant) {
+        const list = JSON.parse(savedTenant);
+        if (list.some((r) => String(r.utr || r.razorpay_payment_id || "").trim().toUpperCase() === cleanUtr.toUpperCase())) {
+          isDuplicate = true;
+        }
+      }
+      if (!isDuplicate) {
+        const savedGlobal = localStorage.getItem("erp_fee_ledger");
+        if (savedGlobal) {
+          const list = JSON.parse(savedGlobal);
+          if (list.some((r) => String(r.utr || r.razorpay_payment_id || "").trim().toUpperCase() === cleanUtr.toUpperCase() && String(r.school_id || "").toUpperCase() === activeSchoolCode)) {
+            isDuplicate = true;
+          }
+        }
+      }
+    } catch (e) {}
+
+    if (isDuplicate) {
+      showToast(`Transaction Reference (UTR) "${cleanUtr}" has already been registered. Duplicate submissions are not permitted.`, "error");
+      return;
+    }
+
+    // 2. Partial fee payment calculation
+    const isPartial = paymentSplitType === "partial";
+    const numInstallment = Number(customInstallment);
+    if (isPartial && (!numInstallment || numInstallment <= 0 || numInstallment > Number(selectedFee.amount))) {
+      showToast(`Please enter a valid installment amount between ₹1 and ₹${Number(selectedFee.amount).toLocaleString()}.`, "error");
+      return;
+    }
+
+    const amountToSettle = isPartial ? numInstallment : Number(selectedFee.amount);
+    const remainingBalance = Math.max(0, Number(selectedFee.amount) - amountToSettle);
+
     setLoading(true);
 
     const today = new Date().toISOString().split("T")[0];
     const studentName = user?.name || user?.full_name || "Enrolled Student";
     const rawPhone = user?.parent_phone || user?.phone || "9876543210";
     const studentPhone = rawPhone.replace(/[^0-9]/g, "").slice(-10) || "9876543210";
-    const schoolId = user?.school_id || "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
+    const schoolId = user?.school_id || activeSchoolCode;
     const institutionName = user?.institution_name || schoolUpiMeta.merchantName || "Apex International Academy";
     const invoiceNo = `INV-${Date.now().toString().slice(-6)}`;
     const paymentMode = paymentModeOverride || `School UPI QR (UTR: ${cleanUtr})`;
 
     try {
-      // 1. Supabase fee_ledger insertion
+      // 1. Supabase fee_ledger insertion with pending_verification
       try {
         const { error: ledgerError } = await supabase.from("fee_ledger").insert([
           {
             school_id: schoolId,
             student_name: studentName,
-            class_name: "Class 10 ICSE",
-            amount: selectedFee.amount,
-            status: "paid",
+            class_name: user?.class_name || "Class 10 ICSE",
+            amount: amountToSettle,
+            status: "pending_verification",
             payment_mode: paymentMode,
             razorpay_payment_id: cleanUtr,
             date: today,
@@ -186,8 +226,8 @@ export default function StudentRazorpayCheckout() {
           {
             school_id: schoolId,
             student_id: user?.id && user.id.length === 36 ? user.id : null,
-            amount: selectedFee.amount,
-            status: "paid",
+            amount: amountToSettle,
+            status: "pending_verification",
             date: today,
           },
         ]);
@@ -195,7 +235,7 @@ export default function StudentRazorpayCheckout() {
         console.warn("fees table sync notice:", fErr);
       }
 
-      // 3. LocalStorage persistence (erp_fee_ledger) for 100% offline & sales demo reliability
+      // 3. LocalStorage persistence (erp_fee_ledger) with status: pending_verification
       try {
         const existingRaw = localStorage.getItem("erp_fee_ledger");
         const existingList = existingRaw ? JSON.parse(existingRaw) : [];
@@ -203,9 +243,12 @@ export default function StudentRazorpayCheckout() {
           id: `TXN-${Date.now()}`,
           school_id: schoolId,
           student_name: studentName,
-          class_name: "Class 10 ICSE",
-          amount: selectedFee.amount,
-          status: "paid",
+          class_name: user?.class_name || "Class 10 ICSE",
+          amount: amountToSettle,
+          total_due: Number(selectedFee.amount),
+          is_partial: isPartial,
+          remaining_balance: remainingBalance,
+          status: "pending_verification",
           payment_mode: paymentMode,
           razorpay_payment_id: cleanUtr,
           utr: cleanUtr,
@@ -214,6 +257,8 @@ export default function StudentRazorpayCheckout() {
           title: selectedFee.title,
           term: selectedFee.title,
           screenshot: screenshotName || null,
+          screenshot_data: screenshotData || null,
+          submitted_at: new Date().toISOString(),
         };
         existingList.unshift(newRecord);
         localStorage.setItem("erp_fee_ledger", JSON.stringify(existingList));
@@ -230,29 +275,18 @@ export default function StudentRazorpayCheckout() {
         console.warn("LocalStorage ledger sync notice:", storageErr);
       }
 
-      // 4. WhatsApp & Guardian Notification
-      notifyFeePaymentConfirmed({
-        studentName,
-        amount: selectedFee.amount,
-        invoiceNo,
-        guardianPhone: studentPhone,
-        schoolName: institutionName,
-        date: today,
-        paymentId: cleanUtr,
-      });
-
-      // 5. Role-based security audit logging
+      // 4. Role-based security audit logging
       logSecurityAction({
         action: AUDIT_ACTIONS.FEE_COLLECTION,
-        entityType: "UPI_SETTLEMENT",
+        entityType: "UPI_SETTLEMENT_SUBMISSION",
         entityId: invoiceNo,
-        details: `UPI Fee payment of ₹${selectedFee.amount} settled via ${paymentMode} for ${selectedFee.title}`,
+        details: `UPI Fee submission of ₹${amountToSettle} (UTR: ${cleanUtr}${isPartial ? `, Partial of ₹${selectedFee.amount}` : ""}) pending verification by Accountant.`,
         user,
         schoolId,
       });
 
       showToast(
-        `Payment Verified! UTR: ${cleanUtr}. Official Tax Invoice generated for ₹${selectedFee.amount.toLocaleString()}.`,
+        `Payment UTR ${cleanUtr} submitted! Status: PENDING VERIFICATION by School Accountant.`,
         "success"
       );
 
@@ -433,11 +467,94 @@ export default function StudentRazorpayCheckout() {
                   <span className="text-blue-400 font-bold">{selectedFee.title}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-slate-800">
-                  <span className="text-slate-200 font-bold text-sm">Total Payable Amount</span>
+                  <span className="text-slate-200 font-bold text-sm">Total Fee Head Value</span>
                   <span className="text-2xl font-black text-emerald-400">
                     ₹{Number(selectedFee.amount || 0).toLocaleString()}
                   </span>
                 </div>
+              </div>
+            )}
+
+            {/* PARTIAL FEE PAYMENT SPLITTER */}
+            {selectedFee && (
+              <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                    Settlement Structure & Splitter
+                  </label>
+                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/30">
+                    Flexible Installment
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaymentSplitType("full");
+                      setCustomInstallment("");
+                    }}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      paymentSplitType === "full"
+                        ? "bg-emerald-500/20 border-emerald-500/60 text-white shadow-md shadow-emerald-500/10"
+                        : "bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <p className="text-xs font-extrabold flex items-center justify-between">
+                      <span>Full Clearance</span>
+                      {paymentSplitType === "full" && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                    </p>
+                    <p className="text-emerald-400 font-black text-sm mt-1">₹{Number(selectedFee.amount).toLocaleString()}</p>
+                    <p className="text-[10px] text-slate-400">100% full dues settlement</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaymentSplitType("partial");
+                      if (!customInstallment) {
+                        setCustomInstallment(String(Math.round(Number(selectedFee.amount) / 2)));
+                      }
+                    }}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      paymentSplitType === "partial"
+                        ? "bg-blue-500/20 border-blue-500/60 text-white shadow-md shadow-blue-500/10"
+                        : "bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <p className="text-xs font-extrabold flex items-center justify-between">
+                      <span>Partial Installment</span>
+                      {paymentSplitType === "partial" && <Check className="w-3.5 h-3.5 text-blue-400" />}
+                    </p>
+                    <p className="text-blue-400 font-black text-sm mt-1">Custom Split</p>
+                    <p className="text-[10px] text-slate-400">Pay customized balance</p>
+                  </button>
+                </div>
+
+                {paymentSplitType === "partial" && (
+                  <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      Enter Installment Amount (₹) *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold">₹</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max={selectedFee.amount}
+                        value={customInstallment}
+                        onChange={(e) => setCustomInstallment(e.target.value)}
+                        placeholder={`e.g. ${Math.round(Number(selectedFee.amount) / 2)}`}
+                        className="w-full bg-slate-900 border border-blue-500/50 rounded-xl pl-8 pr-4 py-2.5 text-white font-mono font-bold text-sm focus:outline-none focus:border-blue-400"
+                      />
+                    </div>
+                    {Number(customInstallment) > 0 && (
+                      <div className="flex justify-between items-center text-xs text-slate-400 pt-1">
+                        <span>Paying now: <strong className="text-emerald-400 font-mono font-bold">₹{Number(customInstallment).toLocaleString()}</strong></span>
+                        <span>Remaining balance: <strong className="text-amber-400 font-mono font-bold">₹{Math.max(0, Number(selectedFee.amount) - Number(customInstallment)).toLocaleString()}</strong></span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -475,7 +592,7 @@ export default function StudentRazorpayCheckout() {
               {/* OPTIONAL SCREENSHOT UPLOAD */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-                  Optional: Attach Payment Receipt Screenshot
+                  Payment Receipt Screenshot (Forwarded to Accountant Verification Queue)
                 </label>
                 <div className="flex items-center gap-3">
                   <label className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-2">
@@ -489,7 +606,7 @@ export default function StudentRazorpayCheckout() {
                     />
                   </label>
                   <span className="text-xs text-slate-400 truncate max-w-[200px]">
-                    {screenshotName || "No file chosen"}
+                    {screenshotName || "No screenshot attached (Optional)"}
                   </span>
                 </div>
               </div>
@@ -504,13 +621,13 @@ export default function StudentRazorpayCheckout() {
                   {loading ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>Verifying UTR & Reconciling Institutional Ledger...</span>
+                      <span>Submitting Payment Receipt to Treasury Queue...</span>
                     </>
                   ) : (
                     <>
                       <Receipt className="w-5 h-5" />
                       <span>
-                        Verify & Submit Fee Payment {selectedFee ? `(₹${Number(selectedFee.amount).toLocaleString()})` : "(Select Fee Head Above)"}
+                        Submit for Verification {selectedFee ? `(₹${(paymentSplitType === 'partial' && Number(customInstallment) > 0 ? Number(customInstallment) : Number(selectedFee.amount)).toLocaleString()})` : "(Select Fee Head Above)"}
                       </span>
                     </>
                   )}
@@ -524,7 +641,7 @@ export default function StudentRazorpayCheckout() {
                   className="w-full bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 font-bold py-3 px-4 rounded-xl transition-all text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>⚡ Auto-Fill Demo UTR & Instant Verify (Sales Demo)</span>
+                  <span>⚡ Auto-Fill Verified Demo UTR & Route to Accountant (Sales Demo)</span>
                 </button>
               </div>
             </form>

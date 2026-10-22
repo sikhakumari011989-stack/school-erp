@@ -4,7 +4,7 @@ import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import BrandLogo from "../Components/BrandLogo";
-import { verifyCloudLogin } from "../utils/cloudSyncService";
+import { verifyCloudLogin, checkSchoolSubscriptionStatus } from "../utils/cloudSyncService";
 
 /**
  * Standardizes email generation pattern for 2-Tier institutional credentials:
@@ -68,6 +68,7 @@ export default function Login({ isDirectPortal = false }) {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [suspendedNotice, setSuspendedNotice] = useState(null);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -84,6 +85,29 @@ export default function Login({ isDirectPortal = false }) {
     }
 
     setLoading(true);
+
+    // 0. Manual Subscription & Master Kill-Switch Enforcement
+    try {
+      const sub = await checkSchoolSubscriptionStatus(cleanInst);
+      if (sub && sub.isBlocked) {
+        setLoading(false);
+        setSuspendedNotice({
+          schoolCode: cleanInst,
+          isSuspended: sub.isSuspended,
+          isExpired: sub.isExpired,
+          expiryDate: sub.expiryDate,
+        });
+        showToast(
+          sub.isSuspended
+            ? `Campus node ${cleanInst} is SUSPENDED by platform administrator.`
+            : `Campus node ${cleanInst} license expired on ${sub.expiryDate}.`,
+          "error"
+        );
+        return;
+      }
+    } catch (subErr) {
+      console.warn("Subscription check notice:", subErr);
+    }
 
     const standardizedEmail = buildStandardErpEmail(cleanInst, cleanPersonal);
     const emailAlt = `${cleanInst.toLowerCase().replace(/[^a-z0-9]/g, "")}.${cleanPersonal.toLowerCase().replace(/[^a-z0-9]/g, "")}@gmail.com`;
@@ -340,6 +364,54 @@ export default function Login({ isDirectPortal = false }) {
           </p>
         </div>
       </div>
+
+      {/* NON-DISMISSIBLE SUBSCRIPTION SUSPENSION / EXPIRY NOTICE */}
+      {suspendedNotice && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border-2 border-rose-500/70 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-5 text-center shadow-2xl relative animate-fade-in">
+            <div className="w-16 h-16 rounded-3xl bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center text-3xl mx-auto shadow-xl shadow-rose-500/20">
+              🚫
+            </div>
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-rose-400 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/30">
+                {suspendedNotice.isSuspended ? "Master Kill-Switch Activated" : "Institutional License Expired"}
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-white mt-2">
+                Campus Portal Access Blocked
+              </h2>
+              <p className="text-slate-300 text-xs mt-2 leading-relaxed">
+                {suspendedNotice.isSuspended ? (
+                  <>
+                    Access to campus node <strong className="text-white font-mono">{suspendedNotice.schoolCode}</strong> has been suspended by the platform administrator via the master subscription kill-switch.
+                  </>
+                ) : (
+                  <>
+                    The enterprise software license for campus node <strong className="text-white font-mono">{suspendedNotice.schoolCode}</strong> expired on <strong className="text-rose-400 font-mono">{suspendedNotice.expiryDate}</strong>.
+                  </>
+                )}
+              </p>
+            </div>
+
+            <div className="bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 text-left space-y-1">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Notice for Faculty, Staff & Students</p>
+              <p className="text-xs text-slate-400">
+                All portal services (Trustee, Teacher, Accountant, Staff, Student) are temporarily restricted. Please contact your school management or platform support to renew access.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSuspendedNotice(null);
+                setFormData((prev) => ({ ...prev, institutionCode: "", personalCode: "", password: "" }));
+              }}
+              className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold py-3.5 px-4 rounded-xl transition-all cursor-pointer text-xs"
+            >
+              ← Return to Login / Enter Different School Code
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

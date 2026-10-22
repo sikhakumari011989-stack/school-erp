@@ -1,10 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { logSecurityAction, AUDIT_ACTIONS } from "../utils/auditLogger";
 import { buildStandardErpEmail } from "./Login";
-import { provisionSchoolInCloud, detectRoleFromId } from "../utils/cloudSyncService";
+import {
+  provisionSchoolInCloud,
+  detectRoleFromId,
+  getAllRegisteredSchools,
+  updateSchoolSubscription,
+  getSchoolSubscription,
+} from "../utils/cloudSyncService";
 import BrandLogo from "../Components/BrandLogo";
 
 export { detectRoleFromId };
@@ -13,13 +19,23 @@ export default function MasterSchoolSetup() {
   const { showToast } = useToast();
   const navigate = useNavigate();
 
+  const [isUnlocked, setIsUnlocked] = useState(
+    () => sessionStorage.getItem("erp_master_gate_unlocked") === "true"
+  );
+  const [passkeyInput, setPasskeyInput] = useState("");
+  const [passkeyError, setPasskeyError] = useState("");
   const [loading, setLoading] = useState(false);
   const [successData, setSuccessData] = useState(null);
+
+  const [schoolsList, setSchoolsList] = useState([]);
+  const [loadingSchools, setLoadingSchools] = useState(false);
+  const [searchSchoolTerm, setSearchSchoolTerm] = useState("");
 
   const [formData, setFormData] = useState({
     institutionName: "",
     institutionCode: "",
     institutionCodeManual: false,
+    institutionMode: "school", // 'school' | 'tuition'
     adminName: "",
     adminRoleCode: "HOD-01",
     email: "",
@@ -27,6 +43,72 @@ export default function MasterSchoolSetup() {
     password: "password123",
     address: "Mahim Manohar Highway, Palghar 401404",
   });
+
+  const loadSchools = async () => {
+    setLoadingSchools(true);
+    try {
+      const list = await getAllRegisteredSchools();
+      setSchoolsList(list);
+    } catch (e) {
+      console.warn("Error loading schools list:", e);
+    } finally {
+      setLoadingSchools(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isUnlocked) {
+      loadSchools();
+      window.addEventListener("erp-schools-updated", loadSchools);
+      return () => window.removeEventListener("erp-schools-updated", loadSchools);
+    }
+  }, [isUnlocked]);
+
+  const handleUnlockGateway = (e) => {
+    e.preventDefault();
+    if (passkeyInput.trim() === "ASK&1412") {
+      setIsUnlocked(true);
+      sessionStorage.setItem("erp_master_gate_unlocked", "true");
+      setPasskeyError("");
+      showToast("Master Gateway Unlocked! Access Granted.", "success");
+    } else {
+      setPasskeyError("Access Denied: Invalid Master Passkey.");
+      showToast("Access Denied: Invalid Master Passkey.", "error");
+    }
+  };
+
+  const handleLockGateway = () => {
+    setIsUnlocked(false);
+    sessionStorage.removeItem("erp_master_gate_unlocked");
+    setPasskeyInput("");
+    showToast("Master Provisioning Gateway Locked.", "info");
+  };
+
+  const handleToggleSubscription = async (school) => {
+    const isCurrentlyActive = (school.subscriptionStatus || "active").toLowerCase() === "active";
+    const newStatus = isCurrentlyActive ? "suspended" : "active";
+    await updateSchoolSubscription({
+      schoolCode: school.code,
+      status: newStatus,
+      expiryDate: school.expiryDate,
+    });
+    showToast(
+      `School ${school.code} subscription set to ${newStatus.toUpperCase()}! ${newStatus === "suspended" ? "Access blocked." : "Access restored."}`,
+      newStatus === "suspended" ? "error" : "success"
+    );
+    loadSchools();
+  };
+
+  const handleUpdateExpiry = async (schoolCode, newDate) => {
+    const current = getSchoolSubscription(schoolCode);
+    await updateSchoolSubscription({
+      schoolCode,
+      status: current.status,
+      expiryDate: newDate,
+    });
+    showToast(`Expiry date for ${schoolCode} updated to ${newDate}!`, "success");
+    loadSchools();
+  };
 
   const handleNameChange = (name) => {
     // Generate suggested code from institution name unless manually modified
@@ -74,22 +156,27 @@ export default function MasterSchoolSetup() {
         phone: formData.phone,
         email: formData.email,
         address: formData.address,
+        institutionMode: formData.institutionMode,
       });
+
+      localStorage.setItem(`erp_institution_type_${outcomeData.institutionCode}`, formData.institutionMode);
 
       // Security Audit Trail
       logSecurityAction({
         action: AUDIT_ACTIONS.TENANT_SWITCH || "INSTITUTION_PROVISIONED",
         entityType: "SCHOOL",
         entityId: outcomeData.institutionCode,
-        details: `Platform Owner provisioned institutional node "${outcomeData.institutionName}" (${outcomeData.institutionCode}) with Master Admin ${outcomeData.adminId}`,
+        details: `Platform Owner provisioned institutional node "${outcomeData.institutionName}" (${outcomeData.institutionCode}) with Master Admin ${outcomeData.adminId} [Mode: ${formData.institutionMode}]`,
         schoolId: outcomeData.institutionCode,
       });
 
-      setSuccessData(outcomeData);
+      setSuccessData({ ...outcomeData, institutionMode: formData.institutionMode });
       showToast(`Institution "${outcomeData.institutionName}" (${outcomeData.institutionCode}) successfully provisioned to cloud!`, "success");
+      loadSchools();
     } catch (err) {
       console.error("Master setup error:", err);
       showToast("Provisioning completed in sandbox partition.", "info");
+      loadSchools();
     } finally {
       setLoading(false);
     }
@@ -101,6 +188,7 @@ export default function MasterSchoolSetup() {
       `🏛️ EduSaaS ERP - Master Institutional Credentials`,
       `================================================`,
       `Institution Name: ${successData.institutionName}`,
+      `Architecture Mode: ${successData.institutionMode === "tuition" ? "Tuition / Coaching Institute" : "Full K-12 School"}`,
       `School Code (Tier 1): ${successData.institutionCode}`,
       `Master Admin ID (Tier 2): ${successData.adminId}`,
       `Security Password: ${successData.password}`,
@@ -119,26 +207,93 @@ export default function MasterSchoolSetup() {
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[160px] pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[160px] pointer-events-none"></div>
 
-      <div className="relative z-10 w-full max-w-xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <BrandLogo size="lg" className="shadow-2xl shadow-indigo-600/40" />
+      <div className="relative z-10 w-full max-w-5xl py-8">
+        <div className="max-w-xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <BrandLogo size="lg" className="shadow-2xl shadow-indigo-600/40" />
+            </div>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 inline-block">
+                🔐 Secret Master Route &bull; Platform Owner Only
+              </span>
+              {isUnlocked && (
+                <button
+                  type="button"
+                  onClick={handleLockGateway}
+                  className="text-[10px] font-bold text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/40 px-2.5 py-1 rounded-full bg-slate-900 transition-colors cursor-pointer"
+                  title="Lock Master Provisioning Gateway"
+                >
+                  🔒 Lock Terminal
+                </button>
+              )}
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Institution Provisioning Engine
+            </h1>
+            <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-md mx-auto">
+              Create high-security institutional nodes, initialize clean-slate partitions, and issue Master HOD keys.
+            </p>
           </div>
-          <span className="text-[10px] font-black uppercase tracking-widest px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 inline-block mb-2">
-            🔐 Secret Master Route &bull; Platform Owner Only
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Institution Provisioning Engine
-          </h1>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-md mx-auto">
-            Create high-security institutional nodes, initialize clean-slate partitions, and issue Master HOD keys.
-          </p>
-        </div>
 
-        {/* Master Card */}
-        <div className="bg-[#1E293B]/75 backdrop-blur-2xl border border-slate-700/70 rounded-3xl p-6 sm:p-8 shadow-2xl">
-          {successData ? (
+          {/* Master Card */}
+          <div className="bg-[#1E293B]/75 backdrop-blur-2xl border border-slate-700/70 rounded-3xl p-6 sm:p-8 shadow-2xl">
+          {!isUnlocked ? (
+            /* PASSWORD GATE */
+            <form onSubmit={handleUnlockGateway} className="space-y-5 text-center py-4 animate-fade-in">
+              <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center text-3xl mx-auto shadow-xl shadow-amber-500/10">
+                🔒
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-white">Master Engineering Gateway</h2>
+                <p className="text-slate-400 text-xs mt-1 max-w-sm mx-auto">
+                  This route is strictly restricted to platform owners. Please enter the master passkey to unlock node provisioning.
+                </p>
+              </div>
+
+              {passkeyError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold">
+                  {passkeyError}
+                </div>
+              )}
+
+              <div className="text-left">
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-widest mb-1.5 ml-1">
+                  Master Security Passkey *
+                </label>
+                <input
+                  type="password"
+                  required
+                  autoFocus
+                  placeholder="Enter Master Passkey (ASK&1412)"
+                  className="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-4 py-3.5 text-amber-300 font-mono text-center tracking-widest text-base focus:outline-none focus:border-amber-500"
+                  value={passkeyInput}
+                  onChange={(e) => {
+                    setPasskeyInput(e.target.value);
+                    setPasskeyError("");
+                  }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-black py-4 px-4 rounded-xl shadow-xl shadow-amber-600/30 transition-all cursor-pointer text-sm"
+              >
+                🔓 Authenticate & Unlock Provisioning
+              </button>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => navigate("/portal")}
+                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                >
+                  ← Return to Member Portal Login
+                </button>
+              </div>
+            </form>
+          ) : successData ? (
             /* PROVISIONED SUCCESS CARD */
             <div className="space-y-6 text-center py-2 animate-fade-in">
               <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-3xl mx-auto shadow-xl shadow-emerald-500/20">
@@ -146,7 +301,7 @@ export default function MasterSchoolSetup() {
               </div>
               <div>
                 <span className="text-[11px] font-extrabold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                  Node Activated
+                  Node Activated &bull; {successData.institutionMode === "tuition" ? "Tuition Mode" : "K-12 School"}
                 </span>
                 <h2 className="text-2xl font-black text-white mt-2">
                   Institutional Node Provisioned!
@@ -161,6 +316,12 @@ export default function MasterSchoolSetup() {
                 <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
                   <span className="text-slate-400 font-sans font-bold">Institution Name:</span>
                   <span className="text-white font-extrabold">{successData.institutionName}</span>
+                </div>
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
+                  <span className="text-slate-400 font-sans font-bold">Architecture Mode:</span>
+                  <span className="text-purple-300 font-sans font-bold">
+                    {successData.institutionMode === "tuition" ? "🎓 Tuition / Coaching Institute" : "🏫 Full K-12 School"}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
                   <span className="text-slate-400 font-sans font-bold">Tier 1 School Code:</span>
@@ -224,7 +385,51 @@ export default function MasterSchoolSetup() {
             </div>
           ) : (
             /* PROVISIONING FORM */
-            <form onSubmit={handleProvisionSchool} className="space-y-4">
+            <form onSubmit={handleProvisionSchool} className="space-y-4 animate-fade-in">
+              {/* Institution Mode Selector */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-widest mb-2 ml-1">
+                  Institution Operating Mode *
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, institutionMode: "school" })}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                      formData.institutionMode === "school"
+                        ? "bg-blue-600/20 border-blue-500 shadow-lg shadow-blue-600/20"
+                        : "bg-slate-900/60 border-slate-700/80 hover:border-slate-600"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xl">🏫</span>
+                      <span className="font-extrabold text-white text-sm">Full K-12 School</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Standard school infrastructure, comprehensive registers & faculty departments.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, institutionMode: "tuition" })}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                      formData.institutionMode === "tuition"
+                        ? "bg-purple-600/20 border-purple-500 shadow-lg shadow-purple-600/20"
+                        : "bg-slate-900/60 border-slate-700/80 hover:border-slate-600"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xl">🎓</span>
+                      <span className="font-extrabold text-white text-sm">Tuition / Coaching</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Streamlined coaching hub focusing on Batches, Attendance, Fees & LMS.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
               {/* Institution Name */}
               <div>
                 <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-widest mb-1.5 ml-1">
@@ -233,7 +438,11 @@ export default function MasterSchoolSetup() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. St. Xavier's International School"
+                  placeholder={
+                    formData.institutionMode === "tuition"
+                      ? "e.g. Apex IIT-JEE & Medical Academy"
+                      : "e.g. St. Xavier's International School"
+                  }
                   className="w-full bg-slate-950/60 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-sm"
                   value={formData.institutionName}
                   onChange={(e) => handleNameChange(e.target.value)}
@@ -373,6 +582,156 @@ export default function MasterSchoolSetup() {
             </form>
           )}
         </div>
+      </div>
+
+        {/* MANUAL SUBSCRIPTION & EXPIRY CONTROLLER (MASTER KILL-SWITCH) */}
+        {isUnlocked && (
+          <div className="mt-10 bg-[#1E293B]/80 backdrop-blur-2xl border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 animate-fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700/60 pb-5">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">🎛️</span>
+                  <h2 className="text-xl font-black text-white">
+                    Manual Subscription & Expiry Controller
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Master kill-switch and custom license validity controls across all active institutional campus nodes.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  placeholder="Search campus code or name..."
+                  value={searchSchoolTerm}
+                  onChange={(e) => setSearchSchoolTerm(e.target.value)}
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 w-52"
+                />
+                <button
+                  type="button"
+                  onClick={loadSchools}
+                  disabled={loadingSchools}
+                  className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-xl text-slate-300 font-bold transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>🔄</span>
+                  <span>{loadingSchools ? "Syncing..." : "Refresh Nodes"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* TABLE */}
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-slate-700/70 text-slate-400 uppercase tracking-wider bg-slate-900/50">
+                    <th className="p-4">Campus Node & Code</th>
+                    <th className="p-4 text-center">Architecture Mode</th>
+                    <th className="p-4 text-center">Subscription Status (Kill-Switch)</th>
+                    <th className="p-4 text-center">Custom License Expiry Date</th>
+                    <th className="p-4 text-center">Master Admin</th>
+                    <th className="p-4 text-right pr-6">Portal Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {schoolsList.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="p-8 text-center text-slate-400 text-xs">
+                        No registered schools found. Provision a new node above to begin.
+                      </td>
+                    </tr>
+                  ) : (
+                    schoolsList
+                      .filter((s) => {
+                        const term = searchSchoolTerm.toLowerCase();
+                        return (
+                          (s.code || "").toLowerCase().includes(term) ||
+                          (s.name || "").toLowerCase().includes(term) ||
+                          (s.adminName || "").toLowerCase().includes(term)
+                        );
+                      })
+                      .map((school) => {
+                        const isSuspended = (school.subscriptionStatus || "active").toLowerCase() === "suspended";
+                        const today = new Date().toISOString().split("T")[0];
+                        const isExpired = Boolean(school.expiryDate && today > school.expiryDate);
+
+                        return (
+                          <tr key={school.code} className="hover:bg-slate-800/30 transition-colors">
+                            <td className="p-4">
+                              <p className="font-extrabold text-white text-sm">{school.name}</p>
+                              <span className="font-mono text-blue-400 font-bold text-xs">{school.code}</span>
+                            </td>
+                            <td className="p-4 text-center">
+                              <span
+                                className={`px-2.5 py-1 rounded-full font-bold text-[10px] uppercase border ${
+                                  school.institutionMode === "tuition"
+                                    ? "bg-purple-500/10 text-purple-300 border-purple-500/30"
+                                    : "bg-blue-500/10 text-blue-300 border-blue-500/30"
+                                }`}
+                              >
+                                {school.institutionMode === "tuition" ? "🎓 Tuition Hub" : "🏫 K-12 School"}
+                              </span>
+                            </td>
+                            <td className="p-4 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleSubscription(school)}
+                                className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all shadow-md cursor-pointer border inline-flex items-center gap-1.5 ${
+                                  isSuspended
+                                    ? "bg-rose-500/20 text-rose-300 border-rose-500/50 hover:bg-rose-500/30"
+                                    : "bg-emerald-500/20 text-emerald-300 border-emerald-500/50 hover:bg-emerald-500/30"
+                                }`}
+                                title={isSuspended ? "Click to Re-activate" : "Click to Suspend Node (Kill-Switch)"}
+                              >
+                                <span>{isSuspended ? "🔴" : "🟢"}</span>
+                                <span>{isSuspended ? "Suspended (Locked)" : "Active (Operational)"}</span>
+                              </button>
+                            </td>
+                            <td className="p-4 text-center">
+                              <div className="inline-flex flex-col items-center">
+                                <input
+                                  type="date"
+                                  value={school.expiryDate || "2027-12-31"}
+                                  onChange={(e) => handleUpdateExpiry(school.code, e.target.value)}
+                                  className={`bg-slate-900 border rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold focus:outline-none focus:border-blue-500 ${
+                                    isExpired ? "border-rose-500 text-rose-300" : "border-slate-700 text-white"
+                                  }`}
+                                />
+                                {isExpired ? (
+                                  <span className="text-[10px] text-rose-400 font-extrabold uppercase mt-1">
+                                    ⚠️ License Expired
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-emerald-400 font-semibold mt-1">
+                                    ✓ License Valid
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-4 text-center text-slate-300">
+                              <p className="font-bold text-white text-xs">{school.adminName || "Trustee"}</p>
+                              <span className="text-[10px] font-mono text-slate-400">{school.adminId || "HOD-01"}</span>
+                            </td>
+                            <td className="p-4 text-right pr-6">
+                              <a
+                                href={`/portal?school=${school.code}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-slate-800 hover:bg-blue-600/30 border border-slate-700 hover:border-blue-500/40 text-blue-300 font-bold px-3 py-1.5 rounded-xl text-xs transition-all inline-flex items-center gap-1"
+                              >
+                                <span>Open Portal</span>
+                                <span>↗</span>
+                              </a>
+                            </td>
+                          </tr>
+                        );
+                      })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

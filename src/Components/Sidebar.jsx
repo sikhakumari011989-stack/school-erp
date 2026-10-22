@@ -29,7 +29,24 @@ export default function Sidebar() {
 
   if (!user) return null;
 
-  // Define links based on user role
+  const schoolCode = (user.institution_code || user.school_id || tenant?.code || "CAMPUS-01").toUpperCase();
+  const institutionMode = (() => {
+    try {
+      return (
+        user.institution_mode ||
+        user.institutionMode ||
+        user.institution_type ||
+        user.institutionType ||
+        localStorage.getItem(`erp_institution_type_${schoolCode}`) ||
+        "school"
+      );
+    } catch {
+      return "school";
+    }
+  })();
+  const isTuition = institutionMode === "tuition";
+
+  // Define links based on user role and institution architecture
   const getLinks = () => {
     const role = (user.role || "").toLowerCase();
     if (role === "admin") {
@@ -45,6 +62,14 @@ export default function Sidebar() {
     } else if (role === "staff") {
       return [{ name: "Dashboard", path: "/staff/dashboard", icon: "🛠️" }];
     } else if (role === "trustee" || role === "principal") {
+      if (isTuition) {
+        return [
+          { name: "Coaching Command Hub", path: "/trustee/dashboard", icon: "📈" },
+          { name: "Fee Treasury & Ledger", path: "/accountant/dashboard", icon: "💰" },
+          { name: "Institute Directory", path: "/admin/directory", icon: "📞" },
+          { name: "Security & Audit", path: "/admin/audit", icon: "⚙️" },
+        ];
+      }
       return [
         { name: "Executive Command", path: "/trustee/dashboard", icon: "📈" },
         { name: "Principal Hub", path: "/principal/dashboard", icon: "🏛️" },
@@ -57,6 +82,15 @@ export default function Sidebar() {
         { name: "Directory & Contacts", path: "/admin/directory", icon: "📞" },
       ];
     } else if (role === "teacher") {
+      if (isTuition) {
+        return [
+          { name: "Faculty Dashboard", path: "/teacher/dashboard", icon: "👨‍🏫" },
+          { name: "Coaching Batches", path: "/teacher/classes", icon: "🏫" },
+          { name: "Attendance Register", path: "/teacher/attendance", icon: "✅" },
+          { name: "Publish Homework & Quizzes", path: "/teacher/homework", icon: "📚" },
+          { name: "Marks Grid & Reports", path: "/teacher/analytics", icon: "📊" },
+        ];
+      }
       return [
         { name: "Faculty Dashboard", path: "/teacher/dashboard", icon: "👨‍🏫" },
         { name: "My Classroom Batches", path: "/teacher/classes", icon: "🏫" },
@@ -66,6 +100,16 @@ export default function Sidebar() {
         { name: "Curriculum Planner", path: "/teacher/planner", icon: "📝" },
       ];
     } else if (role === "student") {
+      if (isTuition) {
+        // Streamlined Tuition Power Modules: Batches, Attendance, Fee Treasury, LMS/Homework
+        return [
+          { name: "Student Dashboard", path: "/student/dashboard", icon: "🎓" },
+          { name: "Homework & Tasks", path: "/student/homework", icon: "📚" },
+          { name: "Fee Treasury & Ledger", path: "/student/fees", icon: "💳" },
+          { name: "Pay Online (UPI / Card)", path: "/student/pay", icon: "⚡" },
+          { name: "LMS & Quizzes", path: "/student/lms", icon: "📖" },
+        ];
+      }
       return [
         { name: "Student Dashboard", path: "/student/dashboard", icon: "🎓" },
         { name: "Homework & Tasks", path: "/student/homework", icon: "📚" },
@@ -276,10 +320,10 @@ export default function Sidebar() {
               <h2 className="text-sm font-black text-white leading-snug truncate" title={tenant?.name || "Apex International"}>
                 {tenant?.name || "Apex International"}
               </h2>
-              <div className="flex items-center gap-1.5 mt-0.5">
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded font-mono font-extrabold tracking-wider">
-                  MULTI-TENANT RLS ACTIVE
+                <span className="text-[9px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded font-extrabold tracking-wider">
+                  {isTuition ? "🎓 TUITION HUB" : "🏫 K-12 SCHOOL"}
                 </span>
               </div>
               <p className="text-[10px] text-blue-400 font-extrabold uppercase tracking-widest truncate mt-0.5">

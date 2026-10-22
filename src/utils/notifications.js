@@ -1,9 +1,19 @@
 /**
  * Enterprise Notification Service
  * Supports WhatsApp (Wati / Twilio) and SMS (Twilio) with Mock/Sandbox fallback
+ *
+ * STRICT OUTBOUND MESSAGING POLICY:
+ * Outbound WhatsApp and SMS dispatches are STRICTLY restricted to:
+ * 1. Absenteeism Alerts (Daily roll call absences with 60-second teacher undo window)
+ * 2. Fee Receipts, UPI Settlements & Defaulter Dues Reminders
+ *
+ * All other updates (Homework assignments, test marks, exam report cards, general notices)
+ * remain STRICTLY IN-APP alerts to eliminate messaging spam.
  */
 
 const STORAGE_KEY = "erp_notification_history";
+
+export const PERMITTED_OUTBOUND_SCOPES = ["ABSENTEEISM", "FEE_FINANCE"];
 
 /**
  * Persists a notification to the local audit history
@@ -32,7 +42,11 @@ export function getNotificationHistory() {
 /**
  * Dispatches an SMS alert via Twilio REST API (or dev simulation)
  */
-export async function sendSMS({ to, message, studentName = "Student" }) {
+export async function sendSMS({ to, message, studentName = "Student", scope = "FEE_FINANCE" }) {
+  if (!PERMITTED_OUTBOUND_SCOPES.includes(scope)) {
+    console.info(`[Notification Policy] Suppressed outbound SMS for non-permitted scope "${scope}". In-app alert retained.`);
+    return { success: false, reason: "OUTBOUND_SCOPE_RESTRICTED" };
+  }
   const accountSid = import.meta.env.VITE_TWILIO_ACCOUNT_SID;
   const authToken = import.meta.env.VITE_TWILIO_AUTH_TOKEN;
   const fromNumber = import.meta.env.VITE_TWILIO_PHONE_NUMBER || "+18005550199";
@@ -87,7 +101,12 @@ export async function sendSMS({ to, message, studentName = "Student" }) {
 /**
  * Dispatches a WhatsApp alert via WATI / Twilio WhatsApp (or dev simulation)
  */
-export async function sendWhatsApp({ to, message, studentName = "Student" }) {
+export async function sendWhatsApp({ to, message, studentName = "Student", scope = "FEE_FINANCE" }) {
+  if (!PERMITTED_OUTBOUND_SCOPES.includes(scope)) {
+    console.info(`[Notification Policy] Suppressed outbound WhatsApp for non-permitted scope "${scope}". In-app alert retained.`);
+    return { success: false, reason: "OUTBOUND_SCOPE_RESTRICTED" };
+  }
+
   const watiEndpoint = import.meta.env.VITE_WATI_API_ENDPOINT;
   const watiToken = import.meta.env.VITE_WATI_ACCESS_TOKEN;
   const recipient = to || "+919876543210";
@@ -141,10 +160,10 @@ export async function notifyAttendanceAbsent({
 }) {
   const message = `[${schoolName}] Attendance Alert: Student ${studentName} (Roll: ${rollNumber}, Class: ${className}) has been marked ABSENT on ${date}. Please contact the institution office if this is an error.`;
 
-  // Dispatch concurrently via SMS and WhatsApp
+  // Dispatch concurrently via SMS and WhatsApp (strictly scoped to absenteeism)
   const [smsResult, waResult] = await Promise.allSettled([
-    sendSMS({ to: guardianPhone, message, studentName }),
-    sendWhatsApp({ to: guardianPhone, message, studentName }),
+    sendSMS({ to: guardianPhone, message, studentName, scope: "ABSENTEEISM" }),
+    sendWhatsApp({ to: guardianPhone, message, studentName, scope: "ABSENTEEISM" }),
   ]);
 
   return {
@@ -169,9 +188,10 @@ export async function notifyFeePaymentConfirmed({
   const formattedAmount = Number(amount || 0).toLocaleString("en-IN");
   const message = `[${schoolName}] Payment Receipt Confirmed: Fee of Rs. ${formattedAmount} received for ${studentName}. Invoice: ${invoiceNo}. Ref: ${paymentId}. Date: ${date}. Thank you!`;
 
+  // Dispatch concurrently via SMS and WhatsApp (strictly scoped to fee settlement)
   const [smsResult, waResult] = await Promise.allSettled([
-    sendSMS({ to: guardianPhone, message, studentName }),
-    sendWhatsApp({ to: guardianPhone, message, studentName }),
+    sendSMS({ to: guardianPhone, message, studentName, scope: "FEE_FINANCE" }),
+    sendWhatsApp({ to: guardianPhone, message, studentName, scope: "FEE_FINANCE" }),
   ]);
 
   return {

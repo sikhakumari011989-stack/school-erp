@@ -49,29 +49,36 @@ export default function StudentFees() {
           .order("created_at", { ascending: false });
 
         if (!error && data && data.length > 0) {
-          combined = data.map((d, index) => ({
-            id: d.id || `db-${index}`,
-            term: d.term || (d.student_name ? `${d.student_name} - ${d.class_name || "Term Fee"}` : "Term Tuition Fee"),
-            amount: Number(d.amount) || 0,
-            date: d.date || new Date().toISOString().split("T")[0],
-            status: (d.status || "paid").toLowerCase() === "paid" ? "Paid" : "Pending",
-            mode: d.payment_mode || "School UPI QR",
-            utr: d.razorpay_payment_id || d.utr || null,
-            invoice_no: d.invoice_no || null,
-          }));
+          combined = data.map((d, index) => {
+            const rawStatus = (d.status || "paid").toLowerCase();
+            const displayStatus = rawStatus === "paid" ? "Paid" : rawStatus === "pending_verification" ? "Pending Verification" : "Pending";
+            return {
+              id: d.id || `db-${index}`,
+              term: d.term || (d.student_name ? `${d.student_name} - ${d.class_name || "Term Fee"}` : "Term Tuition Fee"),
+              amount: Number(d.amount) || 0,
+              date: d.date || new Date().toISOString().split("T")[0],
+              status: displayStatus,
+              mode: d.payment_mode || "School UPI QR",
+              utr: d.razorpay_payment_id || d.utr || null,
+              invoice_no: d.invoice_no || null,
+            };
+          });
         }
       }
 
       // Prepend local recent records if not already in list
       localRecords.forEach((lr) => {
         const exists = combined.some((c) => c.utr === lr.utr || c.id === lr.id);
+        const rawStatus = (lr.status || "paid").toLowerCase();
+        const displayStatus = rawStatus === "paid" ? "Paid" : rawStatus === "pending_verification" ? "Pending Verification" : "Pending";
+
         if (!exists) {
           combined.unshift({
             id: lr.id,
             term: lr.term || lr.title || "Tuition Fee Settlement",
             amount: Number(lr.amount) || 0,
             date: lr.date || new Date().toISOString().split("T")[0],
-            status: (lr.status || "paid").toLowerCase() === "paid" ? "Paid" : "Pending",
+            status: displayStatus,
             mode: lr.payment_mode || `School UPI QR (UTR: ${lr.utr || "Verified"})`,
             utr: lr.utr || lr.razorpay_payment_id || null,
             invoice_no: lr.invoice_no || null,
@@ -80,18 +87,60 @@ export default function StudentFees() {
       });
 
       setFees(combined);
+
+      // Fetch published report cards from Teacher exam marks
+      try {
+        const rawMarks = localStorage.getItem(`erp_exam_marks_${schoolId}`);
+        if (rawMarks) {
+          const allMarks = JSON.parse(rawMarks);
+          if (Array.isArray(allMarks) && allMarks.length > 0) {
+            const myRoll = String(user?.personal_code || user?.roll_number || user?.id || "").toUpperCase();
+            const myName = String(user?.name || user?.full_name || "").toLowerCase();
+            const matched = allMarks.filter(
+              (m) =>
+                (m.roll_number && String(m.roll_number).toUpperCase() === myRoll) ||
+                (m.student_name && String(m.student_name).toLowerCase().includes(myName)) ||
+                allMarks.length <= 2
+            );
+            if (matched.length > 0) {
+              setReportCards(
+                matched.map((m) => {
+                  const mMarks = Number(m.maths) || 0;
+                  const sMarks = Number(m.science) || 0;
+                  const eMarks = Number(m.english) || 0;
+                  const total = mMarks + sMarks + eMarks;
+                  const pct = Math.round((total / 300) * 100);
+                  const grade = pct >= 90 ? "A+" : pct >= 80 ? "A" : pct >= 70 ? "B+" : pct >= 60 ? "B" : pct >= 50 ? "C" : "D";
+                  return {
+                    id: m.id,
+                    term: m.term || "Term II Final Examination (2026-27)",
+                    percentage: `${pct}%`,
+                    grade: grade,
+                    status: "Authenticated & Sealed",
+                  };
+                })
+              );
+            }
+          }
+        }
+      } catch (rcErr) {
+        console.warn("Report cards read error:", rcErr);
+      }
     } catch (err) {
       console.error("Error fetching fees for student:", err);
-      const fallback = localRecords.map((lr) => ({
-        id: lr.id,
-        term: lr.term || lr.title || "Tuition Fee Settlement",
-        amount: Number(lr.amount) || 0,
-        date: lr.date || new Date().toISOString().split("T")[0],
-        status: (lr.status || "paid").toLowerCase() === "paid" ? "Paid" : "Pending",
-        mode: lr.payment_mode || `School UPI QR (UTR: ${lr.utr || "Verified"})`,
-        utr: lr.utr || null,
-        invoice_no: lr.invoice_no || null,
-      }));
+      const fallback = localRecords.map((lr) => {
+        const rawStatus = (lr.status || "paid").toLowerCase();
+        return {
+          id: lr.id,
+          term: lr.term || lr.title || "Tuition Fee Settlement",
+          amount: Number(lr.amount) || 0,
+          date: lr.date || new Date().toISOString().split("T")[0],
+          status: rawStatus === "paid" ? "Paid" : rawStatus === "pending_verification" ? "Pending Verification" : "Pending",
+          mode: lr.payment_mode || `School UPI QR (UTR: ${lr.utr || "Verified"})`,
+          utr: lr.utr || null,
+          invoice_no: lr.invoice_no || null,
+        };
+      });
       setFees(fallback);
     } finally {
       setLoading(false);
@@ -218,19 +267,29 @@ export default function StudentFees() {
                           className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
                             f.status === "Paid"
                               ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                              : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                              : f.status === "Pending Verification"
+                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse"
+                              : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
                           }`}
                         >
                           {f.status}
                         </span>
                       </td>
                       <td className="p-5 text-center">
-                        <button
-                          onClick={() => handleDownloadInvoice(f)}
-                          className="bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border border-emerald-500/40 px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 mx-auto"
-                        >
-                          <span>📄</span> Download Invoice
-                        </button>
+                        {f.status === "Paid" ? (
+                          <button
+                            onClick={() => handleDownloadInvoice(f)}
+                            className="bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border border-emerald-500/40 px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 mx-auto cursor-pointer"
+                          >
+                            <span>📄</span> Download Invoice
+                          </button>
+                        ) : f.status === "Pending Verification" ? (
+                          <span className="text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-xl inline-flex items-center gap-1">
+                            <span>⏳</span> In Accountant Queue
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-500 font-medium">Unpaid</span>
+                        )}
                       </td>
                     </tr>
                   ))}

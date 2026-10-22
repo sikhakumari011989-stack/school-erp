@@ -28,6 +28,55 @@ export default function TeacherAttendance() {
   const [attendanceStatus, setAttendanceStatus] = useState({}); // { studentId: 'present' | 'absent' }
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [absenteeQueue, setAbsenteeQueue] = useState(null); // { absentStudents, batch, date }
+  const [countdown, setCountdown] = useState(60);
+
+  // 60-Second Undo Timer for Absentee WhatsApp Dispatch
+  useEffect(() => {
+    if (!absenteeQueue) return;
+
+    if (countdown <= 0) {
+      executeAbsenteeDispatch(absenteeQueue.absentStudents, absenteeQueue.batch, absenteeQueue.date);
+      setAbsenteeQueue(null);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [absenteeQueue, countdown]);
+
+  const executeAbsenteeDispatch = (absentList, batchName, dateStr) => {
+    if (!absentList || absentList.length === 0) return;
+    absentList.forEach((absentStudent) => {
+      notifyAttendanceAbsent({
+        studentName: absentStudent.name,
+        rollNumber: absentStudent.roll_number,
+        guardianPhone: absentStudent.phone || "+91 98765 43210",
+        schoolName: tenant?.name || user?.institution_name || "Apex International Academy",
+        date: dateStr,
+        className: batchName,
+      });
+    });
+    showToast(
+      `Dispatched ${absentList.length} official absentee notices via school WhatsApp gateway!`,
+      "success"
+    );
+  };
+
+  const handleUndoAbsenteeDispatch = () => {
+    setAbsenteeQueue(null);
+    showToast("Absentee WhatsApp dispatch aborted! Attendance marks remain recorded in register.", "info");
+  };
+
+  const handleForceSendAbsentee = () => {
+    if (absenteeQueue) {
+      executeAbsenteeDispatch(absenteeQueue.absentStudents, absenteeQueue.batch, absenteeQueue.date);
+      setAbsenteeQueue(null);
+    }
+  };
 
   // Load available batches dynamically from database & directory
   useEffect(() => {
@@ -292,27 +341,24 @@ export default function TeacherAttendance() {
         console.warn("Supabase attendance sync notice:", dbErr);
       }
 
-      // 3. Automated Absent Notification Alerts
+      // 3. Automated Absent Notification Alerts with 60-Second Undo Window
       const absentStudents = students.filter(
         (s) => (attendanceStatus[s.id] || "present") === "absent"
       );
 
       if (absentStudents.length > 0) {
-        absentStudents.forEach((absentStudent) => {
-          notifyAttendanceAbsent({
-            studentName: absentStudent.name,
-            rollNumber: absentStudent.roll_number,
-            guardianPhone: absentStudent.phone || "+91 98765 43210",
-            schoolName: tenant?.name || user?.institution_name || "Apex International Academy",
-            date: today,
-            className: selectedBatch,
-          });
+        setAbsenteeQueue({
+          absentStudents,
+          batch: selectedBatch,
+          date: today,
         });
+        setCountdown(60);
         showToast(
-          `Attendance saved for ${selectedBatch}! (${absentStudents.length} Absent notices logged).`,
-          "success"
+          `Attendance register saved! 60s Undo Window active for ${absentStudents.length} absent scholars.`,
+          "info"
         );
       } else {
+        setAbsenteeQueue(null);
         showToast(`Attendance synchronized for ${selectedBatch}! (100% Present recorded)`, "success");
       }
 
@@ -364,6 +410,50 @@ export default function TeacherAttendance() {
             </span>
           </div>
         </div>
+
+        {/* 60-SECOND ABSENTEE UNDO BANNER */}
+        {absenteeQueue && (
+          <div className="bg-gradient-to-r from-rose-950/90 via-slate-900 to-rose-950/90 border-2 border-rose-500/70 p-5 rounded-3xl shadow-2xl backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center text-2xl font-bold shrink-0 animate-pulse">
+                🚨
+              </div>
+              <div>
+                <p className="font-extrabold text-white text-base flex items-center gap-2">
+                  <span>Official School-Number Absentee Dispatcher Queued</span>
+                  <span className="bg-rose-500 text-white text-xs font-black px-2 py-0.5 rounded-full">
+                    {absenteeQueue.absentStudents.length} Scholars Marked ABSENT
+                  </span>
+                </p>
+                <p className="text-xs text-rose-200/90 mt-1">
+                  Official WhatsApp & SMS alert will automatically dispatch in{" "}
+                  <span className="font-mono font-black text-white text-sm bg-black/60 px-2.5 py-0.5 rounded-lg border border-rose-400/80 inline-block">
+                    {countdown}s
+                  </span>
+                  . Use the 60-second window to abort if attendance was marked by mistake.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={handleUndoAbsenteeDispatch}
+                className="bg-rose-600 hover:bg-rose-500 text-white font-black px-5 py-2.5 rounded-xl text-xs transition-all shadow-lg cursor-pointer flex items-center gap-2 border border-rose-400"
+              >
+                <span>↩️</span>
+                <span>UNDO / CANCEL</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleForceSendAbsentee}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-5 py-2.5 rounded-xl text-xs transition-all shadow-lg cursor-pointer flex items-center gap-2 border border-emerald-400"
+              >
+                <span>🚀</span>
+                <span>Send Now</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* BATCH SELECTOR & QUICK ACTIONS CARD */}
         <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-slate-700/70 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-end gap-6">

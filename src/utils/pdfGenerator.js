@@ -329,7 +329,28 @@ export function generateReportCardPDF({
     ["5", "English Literature", "100", "89", "A", "Thoughtful Literary Analysis"],
   ];
 
-  const bodyData = grades.length > 0 ? grades : defaultGrades;
+  const bodyData = grades && grades.length > 0
+    ? grades.map((g, idx) => {
+        if (Array.isArray(g)) return g;
+        return [
+          String(idx + 1),
+          g.subject || `Curriculum Unit ${idx + 1}`,
+          String(g.maxMarks || 100),
+          String(g.marksObtained ?? g.marks ?? 0),
+          g.grade || "A",
+          g.remarks || (Number(g.marksObtained ?? g.marks ?? 0) >= 80 ? "Exemplary Analytical Capability" : "Satisfactory Concept Evaluation"),
+        ];
+      })
+    : defaultGrades;
+
+  let totalMarks = 0;
+  let totalMax = 0;
+  bodyData.forEach((row) => {
+    totalMax += Number(row[2]) || 100;
+    totalMarks += Number(row[3]) || 0;
+  });
+  const computedPct = totalMax > 0 ? ((totalMarks / totalMax) * 100).toFixed(1) : "92.4";
+  const computedCgpa = (Number(computedPct) / 10).toFixed(1);
 
   autoTable(doc, {
     startY: 80,
@@ -366,26 +387,40 @@ export function generateReportCardPDF({
   doc.setTextColor(107, 33, 168);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.text("Cumulative Grade Point Average (CGPA): 9.6 / 10.0 (Aggregate: 92.4%)", 20, finalY + 19);
+  doc.text(`Cumulative Grade Point Average (CGPA): ${computedCgpa} / 10.0 (Aggregate: ${computedPct}%)`, 20, finalY + 19);
+
+  // DIGITAL AUTHENTICATION STAMP
+  doc.setDrawColor(168, 85, 247); // Purple 500
+  doc.setFillColor(250, 245, 255);
+  doc.roundedRect(132, finalY + 32, 64, 25, 3, 3, "FD");
+  doc.setTextColor(147, 51, 234);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.text("OFFICIAL DIGITAL TRANSCRIPT", 164, finalY + 39, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(107, 33, 168);
+  doc.text("Digitally Certified Academic Record", 164, finalY + 45, { align: "center" });
+  doc.text(`Seal: ${institutionCode}-ACAD-VERIFIED`, 164, finalY + 51, { align: "center" });
 
   // SIGNATURES
   doc.setTextColor(15, 23, 42);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("Head of Department / Teacher", 20, finalY + 50);
+  doc.text("Head of Department / Teacher", 20, finalY + 68);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text("Faculty Academic Board", 20, finalY + 55);
+  doc.text("Faculty Academic Board", 20, finalY + 73);
 
   doc.setTextColor(15, 23, 42);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("Principal / Controller of Exams", 135, finalY + 50);
+  doc.text("Principal / Controller of Exams", 135, finalY + 68);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text("Apex Institutional Board", 135, finalY + 55);
+  doc.text("Institutional Academic Council", 135, finalY + 73);
 
   doc.save(`${institutionCode}_ReportCard_${studentRoll}.pdf`);
   return doc;

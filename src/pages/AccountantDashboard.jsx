@@ -4,16 +4,24 @@ import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { StatSkeleton, TableSkeleton } from "../Components/Skeleton";
 import { generateFeeInvoicePDF } from "../utils/pdfGenerator";
+import { notifyFeePaymentConfirmed } from "../utils/notifications";
+import { Eye, CheckCircle2, XCircle, AlertCircle, FileText, Image as ImageIcon } from "lucide-react";
 
 export default function AccountantDashboard() {
   const { user } = useContext(AppContext);
   const { showToast } = useToast();
   const [ledger, setLedger] = useState([]);
-  const [stats, setStats] = useState({ totalRevenue: 0, pendingDues: 0, totalPaidCount: 0 });
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    pendingDues: 0,
+    totalPaidCount: 0,
+    pendingVerificationCount: 0,
+  });
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [previewReceipt, setPreviewReceipt] = useState(null);
 
   const [formData, setFormData] = useState({
     student_name: "",
@@ -60,14 +68,25 @@ export default function AccountantDashboard() {
         }
       }
 
-      // Merge local records strictly for this active school
+      // Merge local records strictly for this active school, preserving verification metadata
       localRecords.forEach((lr) => {
-        const exists = combined.some(
+        const existingIdx = combined.findIndex(
           (c) =>
-            (c.razorpay_payment_id && c.razorpay_payment_id === lr.utr) ||
+            (c.razorpay_payment_id && lr.utr && c.razorpay_payment_id === lr.utr) ||
             c.id === lr.id
         );
-        if (!exists) {
+        if (existingIdx >= 0) {
+          combined[existingIdx] = {
+            ...combined[existingIdx],
+            screenshot: lr.screenshot || combined[existingIdx].screenshot,
+            screenshot_data: lr.screenshot_data || combined[existingIdx].screenshot_data,
+            is_partial: lr.is_partial || combined[existingIdx].is_partial,
+            total_due: lr.total_due || combined[existingIdx].total_due,
+            remaining_balance: lr.remaining_balance || combined[existingIdx].remaining_balance,
+            utr: lr.utr || combined[existingIdx].razorpay_payment_id,
+            status: lr.status || combined[existingIdx].status,
+          };
+        } else {
           combined.unshift({
             id: lr.id,
             student_name: lr.student_name,
@@ -77,44 +96,71 @@ export default function AccountantDashboard() {
             payment_mode: lr.payment_mode || `School UPI QR (UTR: ${lr.utr || "Verified"})`,
             date: lr.date,
             school_id: schoolId,
+            utr: lr.utr || lr.razorpay_payment_id,
+            razorpay_payment_id: lr.razorpay_payment_id || lr.utr,
+            screenshot: lr.screenshot,
+            screenshot_data: lr.screenshot_data,
+            is_partial: lr.is_partial,
+            total_due: lr.total_due,
+            remaining_balance: lr.remaining_balance,
           });
         }
       });
 
       setLedger(combined);
 
-      // Calculate real-time financial stats
+      // Calculate real-time financial stats including verification queue
       let revenue = 0;
       let pending = 0;
       let paidCount = 0;
+      let pendingVerificationCount = 0;
 
       combined.forEach((item) => {
         const val = Number(item.amount) || 0;
-        if ((item.status || "").toLowerCase() === "paid") {
+        const st = (item.status || "").toLowerCase();
+        if (st === "paid") {
           revenue += val;
           paidCount += 1;
+        } else if (st === "pending_verification") {
+          pendingVerificationCount += 1;
+          pending += val;
         } else {
           pending += val;
         }
       });
 
-      setStats({ totalRevenue: revenue, pendingDues: pending, totalPaidCount: paidCount });
+      setStats({
+        totalRevenue: revenue,
+        pendingDues: pending,
+        totalPaidCount: paidCount,
+        pendingVerificationCount,
+      });
     } catch (err) {
       console.error("Error fetching financial ledger:", err);
       setLedger(localRecords);
       let revenue = 0;
       let pending = 0;
       let paidCount = 0;
+      let pendingVerificationCount = 0;
       localRecords.forEach((item) => {
         const val = Number(item.amount) || 0;
-        if ((item.status || "").toLowerCase() === "paid") {
+        const st = (item.status || "").toLowerCase();
+        if (st === "paid") {
           revenue += val;
           paidCount += 1;
+        } else if (st === "pending_verification") {
+          pendingVerificationCount += 1;
+          pending += val;
         } else {
           pending += val;
         }
       });
-      setStats({ totalRevenue: revenue, pendingDues: pending, totalPaidCount: paidCount });
+      setStats({
+        totalRevenue: revenue,
+        pendingDues: pending,
+        totalPaidCount: paidCount,
+        pendingVerificationCount,
+      });
     } finally {
       setLoading(false);
     }
@@ -245,12 +291,158 @@ export default function AccountantDashboard() {
     }
   };
 
+  const handleApprovePayment = async (item) => {
+    try {
+      // 1. Update in Supabase fee_ledger & fees tables
+      if (supabase) {
+        try {
+          await supabase
+            .from("fee_ledger")
+            .update({ status: "paid" })
+            .or(`id.eq.${item.id},razorpay_payment_id.eq.${item.utr || item.razorpay_payment_id}`);
+
+          await supabase
+            .from("fees")
+            .update({ status: "paid" })
+            .eq("school_id", schoolId);
+        } catch (dbErr) {
+          console.warn("Supabase approval sync notice:", dbErr);
+        }
+      }
+
+      // 2. Update local storage for immediate offline and UI reconciliation
+      const updateLocalList = (key) => {
+        try {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const list = JSON.parse(raw);
+            const updated = list.map((r) => {
+              if (
+                r.id === item.id ||
+                (r.utr && (r.utr === item.utr || r.utr === item.razorpay_payment_id)) ||
+                (r.razorpay_payment_id && (r.razorpay_payment_id === item.utr || r.razorpay_payment_id === item.razorpay_payment_id))
+              ) {
+                return { ...r, status: "paid" };
+              }
+              return r;
+            });
+            localStorage.setItem(key, JSON.stringify(updated));
+          }
+        } catch (e) {}
+      };
+
+      updateLocalList(`erp_fee_ledger_${schoolId}`);
+      updateLocalList("erp_fee_ledger");
+
+      // 3. Issue and download Official Tax Invoice PDF automatically
+      try {
+        generateFeeInvoicePDF({
+          tenant: {
+            name: user?.school_name || "Apex International Academy",
+            code: schoolId,
+            address: user?.address || "Flat number 201, Jivdani Chaya, Mahim Highway, Palghar 401404",
+            email: user?.email || "accounts@campus.edu",
+          },
+          student: {
+            name: item.student_name,
+            roll_number: item.roll_number || item.id || "STU-001",
+            class: item.class_name || "Class 10",
+          },
+          payment: {
+            invoiceNo: `INV-${String(item.id || Date.now()).slice(-6)}`,
+            date: new Date().toISOString().split("T")[0],
+            amount: item.amount,
+            payment_mode: item.payment_mode || "School UPI QR",
+            transactionId: item.utr || item.razorpay_payment_id || item.id || `TXN-${Date.now()}`,
+            title: item.title || "Tuition & Institutional Fee Settlement",
+          },
+        });
+      } catch (pdfErr) {
+        console.warn("Auto-PDF generation notice:", pdfErr);
+      }
+
+      // 4. Send payment confirmed WhatsApp notification
+      try {
+        notifyFeePaymentConfirmed({
+          studentName: item.student_name,
+          amount: item.amount,
+          invoiceNo: `INV-${String(item.id || Date.now()).slice(-6)}`,
+          guardianPhone: item.phone || "9876543210",
+          schoolName: user?.school_name || schoolId,
+          date: new Date().toISOString().split("T")[0],
+          paymentId: item.utr || item.razorpay_payment_id || "VERIFIED-UTR",
+        });
+      } catch (waErr) {}
+
+      window.dispatchEvent(new Event("erp-fee-ledger-updated"));
+      showToast(`Payment of ₹${Number(item.amount).toLocaleString()} approved! Official Tax Invoice generated & downloaded.`, "success");
+      fetchLedger();
+    } catch (err) {
+      console.error("Payment approval error:", err);
+      showToast("Error approving payment", "error");
+    }
+  };
+
+  const handleRejectPayment = async (item) => {
+    try {
+      if (supabase) {
+        try {
+          await supabase
+            .from("fee_ledger")
+            .update({ status: "rejected" })
+            .or(`id.eq.${item.id},razorpay_payment_id.eq.${item.utr || item.razorpay_payment_id}`);
+        } catch (dbErr) {}
+      }
+
+      const updateLocalList = (key) => {
+        try {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const list = JSON.parse(raw);
+            const updated = list.map((r) => {
+              if (
+                r.id === item.id ||
+                (r.utr && (r.utr === item.utr || r.utr === item.razorpay_payment_id)) ||
+                (r.razorpay_payment_id && (r.razorpay_payment_id === item.utr || r.razorpay_payment_id === item.razorpay_payment_id))
+              ) {
+                return { ...r, status: "rejected" };
+              }
+              return r;
+            });
+            localStorage.setItem(key, JSON.stringify(updated));
+          }
+        } catch (e) {}
+      };
+
+      updateLocalList(`erp_fee_ledger_${schoolId}`);
+      updateLocalList("erp_fee_ledger");
+
+      window.dispatchEvent(new Event("erp-fee-ledger-updated"));
+      showToast(`Payment receipt marked as rejected.`, "info");
+      fetchLedger();
+    } catch (err) {
+      showToast("Error rejecting payment", "error");
+    }
+  };
+
   // Filtered transactions
   const filteredLedger = ledger.filter((item) => {
-    const matchesStatus = filterStatus === "all" || item.status === filterStatus;
+    let matchesStatus = true;
+    const st = (item.status || "").toLowerCase();
+    if (filterStatus === "paid") {
+      matchesStatus = st === "paid";
+    } else if (filterStatus === "pending") {
+      matchesStatus = st === "pending";
+    } else if (filterStatus === "pending_verification") {
+      matchesStatus = st === "pending_verification";
+    }
+
     const matchesSearch =
       (item.student_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.class_name || "").toLowerCase().includes(searchTerm.toLowerCase());
+      (item.class_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(item.utr || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(item.razorpay_payment_id || "").toLowerCase().includes(searchTerm.toLowerCase());
+
     return matchesStatus && matchesSearch;
   });
 
@@ -279,60 +471,117 @@ export default function AccountantDashboard() {
         </div>
 
         {/* FINANCIAL METRICS ROW */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {loading ? (
             <>
+              <StatSkeleton />
               <StatSkeleton />
               <StatSkeleton />
               <StatSkeleton />
             </>
           ) : (
             <>
-              <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-6 shadow-2xl flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-2xl font-bold">
+              <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-5 shadow-2xl flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-xl font-bold">
                   ₹
                 </div>
                 <div>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">
-                    Total Collected Revenue
+                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-0.5">
+                    Total Revenue
                   </p>
-                  <p className="text-2xl font-extrabold text-emerald-400">
+                  <p className="text-xl font-extrabold text-emerald-400">
                     ₹{stats.totalRevenue.toLocaleString()}
                   </p>
-                  <span className="text-[11px] text-slate-400 mt-1 block">Live synced with Razorpay</span>
+                  <span className="text-[10px] text-slate-400 block">Cleared receipts</span>
                 </div>
               </div>
 
-              <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-6 shadow-2xl flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl font-bold">
+              <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-5 shadow-2xl flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xl font-bold">
                   ⏳
                 </div>
                 <div>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">
-                    Pending Defaulter Dues
+                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-0.5">
+                    Pending Defaulters
                   </p>
-                  <p className="text-2xl font-extrabold text-amber-400">
+                  <p className="text-xl font-extrabold text-amber-400">
                     ₹{stats.pendingDues.toLocaleString()}
                   </p>
-                  <span className="text-[11px] text-slate-400 mt-1 block">Awaiting payment settlement</span>
+                  <span className="text-[10px] text-slate-400 block">Unsettled fees</span>
                 </div>
               </div>
 
-              <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-6 shadow-2xl flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center text-2xl font-bold">
+              <div
+                onClick={() => setFilterStatus("pending_verification")}
+                className={`backdrop-blur-xl border rounded-3xl p-5 shadow-2xl flex items-center gap-4 cursor-pointer transition-all ${
+                  stats.pendingVerificationCount > 0
+                    ? "bg-amber-950/40 border-amber-500/60 hover:border-amber-400"
+                    : "bg-[#1E293B]/70 border-slate-700/60"
+                }`}
+              >
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center justify-center text-xl font-bold">
+                  ⚡
+                </div>
+                <div>
+                  <p className="text-amber-300 text-[11px] font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+                    <span>UPI Queue</span>
+                    {stats.pendingVerificationCount > 0 && (
+                      <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full animate-pulse">
+                        {stats.pendingVerificationCount} New
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xl font-extrabold text-white">
+                    {stats.pendingVerificationCount} Awaiting
+                  </p>
+                  <span className="text-[10px] text-amber-200/80 block">Click to review receipts</span>
+                </div>
+              </div>
+
+              <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-5 shadow-2xl flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center text-xl font-bold">
                   🧾
                 </div>
                 <div>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">
-                    Completed Receipts
+                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-0.5">
+                    Completed
                   </p>
-                  <p className="text-2xl font-extrabold text-blue-400">{stats.totalPaidCount} Verified</p>
-                  <span className="text-[11px] text-slate-400 mt-1 block">100% audit compliant</span>
+                  <p className="text-xl font-extrabold text-blue-400">{stats.totalPaidCount} Invoices</p>
+                  <span className="text-[10px] text-slate-400 block">Tax cleared</span>
                 </div>
               </div>
             </>
           )}
         </div>
+
+        {/* PENDING VERIFICATION ALERT BANNER */}
+        {stats.pendingVerificationCount > 0 && (
+          <div className="mb-8 bg-gradient-to-r from-amber-950/90 via-slate-900 to-amber-950/80 border-2 border-amber-500/60 rounded-3xl p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-2xl font-bold shrink-0">
+                🔔
+              </div>
+              <div>
+                <p className="font-extrabold text-white text-sm sm:text-base flex items-center gap-2">
+                  <span>Student UPI Payment Verification Queue</span>
+                  <span className="bg-amber-400 text-slate-950 text-xs font-black px-2 py-0.5 rounded-full">
+                    {stats.pendingVerificationCount} Pending Action
+                  </span>
+                </p>
+                <p className="text-xs text-amber-200/80 mt-0.5">
+                  Students have submitted UPI transaction references (UTRs) and receipt screenshots. Review and approve to automatically issue official tax invoices.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setFilterStatus("pending_verification")}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs transition-all shadow-lg cursor-pointer flex items-center gap-2 shrink-0 border border-amber-300"
+            >
+              <span>Review Queue ({stats.pendingVerificationCount})</span>
+              <span>⚡</span>
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* LEFT: MANUAL FEE ENTRY FORM */}
@@ -436,7 +685,7 @@ export default function AccountantDashboard() {
                     <span>Broadcast WhatsApp Reminder</span>
                   </button>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <button
                     onClick={() => setFilterStatus("all")}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
@@ -459,7 +708,20 @@ export default function AccountantDashboard() {
                       filterStatus === "pending" ? "bg-amber-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
                     }`}
                   >
-                    Pending ({ledger.length - stats.totalPaidCount})
+                    Pending ({ledger.filter((r) => (r.status || "").toLowerCase() === "pending").length})
+                  </button>
+                  <button
+                    onClick={() => setFilterStatus("pending_verification")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      filterStatus === "pending_verification"
+                        ? "bg-amber-500 text-slate-950 font-black shadow-md"
+                        : "bg-slate-800 text-amber-400 border border-amber-500/30 hover:bg-slate-700"
+                    }`}
+                  >
+                    <span>⚡ UPI Queue</span>
+                    <span className="bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded-full text-[10px]">
+                      {stats.pendingVerificationCount || 0}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -467,7 +729,7 @@ export default function AccountantDashboard() {
               {/* SEARCH INPUT */}
               <input
                 type="text"
-                placeholder="Search ledger by student name or class..."
+                placeholder="Search ledger by student name, class, or UTR number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm"
@@ -497,55 +759,105 @@ export default function AccountantDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/50 text-sm">
-                    {filteredLedger.map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="p-4">
-                          <p className="font-bold text-white">{item.student_name}</p>
-                          <p className="text-xs text-slate-400">Class {item.class_name}</p>
-                        </td>
-                        <td className="p-4 font-extrabold text-white">
-                          ₹{Number(item.amount).toLocaleString()}
-                        </td>
-                        <td className="p-4 text-slate-300 text-xs">
-                          <span className="bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-md">
-                            {item.payment_mode}
-                          </span>
-                        </td>
-                        <td className="p-4 text-center">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
-                              item.status === "paid"
-                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                                : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                            }`}
-                          >
-                            {item.status}
-                          </span>
-                        </td>
-                        <td className="p-4 text-slate-400 text-xs font-mono">{item.date}</td>
-                        <td className="p-4 text-right">
-                          {item.status === "paid" ? (
-                            <button
-                              onClick={() => handleDownloadTaxInvoice(item)}
-                              className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
-                              title="Download Tax Invoice PDF"
+                    {filteredLedger.map((item) => {
+                      const isPaid = (item.status || "").toLowerCase() === "paid";
+                      const isPendingVerification = (item.status || "").toLowerCase() === "pending_verification";
+
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-800/30 transition-colors">
+                          <td className="p-4">
+                            <p className="font-bold text-white">{item.student_name}</p>
+                            <p className="text-xs text-slate-400">Class {item.class_name}</p>
+                            {item.utr && (
+                              <p className="text-[11px] font-mono text-emerald-400 mt-0.5">
+                                UTR: {item.utr}
+                              </p>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            <span className="font-extrabold text-white text-base">
+                              ₹{Number(item.amount).toLocaleString()}
+                            </span>
+                            {item.is_partial && (
+                              <span className="block text-[10px] text-amber-400 font-medium">
+                                Partial (Due: ₹{Number(item.remaining_balance || 0).toLocaleString()})
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4 text-slate-300 text-xs">
+                            <div className="flex flex-col items-start gap-1">
+                              <span className="bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-md text-[11px]">
+                                {item.payment_mode}
+                              </span>
+                              {(item.screenshot_data || item.screenshot) && (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewReceipt(item)}
+                                  className="text-[11px] text-blue-400 hover:text-blue-300 underline font-semibold flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  <span>View Screenshot</span>
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4 text-center">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
+                                isPaid
+                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                  : isPendingVerification
+                                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse"
+                                  : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                              }`}
                             >
-                              <span>🧾</span>
-                              <span>Tax Invoice</span>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleSendWhatsAppReminder(item)}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 shadow-md shadow-emerald-900/20"
-                              title="Send Reminder via WhatsApp"
-                            >
-                              <span>📲</span>
-                              <span>Remind WhatsApp</span>
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                              {isPaid ? "Paid" : isPendingVerification ? "Pending Verification" : "Pending Due"}
+                            </span>
+                          </td>
+                          <td className="p-4 text-slate-400 text-xs font-mono">{item.date}</td>
+                          <td className="p-4 text-right">
+                            {isPendingVerification ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleApprovePayment(item)}
+                                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all cursor-pointer inline-flex items-center gap-1 shadow-md shadow-emerald-900/30"
+                                  title="Approve settlement and issue official Tax Invoice"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span>Approve & Invoice</span>
+                                </button>
+                                <button
+                                  onClick={() => handleRejectPayment(item)}
+                                  className="px-2 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-rose-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                                  title="Reject transaction"
+                                >
+                                  <XCircle className="w-3.5 h-3.5" />
+                                  <span>Reject</span>
+                                </button>
+                              </div>
+                            ) : isPaid ? (
+                              <button
+                                onClick={() => handleDownloadTaxInvoice(item)}
+                                className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                                title="Download Tax Invoice PDF"
+                              >
+                                <span>🧾</span>
+                                <span>Tax Invoice</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleSendWhatsAppReminder(item)}
+                                className="px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 shadow-md shadow-emerald-900/20"
+                                title="Send Reminder via WhatsApp"
+                              >
+                                <span>📲</span>
+                                <span>Remind WhatsApp</span>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -553,6 +865,74 @@ export default function AccountantDashboard() {
           </div>
         </div>
       </div>
+
+      {/* SCREENSHOT LIGHTBOX MODAL */}
+      {previewReceipt && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
+            <div className="flex justify-between items-center border-b border-slate-700 pb-3">
+              <div>
+                <h3 className="font-extrabold text-white text-base">Payment Receipt Lightbox</h3>
+                <p className="text-xs text-slate-400 font-mono">{previewReceipt.student_name} • {previewReceipt.class_name}</p>
+              </div>
+              <button
+                onClick={() => setPreviewReceipt(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-slate-900 rounded-2xl p-4 text-center border border-slate-800">
+              {previewReceipt.screenshot_data ? (
+                <img
+                  src={previewReceipt.screenshot_data}
+                  alt="Payment Screenshot"
+                  className="max-h-80 mx-auto rounded-xl object-contain border border-slate-700"
+                />
+              ) : (
+                <div className="py-12 text-slate-500 flex flex-col items-center gap-2">
+                  <ImageIcon className="w-12 h-12 stroke-[1.5]" />
+                  <span className="text-xs font-semibold text-slate-400">Attached File: {previewReceipt.screenshot || "Receipt_Proof.jpg"}</span>
+                  <span className="text-[11px] text-slate-500">Verified digital UTR reference attached below.</span>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+              <div>
+                <span className="text-slate-500 block uppercase text-[10px]">UTR Reference</span>
+                <span className="font-mono text-emerald-400 font-bold">{previewReceipt.utr || previewReceipt.razorpay_payment_id || "N/A"}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block uppercase text-[10px]">Submitted Amount</span>
+                <span className="font-bold text-white text-sm">₹{Number(previewReceipt.amount).toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              {(previewReceipt.status || "").toLowerCase() === "pending_verification" && (
+                <button
+                  onClick={() => {
+                    handleApprovePayment(previewReceipt);
+                    setPreviewReceipt(null);
+                  }}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-900/30"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Approve & Issue Tax Invoice</span>
+                </button>
+              )}
+              <button
+                onClick={() => setPreviewReceipt(null)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-3 rounded-xl text-xs transition-all cursor-pointer"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
