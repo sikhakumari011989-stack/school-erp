@@ -147,7 +147,11 @@ export default function StudentDashboard() {
 
       <div className="relative z-10 max-w-6xl mx-auto">
         {/* INSTITUTIONAL NOTICEBOARD CIRCULAR BANNER */}
-        <NoticeBanner role="Student" schoolId={user?.school_id || user?.institution_code} />
+        <NoticeBanner
+          role="Student"
+          schoolId={user?.school_id || user?.institution_code}
+          userClass={user?.class_name || user?.class}
+        />
 
         {/* WELCOME BANNER */}
         <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-8 shadow-2xl mb-8 flex justify-between items-center flex-wrap gap-4">

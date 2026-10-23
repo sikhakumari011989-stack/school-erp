@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getNotices } from "../utils/noticeService";
 
-export default function NoticeBanner({ role = "All", schoolId }) {
+export default function NoticeBanner({ role = "All", schoolId, userClass }) {
   const [notices, setNotices] = useState([]);
   const [dismissed, setDismissed] = useState([]);
   const [expandedNotice, setExpandedNotice] = useState(null);
@@ -9,14 +9,84 @@ export default function NoticeBanner({ role = "All", schoolId }) {
   useEffect(() => {
     const load = async () => {
       const all = await getNotices(schoolId);
+      
+      // Determine student class from prop or localStorage
+      let resolvedClass = (userClass || "").toLowerCase().trim();
+      if (!resolvedClass) {
+        try {
+          const savedUser = JSON.parse(
+            localStorage.getItem("erp_session_user") ||
+            localStorage.getItem("erp_demo_session") ||
+            "{}"
+          );
+          resolvedClass = (savedUser.class_name || savedUser.class || savedUser.batch || "").toLowerCase().trim();
+        } catch {}
+      }
+
+      const userRole = (role || "").toLowerCase().trim();
+
       // Filter for target audience
       const filtered = all.filter((n) => {
-        const aud = (n.audience || "").toLowerCase();
-        const userRole = (role || "").toLowerCase();
-        if (aud === "all" || aud === "all students & staff" || aud.includes("all")) return true;
-        if (userRole === "student" && aud.includes("student")) return true;
-        if (userRole === "teacher" && (aud.includes("teacher") || aud.includes("faculty") || aud.includes("staff"))) return true;
-        if (userRole === "trustee" && (aud.includes("trustee") || aud.includes("hod") || aud.includes("admin") || aud.includes("staff"))) return true;
+        const aud = (n.audience || "").toLowerCase().trim();
+
+        // 1. Universal broadcasts
+        if (
+          aud === "all" ||
+          aud === "all students & staff" ||
+          aud === "all students & teachers" ||
+          aud === "all members" ||
+          aud.includes("all members") ||
+          aud.includes("all students & staff")
+        ) {
+          return true;
+        }
+
+        // 2. Administrators & Trustees see all broadcasts for institutional monitoring
+        if (
+          userRole === "trustee" ||
+          userRole === "principal" ||
+          userRole === "admin"
+        ) {
+          return true;
+        }
+
+        // 3. Teachers & Faculty
+        if (userRole === "teacher") {
+          if (
+            aud.includes("teacher") ||
+            aud.includes("faculty") ||
+            aud.includes("staff") ||
+            aud.startsWith("class:") ||
+            aud.startsWith("batch:")
+          ) {
+            return true;
+          }
+        }
+
+        // 4. Students
+        if (userRole === "student") {
+          // General student notices
+          if (aud === "students" || aud === "all students" || aud.includes("all students")) {
+            return true;
+          }
+          // Specific class/batch notices: "Class: Class 10" or "Batch: NEET Repeater"
+          if (aud.startsWith("class:") || aud.startsWith("batch:") || aud.startsWith("specific:")) {
+            const targetClass = aud
+              .replace(/^(class:|batch:|specific:)/i, "")
+              .trim()
+              .toLowerCase();
+            
+            if (
+              resolvedClass &&
+              (resolvedClass === targetClass ||
+                resolvedClass.includes(targetClass) ||
+                targetClass.includes(resolvedClass))
+            ) {
+              return true;
+            }
+          }
+        }
+
         return aud === userRole;
       });
       setNotices(filtered);
@@ -25,7 +95,7 @@ export default function NoticeBanner({ role = "All", schoolId }) {
     load();
     window.addEventListener("erp-notices-updated", load);
     return () => window.removeEventListener("erp-notices-updated", load);
-  }, [role, schoolId]);
+  }, [role, schoolId, userClass]);
 
   const activeNotices = notices.filter((n) => !dismissed.includes(n.id));
 

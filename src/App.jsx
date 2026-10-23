@@ -41,6 +41,8 @@ import IdCardGenerator from "./pages/IdCardGenerator";
 import OnlineExams from "./pages/OnlineExams";
 import StudentExam from "./pages/StudentExam";
 import PayrollManager from "./pages/PayrollManager";
+import BroadcastManager from "./pages/BroadcastManager";
+import StaffMessenger from "./pages/StaffMessenger";
 import OfflineIndicator from "./Components/OfflineIndicator";
 import ErrorBoundary from "./Components/ErrorBoundary";
 
@@ -204,6 +206,22 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/admin/broadcasts"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal"]}>
+                  <BroadcastManager />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/messages"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "teacher", "accountant", "staff"]}>
+                  <StaffMessenger />
+                </ProtectedRoute>
+              }
+            />
 
             {/* HOD & PRINCIPAL / TRUSTEE SUITE */}
             <Route
@@ -305,6 +323,14 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={["teacher", "admin", "trustee", "principal"]}>
                   <OnlineExams />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/teacher/messages"
+              element={
+                <ProtectedRoute allowedRoles={["teacher", "admin", "trustee", "principal", "accountant", "staff"]}>
+                  <StaffMessenger />
                 </ProtectedRoute>
               }
             />

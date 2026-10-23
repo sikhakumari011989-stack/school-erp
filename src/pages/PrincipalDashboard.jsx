@@ -17,6 +17,7 @@ import SystemAudit from "./SystemAudit";
 import BulkImportModal from "../Components/BulkImportModal";
 import ComprehensiveMemberModal from "../Components/ComprehensiveMemberModal";
 import FeeStructureConfigurator from "../Components/FeeStructureConfigurator";
+import BroadcastManager from "../Components/BroadcastManager";
 import NoticeBanner from "../Components/NoticeBanner";
 import { getNotices, publishNotice, deleteNotice } from "../utils/noticeService";
 import { logSecurityAction } from "../utils/auditLogger";
@@ -465,6 +466,14 @@ export default function PrincipalDashboard() {
 
           <div className="flex items-center gap-2.5 flex-wrap">
             <button
+              onClick={() => navigate("/admin/messages")}
+              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-purple-600/20"
+              title="Direct 1-to-1 faculty messaging"
+            >
+              <span>💬</span>
+              <span>Staff Messenger</span>
+            </button>
+            <button
               onClick={() => navigate("/admin/admissions")}
               className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-blue-600/20"
               title="Manage admissions pipeline & prospective leads"
@@ -770,107 +779,7 @@ export default function PrincipalDashboard() {
             {/* MODULE 6: GLOBAL INSTITUTIONAL BROADCASTS */}
             {activeModuleId === 6 && (
               <div className="space-y-6">
-                <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-slate-700/70 rounded-3xl p-6 sm:p-8 shadow-2xl">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold uppercase tracking-wider mb-2">
-                    <span>📢</span> Emergency & Institutional Alerts
-                  </div>
-                  <h2 className="text-2xl font-black text-white mb-2">Global Institutional Broadcasts</h2>
-                  <p className="text-slate-400 text-sm mb-6 max-w-xl">
-                    Publish official announcements, emergency weather warnings, and exam circulars instantly across all student and teacher dashboards.
-                  </p>
-
-                  <form onSubmit={handlePublishBroadcast} className="space-y-4 max-w-2xl">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Notice Headline *</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Schedule for Mid-Term Transcripts"
-                          value={broadcastForm.title}
-                          onChange={(e) => setBroadcastForm({ ...broadcastForm, title: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Notice Category</label>
-                        <select
-                          value={broadcastForm.category}
-                          onChange={(e) => setBroadcastForm({ ...broadcastForm, category: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
-                        >
-                          <option value="Administrative">Administrative Alert</option>
-                          <option value="Academic">Academic Schedule</option>
-                          <option value="Examination">Examination Notice</option>
-                          <option value="Holiday">Holiday & Vacation</option>
-                          <option value="Emergency">🚨 Emergency Alert</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Broadcast Message Content *</label>
-                      <textarea
-                        rows={3}
-                        placeholder="Type official notification message to display across all dashboards..."
-                        value={broadcastForm.content}
-                        onChange={(e) => setBroadcastForm({ ...broadcastForm, content: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
-                        required
-                      />
-                    </div>
-
-                    <div className="flex justify-end pt-2">
-                      <button
-                        type="submit"
-                        disabled={postingNotice}
-                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs sm:text-sm shadow-lg shadow-blue-600/30 transition-all cursor-pointer flex items-center gap-2"
-                      >
-                        <span>📢</span>
-                        <span>{postingNotice ? "Broadcasting..." : "Publish Broadcast Notice"}</span>
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* ACTIVE BROADCAST LIST */}
-                <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-slate-700/70 rounded-3xl shadow-2xl overflow-hidden">
-                  <div className="p-6 border-b border-slate-700/60 bg-slate-800/40 flex justify-between items-center">
-                    <h3 className="text-lg font-bold text-white">Active Campus Broadcasts ({notices.length})</h3>
-                    <span className="text-xs text-slate-400">Pushed to all student & staff feeds</span>
-                  </div>
-
-                  {notices.length === 0 ? (
-                    <div className="p-12 text-center text-slate-400 space-y-2">
-                      <span className="text-4xl block mb-2 opacity-60">📢</span>
-                      <h4 className="text-base font-bold text-white">No active broadcast notices (Clean Slate).</h4>
-                      <p className="text-xs text-slate-400">Use the notice composer above to push administrative circulars.</p>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-slate-800/60">
-                      {notices.map((n) => (
-                        <div key={n.id} className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-slate-800/30 transition-colors">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                                {n.category || "General"}
-                              </span>
-                              <span className="text-xs font-mono text-slate-400">{n.date || "Recent"}</span>
-                            </div>
-                            <h4 className="text-base font-bold text-white">{n.title}</h4>
-                            <p className="text-xs text-slate-300 max-w-xl">{n.content}</p>
-                          </div>
-                          <button
-                            onClick={() => handleDeleteBroadcast(n.id)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
-                          >
-                            🗑️ Delete
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <BroadcastManager institutionCode={institutionCode} />
               </div>
             )}
 

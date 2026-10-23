@@ -52,6 +52,8 @@ export default function Sidebar() {
     if (role === "admin") {
       return [
         { name: "Super Admin", path: "/admin/dashboard", icon: "🛡️" },
+        { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
+        { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
         { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
         { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
         { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
@@ -66,12 +68,15 @@ export default function Sidebar() {
     } else if (role === "staff") {
       return [
         { name: "Dashboard", path: "/staff/dashboard", icon: "🛠️" },
+        { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
         { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
       ];
     } else if (role === "trustee" || role === "principal") {
       if (isTuition) {
         return [
           { name: "Coaching Command Hub", path: "/trustee/dashboard", icon: "📈" },
+          { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
+          { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
           { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
           { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
           { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
@@ -83,6 +88,8 @@ export default function Sidebar() {
       return [
         { name: "Executive Command", path: "/trustee/dashboard", icon: "📈" },
         { name: "Principal Hub", path: "/principal/dashboard", icon: "🏛️" },
+        { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
+        { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
         { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
         { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
         { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
@@ -92,6 +99,7 @@ export default function Sidebar() {
     } else if (role === "accountant") {
       return [
         { name: "Treasury Dashboard", path: "/accountant/dashboard", icon: "💰" },
+        { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
         { name: "Staff Payroll & Payslips", path: "/accountant/payroll", icon: "💵" },
         { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
         { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
@@ -101,6 +109,7 @@ export default function Sidebar() {
       if (isTuition) {
         return [
           { name: "Faculty Dashboard", path: "/teacher/dashboard", icon: "👨‍🏫" },
+          { name: "Staff Messenger", path: "/teacher/messages", icon: "💬" },
           { name: "Timed Online Exams", path: "/teacher/exams", icon: "📝" },
           { name: "Coaching Batches", path: "/teacher/classes", icon: "🏫" },
           { name: "Attendance Register", path: "/teacher/attendance", icon: "✅" },
@@ -111,6 +120,7 @@ export default function Sidebar() {
       }
       return [
         { name: "Faculty Dashboard", path: "/teacher/dashboard", icon: "👨‍🏫" },
+        { name: "Staff Messenger", path: "/teacher/messages", icon: "💬" },
         { name: "Timed Online Exams", path: "/teacher/exams", icon: "📝" },
         { name: "My Classroom Batches", path: "/teacher/classes", icon: "🏫" },
         { name: "Attendance Register", path: "/teacher/attendance", icon: "✅" },

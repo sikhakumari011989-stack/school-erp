@@ -465,6 +465,12 @@ export default function AccountantDashboard() {
           </div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <button
+              onClick={() => navigate("/admin/messages")}
+              className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-xl text-slate-300 font-bold transition-all cursor-pointer"
+            >
+              💬 Staff Messenger
+            </button>
+            <button
               onClick={() => navigate("/accountant/payroll")}
               className="text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
             >

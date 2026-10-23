@@ -12,6 +12,7 @@ import SystemDiagnostic from "../Components/SystemDiagnostic";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
 import NonTeachingStaffManager from "../Components/NonTeachingStaffManager";
 import FeeStructureConfigurator from "../Components/FeeStructureConfigurator";
+import BroadcastManager from "../Components/BroadcastManager";
 import ComprehensiveMemberModal from "../Components/ComprehensiveMemberModal";
 import { buildStandardErpEmail } from "./Login";
 import { getNextMemberId, getDefaultSchoolDirectory } from "../utils/idGenerator";
@@ -888,127 +889,7 @@ export default function TrusteeDashboard() {
           </div>
         ) : activeTab === "notices" ? (
           /* TAB 3: INSTITUTIONAL NOTICEBOARD & CIRCULARS */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* PUBLISH NOTICE FORM */}
-            <div className="lg:col-span-1 bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-6 shadow-2xl h-fit space-y-4">
-              <h2 className="text-xl font-bold text-white">Broadcast Campus Notice</h2>
-              <p className="text-xs text-slate-400">
-                Official circulars published here instantly display on student and staff dashboards.
-              </p>
-
-              <form onSubmit={handlePublishNotice} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                    Notice Headline *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g., Diwali Vacation & Campus Closure"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500 font-semibold"
-                    value={noticeForm.title}
-                    onChange={(e) => setNoticeForm({ ...noticeForm, title: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                      Category *
-                    </label>
-                    <select
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs font-bold focus:outline-none focus:border-purple-500"
-                      value={noticeForm.category}
-                      onChange={(e) => setNoticeForm({ ...noticeForm, category: e.target.value })}
-                    >
-                      <option value="Holiday">🎉 Holiday</option>
-                      <option value="Exam">📝 Exam</option>
-                      <option value="Fee">💰 Fee</option>
-                      <option value="Emergency">🚨 Emergency</option>
-                      <option value="Academic">📚 Academic</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                      Target Audience *
-                    </label>
-                    <select
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs font-bold focus:outline-none focus:border-purple-500"
-                      value={noticeForm.audience}
-                      onChange={(e) => setNoticeForm({ ...noticeForm, audience: e.target.value })}
-                    >
-                      <option value="All">All Members</option>
-                      <option value="Students">Students Only</option>
-                      <option value="Teachers">Faculty / Staff Only</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                    Circular Content Details *
-                  </label>
-                  <textarea
-                    required
-                    rows="4"
-                    placeholder="Provide full description, date schedule, or instructions..."
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-purple-500"
-                    value={noticeForm.content}
-                    onChange={(e) => setNoticeForm({ ...noticeForm, content: e.target.value })}
-                  ></textarea>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black py-3.5 px-4 rounded-xl shadow-lg shadow-purple-600/30 disabled:opacity-50 transition-all text-xs cursor-pointer flex items-center justify-center gap-2"
-                >
-                  {submitting ? "Broadcasting Notice..." : "Broadcast Official Circular 📢"}
-                </button>
-              </form>
-            </div>
-
-            {/* ACTIVE CIRCULARS LIST */}
-            <div className="lg:col-span-2 space-y-4">
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-xl font-bold text-white">Active Circulars & Circular Vault</h2>
-                <button
-                  onClick={fetchNotices}
-                  className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-xl text-slate-300 font-bold transition-all cursor-pointer"
-                >
-                  🔄 Refresh
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {noticesList.map((n) => (
-                  <div
-                    key={n.id}
-                    className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-5 shadow-xl flex flex-col sm:flex-row justify-between items-start gap-4"
-                  >
-                    <div className="space-y-1.5 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                          {n.category || n.type || "Notice"}
-                        </span>
-                        <span className="text-xs text-slate-400 font-mono">{n.date}</span>
-                        <span className="text-xs text-slate-500 font-semibold">• To: {n.audience}</span>
-                      </div>
-                      <h3 className="text-base font-extrabold text-white">{n.title}</h3>
-                      <p className="text-xs text-slate-300 leading-relaxed">{n.content}</p>
-                    </div>
-
-                    <button
-                      onClick={() => handleDeleteNotice(n.id)}
-                      className="text-rose-400 hover:text-rose-300 text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 px-3 py-1.5 rounded-xl transition-colors cursor-pointer self-start sm:self-center"
-                    >
-                      🗑️ Dismiss
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <BroadcastManager institutionCode={institutionCode} />
         ) : activeTab === "non_teaching" ? (
           <NonTeachingStaffManager schoolId={institutionCode} />
         ) : activeTab === "certificates" ? (

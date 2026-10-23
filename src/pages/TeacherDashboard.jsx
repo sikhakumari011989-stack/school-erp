@@ -139,6 +139,13 @@ export default function TeacherDashboard() {
       path: "/teacher/planner",
     },
     {
+      name: "Staff Messenger",
+      desc: "Direct 1-to-1 faculty & HOD coordination",
+      icon: "💬",
+      color: "from-blue-500/20 to-indigo-500/10 text-blue-400 border-blue-500/30",
+      path: "/teacher/messages",
+    },
+    {
       name: "Staff Directory",
       desc: "HOD & department phone extensions",
       icon: "📞",
