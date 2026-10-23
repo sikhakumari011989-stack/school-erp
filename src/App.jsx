@@ -36,6 +36,11 @@ import RefundPolicy from "./pages/RefundPolicy";
 import ContactUs from "./pages/ContactUs";
 import SystemDiagnosticPage from "./pages/SystemDiagnosticPage";
 import MasterSchoolSetup from "./pages/MasterSchoolSetup";
+import AdmissionsCRM from "./pages/AdmissionsCRM";
+import IdCardGenerator from "./pages/IdCardGenerator";
+import OnlineExams from "./pages/OnlineExams";
+import StudentExam from "./pages/StudentExam";
+import PayrollManager from "./pages/PayrollManager";
 import OfflineIndicator from "./Components/OfflineIndicator";
 import ErrorBoundary from "./Components/ErrorBoundary";
 
@@ -183,6 +188,22 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/admin/admissions"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant"]}>
+                  <AdmissionsCRM />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/id-cards"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant", "teacher"]}>
+                  <IdCardGenerator />
+                </ProtectedRoute>
+              }
+            />
 
             {/* HOD & PRINCIPAL / TRUSTEE SUITE */}
             <Route
@@ -208,6 +229,14 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={["accountant", "admin"]}>
                   <AccountantDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accountant/payroll"
+              element={
+                <ProtectedRoute allowedRoles={["accountant", "admin", "trustee", "principal"]}>
+                  <PayrollManager />
                 </ProtectedRoute>
               }
             />
@@ -271,6 +300,14 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/teacher/exams"
+              element={
+                <ProtectedRoute allowedRoles={["teacher", "admin", "trustee", "principal"]}>
+                  <OnlineExams />
+                </ProtectedRoute>
+              }
+            />
 
             {/* STUDENT & PARENT SUITE */}
             <Route
@@ -310,6 +347,14 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={["student", "admin"]}>
                   <StudentLMS />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/exams"
+              element={
+                <ProtectedRoute allowedRoles={["student", "admin"]}>
+                  <StudentExam />
                 </ProtectedRoute>
               }
             />

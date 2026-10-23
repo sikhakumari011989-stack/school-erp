@@ -111,6 +111,13 @@ export default function TeacherDashboard() {
       path: "/teacher/homework",
     },
     {
+      name: "Timed Online Exams",
+      desc: "Author MCQ papers & view auto-scores",
+      icon: "🎯",
+      color: "from-purple-500/20 to-indigo-500/10 text-purple-400 border-purple-500/30",
+      path: "/teacher/exams",
+    },
+    {
       name: "Classroom Batches",
       desc: "Batch schedules & strength",
       icon: "🏫",

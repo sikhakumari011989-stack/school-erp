@@ -84,6 +84,13 @@ export default function StudentDashboard() {
 
   const studentActions = [
     {
+      name: "Online Tests (CBT)",
+      desc: "Timed exams with instant auto-grading",
+      icon: "🎯",
+      color: "from-purple-500/20 to-indigo-500/10 text-purple-400 border-purple-500/30",
+      path: "/student/exams",
+    },
+    {
       name: "My Homework",
       desc: "Live faculty assignments & deadlines",
       icon: "📝",

@@ -52,6 +52,10 @@ export default function Sidebar() {
     if (role === "admin") {
       return [
         { name: "Super Admin", path: "/admin/dashboard", icon: "🛡️" },
+        { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
+        { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
+        { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
+        { name: "Online Exams (CBT)", path: "/teacher/exams", icon: "📝" },
         { name: "Principal Suite", path: "/principal/dashboard", icon: "🏛️" },
         { name: "Accountant Suite", path: "/accountant/dashboard", icon: "💰" },
         { name: "Trustee Audit", path: "/trustee/dashboard", icon: "📈" },
@@ -60,11 +64,17 @@ export default function Sidebar() {
         { name: "Directory & Comms", path: "/admin/directory", icon: "📞" },
       ];
     } else if (role === "staff") {
-      return [{ name: "Dashboard", path: "/staff/dashboard", icon: "🛠️" }];
+      return [
+        { name: "Dashboard", path: "/staff/dashboard", icon: "🛠️" },
+        { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
+      ];
     } else if (role === "trustee" || role === "principal") {
       if (isTuition) {
         return [
           { name: "Coaching Command Hub", path: "/trustee/dashboard", icon: "📈" },
+          { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
+          { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
+          { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
           { name: "Fee Treasury & Ledger", path: "/accountant/dashboard", icon: "💰" },
           { name: "Institute Directory", path: "/admin/directory", icon: "📞" },
           { name: "Security & Audit", path: "/admin/audit", icon: "⚙️" },
@@ -73,37 +83,47 @@ export default function Sidebar() {
       return [
         { name: "Executive Command", path: "/trustee/dashboard", icon: "📈" },
         { name: "Principal Hub", path: "/principal/dashboard", icon: "🏛️" },
+        { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
+        { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
+        { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
         { name: "Security & Audit", path: "/admin/audit", icon: "⚙️" },
         { name: "Institutional Directory", path: "/admin/directory", icon: "📞" },
       ];
     } else if (role === "accountant") {
       return [
         { name: "Treasury Dashboard", path: "/accountant/dashboard", icon: "💰" },
+        { name: "Staff Payroll & Payslips", path: "/accountant/payroll", icon: "💵" },
+        { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
+        { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
         { name: "Directory & Contacts", path: "/admin/directory", icon: "📞" },
       ];
     } else if (role === "teacher") {
       if (isTuition) {
         return [
           { name: "Faculty Dashboard", path: "/teacher/dashboard", icon: "👨‍🏫" },
+          { name: "Timed Online Exams", path: "/teacher/exams", icon: "📝" },
           { name: "Coaching Batches", path: "/teacher/classes", icon: "🏫" },
           { name: "Attendance Register", path: "/teacher/attendance", icon: "✅" },
           { name: "Publish Homework & Quizzes", path: "/teacher/homework", icon: "📚" },
           { name: "Marks Grid & Reports", path: "/teacher/analytics", icon: "📊" },
+          { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
         ];
       }
       return [
         { name: "Faculty Dashboard", path: "/teacher/dashboard", icon: "👨‍🏫" },
+        { name: "Timed Online Exams", path: "/teacher/exams", icon: "📝" },
         { name: "My Classroom Batches", path: "/teacher/classes", icon: "🏫" },
         { name: "Attendance Register", path: "/teacher/attendance", icon: "✅" },
         { name: "Publish Homework & Quizzes", path: "/teacher/homework", icon: "📚" },
         { name: "Analytics & Papers", path: "/teacher/analytics", icon: "📊" },
         { name: "Curriculum Planner", path: "/teacher/planner", icon: "📝" },
+        { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
       ];
     } else if (role === "student") {
       if (isTuition) {
-        // Streamlined Tuition Power Modules: Batches, Attendance, Fee Treasury, LMS/Homework
         return [
           { name: "Student Dashboard", path: "/student/dashboard", icon: "🎓" },
+          { name: "Online Tests & Quizzes", path: "/student/exams", icon: "📝" },
           { name: "Homework & Tasks", path: "/student/homework", icon: "📚" },
           { name: "Fee Treasury & Ledger", path: "/student/fees", icon: "💳" },
           { name: "Pay Online (UPI / Card)", path: "/student/pay", icon: "⚡" },
@@ -112,6 +132,7 @@ export default function Sidebar() {
       }
       return [
         { name: "Student Dashboard", path: "/student/dashboard", icon: "🎓" },
+        { name: "Online Tests (CBT)", path: "/student/exams", icon: "📝" },
         { name: "Homework & Tasks", path: "/student/homework", icon: "📚" },
         { name: "Fee Ledger & Vault", path: "/student/fees", icon: "💳" },
         { name: "Pay Online (Razorpay)", path: "/student/pay", icon: "⚡" },

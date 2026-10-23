@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
@@ -8,6 +9,7 @@ import { notifyFeePaymentConfirmed } from "../utils/notifications";
 import { Eye, CheckCircle2, XCircle, AlertCircle, FileText, Image as ImageIcon } from "lucide-react";
 
 export default function AccountantDashboard() {
+  const navigate = useNavigate();
   const { user } = useContext(AppContext);
   const { showToast } = useToast();
   const [ledger, setLedger] = useState([]);
@@ -461,13 +463,21 @@ export default function AccountantDashboard() {
               Live tuition fee reconciliation, Razorpay settlements, and defaulter tracking
             </p>
           </div>
-          <button
-            onClick={fetchLedger}
-            disabled={loading}
-            className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-xl text-slate-300 font-bold transition-all disabled:opacity-50"
-          >
-            {loading ? "Syncing..." : "🔄 Refresh Ledger"}
-          </button>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              onClick={() => navigate("/accountant/payroll")}
+              className="text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
+            >
+              💵 Staff Payroll & Payslips
+            </button>
+            <button
+              onClick={fetchLedger}
+              disabled={loading}
+              className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-xl text-slate-300 font-bold transition-all disabled:opacity-50 cursor-pointer"
+            >
+              {loading ? "Syncing..." : "🔄 Refresh Ledger"}
+            </button>
+          </div>
         </div>
 
         {/* FINANCIAL METRICS ROW */}

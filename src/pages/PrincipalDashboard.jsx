@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
@@ -21,6 +22,7 @@ import { getNotices, publishNotice, deleteNotice } from "../utils/noticeService"
 import { logSecurityAction } from "../utils/auditLogger";
 
 export default function PrincipalDashboard() {
+  const navigate = useNavigate();
   const { user } = useContext(AppContext) || {};
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState("modules"); // 'modules' or specific tab
@@ -463,12 +465,28 @@ export default function PrincipalDashboard() {
 
           <div className="flex items-center gap-2.5 flex-wrap">
             <button
+              onClick={() => navigate("/admin/admissions")}
+              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-blue-600/20"
+              title="Manage admissions pipeline & prospective leads"
+            >
+              <span>🎯</span>
+              <span>Admissions CRM</span>
+            </button>
+            <button
+              onClick={() => navigate("/admin/id-cards")}
+              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-cyan-600/20"
+              title="Generate batch student & staff ID cards"
+            >
+              <span>🪪</span>
+              <span>ID Card Studio</span>
+            </button>
+            <button
               onClick={handleCopyPortalLink}
               className="px-3.5 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-md"
               title="Copy direct member portal link to share on WhatsApp"
             >
               <span>🔗</span>
-              <span>Copy Portal Link (/portal)</span>
+              <span>Copy Portal Link</span>
             </button>
             {activeModuleId && (
               <button
