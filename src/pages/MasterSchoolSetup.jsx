@@ -266,7 +266,7 @@ export default function MasterSchoolSetup() {
                   type="password"
                   required
                   autoFocus
-                  placeholder="Enter Master Passkey (ASK&1412)"
+                  placeholder="Enter Master Passkey..."
                   className="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-4 py-3.5 text-amber-300 font-mono text-center tracking-widest text-base focus:outline-none focus:border-amber-500"
                   value={passkeyInput}
                   onChange={(e) => {

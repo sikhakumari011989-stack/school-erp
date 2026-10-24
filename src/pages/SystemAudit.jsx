@@ -3,6 +3,7 @@ import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { getAuditLogs } from "../utils/auditLogger";
 import { TableSkeleton } from "../Components/Skeleton";
+import { exportToCSV } from "../utils/exportUtils";
 
 export default function SystemAudit() {
   const { user } = useContext(AppContext);
@@ -35,21 +36,18 @@ export default function SystemAudit() {
     const headers = ["Timestamp", "User & Identifier", "Role", "Action", "IP Address", "Status"];
     const rows = logs.map((l) => [
       l.created_at ? new Date(l.created_at).toLocaleString() : "Recent",
-      `"${l.user_name || "System"}"`,
+      l.user_name || "System",
       l.user_role || "User",
-      `"${l.action || ""}"`,
+      l.action || "",
       l.ip_address || "127.0.0.1",
       l.status || "Verified",
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Security_Audit_Trail_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportToCSV({
+      filename: `Security_Audit_Trail_${new Date().toISOString().split("T")[0]}`,
+      headers,
+      rows,
+    });
 
     showToast("Audit trail exported successfully as CSV!", "success");
   };

@@ -117,8 +117,9 @@ export default function ComprehensiveMemberModal({
 
   const handleStudentSubmit = async (e) => {
     e.preventDefault();
-    if (!studentForm.name.trim()) {
-      setErrorMessage("Please enter the student's full name.");
+    if (!studentForm.name.trim() || !studentForm.className?.trim()) {
+      showToast("Name and Class are required.", "error");
+      setErrorMessage("Name and Class are required.");
       return;
     }
     if (!studentForm.customId.trim()) {

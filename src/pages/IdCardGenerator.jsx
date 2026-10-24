@@ -42,6 +42,7 @@ export default function IdCardGenerator() {
     (() => {
       try {
         return (
+          localStorage.getItem(`erp_logo_${schoolCode}`) ||
           localStorage.getItem(`erp_school_logo_${schoolCode}`) ||
           localStorage.getItem("erp_school_logo_default") ||
           null
@@ -57,6 +58,16 @@ export default function IdCardGenerator() {
   const [searchQuery, setSearchQuery] = useState("");
   const [members, setMembers] = useState([]);
   const [selectedIds, setSelectedIds] = useState(new Set());
+
+  // Dynamic ID Card Field Configuration State
+  const [cardFields, setCardFields] = useState({
+    showBloodGroup: true,
+    showEmergencyContact: true,
+    showDob: true,
+    showGuardian: true,
+    showBarcode: true,
+    showQrCode: true,
+  });
 
   // Load roster
   useEffect(() => {
@@ -416,6 +427,80 @@ export default function IdCardGenerator() {
             })}
           </div>
         </div>
+
+        {/* Dynamic ID Card Field Configuration Panel */}
+        <div className="bg-slate-900/80 border border-cyan-500/30 rounded-2xl p-5 shadow-xl space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <h4 className="text-xs font-black uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+              <span>🪪</span> Dynamic ID Card Field Configuration (Live Print Preview)
+            </h4>
+            <span className="text-[11px] text-slate-400">
+              Check/uncheck fields to add or remove badges & security tokens before print
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 pt-1">
+            <label className="flex items-center gap-2 text-xs text-slate-200 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60 cursor-pointer hover:border-cyan-500/50 transition-all select-none">
+              <input
+                type="checkbox"
+                checked={cardFields.showBloodGroup}
+                onChange={() => setCardFields((prev) => ({ ...prev, showBloodGroup: !prev.showBloodGroup }))}
+                className="w-4 h-4 rounded text-cyan-500 accent-cyan-500 cursor-pointer"
+              />
+              <span className="font-semibold">Blood Group</span>
+            </label>
+
+            <label className="flex items-center gap-2 text-xs text-slate-200 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60 cursor-pointer hover:border-cyan-500/50 transition-all select-none">
+              <input
+                type="checkbox"
+                checked={cardFields.showEmergencyContact}
+                onChange={() => setCardFields((prev) => ({ ...prev, showEmergencyContact: !prev.showEmergencyContact }))}
+                className="w-4 h-4 rounded text-cyan-500 accent-cyan-500 cursor-pointer"
+              />
+              <span className="font-semibold">Emergency Phone</span>
+            </label>
+
+            <label className="flex items-center gap-2 text-xs text-slate-200 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60 cursor-pointer hover:border-cyan-500/50 transition-all select-none">
+              <input
+                type="checkbox"
+                checked={cardFields.showDob}
+                onChange={() => setCardFields((prev) => ({ ...prev, showDob: !prev.showDob }))}
+                className="w-4 h-4 rounded text-cyan-500 accent-cyan-500 cursor-pointer"
+              />
+              <span className="font-semibold">Date of Birth</span>
+            </label>
+
+            <label className="flex items-center gap-2 text-xs text-slate-200 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60 cursor-pointer hover:border-cyan-500/50 transition-all select-none">
+              <input
+                type="checkbox"
+                checked={cardFields.showGuardian}
+                onChange={() => setCardFields((prev) => ({ ...prev, showGuardian: !prev.showGuardian }))}
+                className="w-4 h-4 rounded text-cyan-500 accent-cyan-500 cursor-pointer"
+              />
+              <span className="font-semibold">Parent / Guardian</span>
+            </label>
+
+            <label className="flex items-center gap-2 text-xs text-slate-200 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60 cursor-pointer hover:border-cyan-500/50 transition-all select-none">
+              <input
+                type="checkbox"
+                checked={cardFields.showBarcode}
+                onChange={() => setCardFields((prev) => ({ ...prev, showBarcode: !prev.showBarcode }))}
+                className="w-4 h-4 rounded text-cyan-500 accent-cyan-500 cursor-pointer"
+              />
+              <span className="font-semibold">Barcode Strip</span>
+            </label>
+
+            <label className="flex items-center gap-2 text-xs text-slate-200 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60 cursor-pointer hover:border-cyan-500/50 transition-all select-none">
+              <input
+                type="checkbox"
+                checked={cardFields.showQrCode}
+                onChange={() => setCardFields((prev) => ({ ...prev, showQrCode: !prev.showQrCode }))}
+                className="w-4 h-4 rounded text-cyan-500 accent-cyan-500 cursor-pointer"
+              />
+              <span className="font-semibold">Secure QR</span>
+            </label>
+          </div>
+        </div>
       </div>
 
       {/* PRINT-READY CARDS CANVAS */}
@@ -489,9 +574,11 @@ export default function IdCardGenerator() {
                           VERIFIED
                         </div>
                       </div>
-                      <span className="text-[9px] font-bold text-rose-400 flex items-center gap-0.5 mt-1.5">
-                        <Droplet className="w-3 h-3 text-rose-500 fill-rose-500" /> {bloodGroup}
-                      </span>
+                      {cardFields.showBloodGroup && (
+                        <span className="text-[9px] font-bold text-rose-400 flex items-center gap-0.5 mt-1.5">
+                          <Droplet className="w-3 h-3 text-rose-500 fill-rose-500" /> {bloodGroup}
+                        </span>
+                      )}
                     </div>
 
                     {/* MEMBER DETAILS */}
@@ -510,37 +597,57 @@ export default function IdCardGenerator() {
                           <strong className="text-slate-400">{isStudent ? "Batch:" : "Designation:"}</strong>{" "}
                           <span className="font-semibold text-white">{member.class_name || member.role}</span>
                         </p>
-                        {isStudent && member.parent_name && (
+
+                        {cardFields.showDob && (
                           <p className="truncate">
-                            <strong className="text-slate-400">Guardian:</strong> {member.parent_name}
+                            <strong className="text-slate-400">DOB:</strong>{" "}
+                            <span className="font-mono text-slate-200">{member.dob || "15/08/2009"}</span>
                           </p>
                         )}
-                        <p className="flex items-center gap-1 text-slate-300">
-                          <Phone className="w-3 h-3 text-emerald-400" />
-                          <span className="font-mono">{phone}</span>
-                        </p>
+
+                        {cardFields.showGuardian && isStudent && (member.parent_name || member.guardian_name) && (
+                          <p className="truncate">
+                            <strong className="text-slate-400">Guardian:</strong> {member.parent_name || member.guardian_name}
+                          </p>
+                        )}
+
+                        {cardFields.showEmergencyContact && (
+                          <p className="flex items-center gap-1 text-slate-300">
+                            <Phone className="w-3 h-3 text-emerald-400" />
+                            <span className="font-mono">{phone}</span>
+                          </p>
+                        )}
                       </div>
 
                       {/* AUTHENTIC BARCODE / QR SIMULATION */}
-                      <div className="pt-1 flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-[7px] text-slate-400 font-mono tracking-tighter">
-                            SECURE TOKEN: {id}-{schoolCode}
-                          </span>
-                          <div className="flex gap-0.5 items-center h-4 mt-0.5">
-                            {[12, 6, 18, 8, 22, 10, 15, 6, 19, 12, 14, 8, 20, 10, 16, 7].map((h, i) => (
-                              <div
-                                key={i}
-                                className="w-0.5 bg-slate-300"
-                                style={{ height: `${h}px` }}
-                              ></div>
-                            ))}
-                          </div>
+                      {(cardFields.showBarcode || cardFields.showQrCode) && (
+                        <div className="pt-1 flex items-center justify-between">
+                          {cardFields.showBarcode ? (
+                            <div className="flex flex-col">
+                              <span className="text-[7px] text-slate-400 font-mono tracking-tighter">
+                                SECURE TOKEN: {id}-{schoolCode}
+                              </span>
+                              <div className="flex gap-0.5 items-center h-4 mt-0.5">
+                                {[12, 6, 18, 8, 22, 10, 15, 6, 19, 12, 14, 8, 20, 10, 16, 7].map((h, i) => (
+                                  <div
+                                    key={i}
+                                    className="w-0.5 bg-slate-300"
+                                    style={{ height: `${h}px` }}
+                                  ></div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div></div>
+                          )}
+
+                          {cardFields.showQrCode && (
+                            <div className="p-1 bg-white rounded border border-slate-300">
+                              <QrCode className="w-8 h-8 text-black" />
+                            </div>
+                          )}
                         </div>
-                        <div className="p-1 bg-white rounded border border-slate-300">
-                          <QrCode className="w-8 h-8 text-black" />
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
 

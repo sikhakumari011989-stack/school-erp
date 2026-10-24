@@ -203,9 +203,21 @@ export const AppProvider = ({ children }) => {
     // 3. Listen to live Supabase Auth state changes (SIGN_IN, SIGN_OUT, TOKEN_REFRESH)
     const { data: listener } = supabase?.auth?.onAuthStateChange
       ? supabase.auth.onAuthStateChange((event, currentSession) => {
-          if (event === "SIGNED_OUT" || !currentSession) {
+          if (event === "SIGNED_OUT") {
             setSession(null);
             setUser(null);
+            return;
+          }
+          if (!currentSession) {
+            // Mobile Swipe-to-Refresh & Persistent Offline Local Session Protection:
+            // Do NOT overwrite user if local persistent session exists
+            const saved =
+              localStorage.getItem("erp_session_user") ||
+              localStorage.getItem("erp_demo_session");
+            if (!saved) {
+              setSession(null);
+              setUser(null);
+            }
             return;
           }
           loadProfile(currentSession);

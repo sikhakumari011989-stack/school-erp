@@ -286,6 +286,10 @@ export default function PrincipalDashboard() {
   // Module 2: Quick Add Roster Member
   const handleQuickAddMember = (e) => {
     e.preventDefault();
+    if ((quickAddForm.role === "student" || !quickAddForm.role) && (!quickAddForm.name.trim() || !quickAddForm.className?.trim())) {
+      showToast("Name and Class are required.", "error");
+      return;
+    }
     if (!quickAddForm.name.trim() || !quickAddForm.roleCode.trim()) {
       showToast("Please provide member name and ID code.", "error");
       return;

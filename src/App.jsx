@@ -1,12 +1,12 @@
 import React from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AppProvider } from "./context/AppContext";
 import { ToastProvider, useToast } from "./context/ToastContext";
 import ProtectedRoute from "./Components/ProtectedRoute";
 
 // Import Components & Pages
 import Sidebar from "./Components/Sidebar";
-import Login from "./pages/Login";
+import Login, { dashboardFor, inferRoleFromCode } from "./pages/Login";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
 import AccountantDashboard from "./pages/AccountantDashboard";
@@ -43,6 +43,7 @@ import StudentExam from "./pages/StudentExam";
 import PayrollManager from "./pages/PayrollManager";
 import BroadcastManager from "./pages/BroadcastManager";
 import StaffMessenger from "./pages/StaffMessenger";
+import ExpenseManagerPage from "./pages/ExpenseManager";
 import OfflineIndicator from "./Components/OfflineIndicator";
 import ErrorBoundary from "./Components/ErrorBoundary";
 
@@ -61,12 +62,42 @@ const PUBLIC_ROUTES = [
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const isPublicPage = PUBLIC_ROUTES.includes(location.pathname);
 
   const [installPrompt, setInstallPrompt] = React.useState(null);
   const [isInstalled, setIsInstalled] = React.useState(false);
   const [showInstallPill, setShowInstallPill] = React.useState(true);
+
+  // Mobile Swipe-to-Refresh & Persistent Session Auto-Router:
+  // If user opens `/`, `/login`, or `/portal` while a valid session is stored in localStorage,
+  // strictly bypass login and auto-route them directly to their respective dashboard.
+  React.useEffect(() => {
+    try {
+      const searchParams = new URLSearchParams(location.search);
+      if (searchParams.get("signedOut") === "true") return;
+
+      const currentPath = location.pathname;
+      if (currentPath === "/" || currentPath === "/login" || currentPath === "/portal") {
+        const saved =
+          localStorage.getItem("erp_session_user") ||
+          localStorage.getItem("erp_demo_session");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && (parsed.role || parsed.role_code)) {
+            const dest = dashboardFor(
+              parsed.role ||
+                inferRoleFromCode(parsed.role_code || parsed.roll_number)
+            );
+            navigate(dest, { replace: true });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Session auto-route check:", e);
+    }
+  }, [location.pathname, location.search, navigate]);
 
   React.useEffect(() => {
     const handleBeforeInstall = (e) => {
@@ -255,6 +286,14 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={["accountant", "admin", "trustee", "principal"]}>
                   <PayrollManager />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accountant/expenses"
+              element={
+                <ProtectedRoute allowedRoles={["accountant", "admin", "trustee", "principal"]}>
+                  <ExpenseManagerPage />
                 </ProtectedRoute>
               }
             />

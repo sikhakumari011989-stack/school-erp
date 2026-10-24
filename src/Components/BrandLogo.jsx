@@ -144,13 +144,13 @@ export default function BrandLogo({
       user?.school_id ||
       tenant?.code ||
       localStorage.getItem("erp_active_tenant") ||
-      "OASIS-TUTORIALS"
+      "CAMPUS-01"
     )
       .trim()
       .toUpperCase();
   };
 
-  // Resolve custom logo from props, tenant, or localStorage
+  // Resolve custom logo from props, tenant, or localStorage (both erp_logo_ and erp_school_logo_ keys)
   useEffect(() => {
     setImageError(false);
 
@@ -164,10 +164,11 @@ export default function BrandLogo({
       return;
     }
 
-    // Check localStorage for uploaded white-label crest
     try {
       const activeCode = getActiveSchoolCode();
-      const storedLogo = localStorage.getItem(`erp_school_logo_${activeCode}`);
+      const storedLogo =
+        localStorage.getItem(`erp_logo_${activeCode}`) ||
+        localStorage.getItem(`erp_school_logo_${activeCode}`);
       if (storedLogo) {
         setResolvedCustomLogo(storedLogo);
       } else {
@@ -181,8 +182,8 @@ export default function BrandLogo({
   // Real-time listener for white-label logo updates across all windows/components
   useEffect(() => {
     const handleLogoUpdated = (e) => {
-      if (e?.detail?.logoUrl) {
-        setResolvedCustomLogo(e.detail.logoUrl);
+      if (e?.detail) {
+        setResolvedCustomLogo(e.detail.logoUrl || null);
         setImageError(false);
       }
     };
@@ -190,7 +191,9 @@ export default function BrandLogo({
     const handleStorageChange = () => {
       try {
         const activeCode = getActiveSchoolCode();
-        const storedLogo = localStorage.getItem(`erp_school_logo_${activeCode}`);
+        const storedLogo =
+          localStorage.getItem(`erp_logo_${activeCode}`) ||
+          localStorage.getItem(`erp_school_logo_${activeCode}`);
         setResolvedCustomLogo(storedLogo || null);
         setImageError(false);
       } catch {}

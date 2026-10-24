@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { logSecurityAction } from "../utils/auditLogger";
+import { exportToCSV } from "../utils/exportUtils";
 
 export default function CustomReportBuilder({ schoolId: propSchoolId }) {
   const { user } = useContext(AppContext);
@@ -72,17 +73,11 @@ export default function CustomReportBuilder({ schoolId: propSchoolId }) {
       return;
     }
 
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [`# Institution: ${institutionName} (${schoolId})`, `# Report: ${report.title}`, `# Date: ${new Date().toLocaleDateString()}`, report.headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `${report.id}_report_${schoolId}_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportToCSV({
+      filename: `${report.id}_report_${schoolId}_${new Date().toISOString().split("T")[0]}`,
+      headers: report.headers,
+      rows: rows,
+    });
 
     logSecurityAction({
       action: "Certified Audit Report Exported",

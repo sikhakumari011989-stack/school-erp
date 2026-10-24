@@ -197,11 +197,11 @@ export default function StudentRazorpayCheckout() {
     const studentPhone = rawPhone.replace(/[^0-9]/g, "").slice(-10) || "9876543210";
     const schoolId = user?.school_id || activeSchoolCode;
     const institutionName = user?.institution_name || schoolUpiMeta.merchantName || "Apex International Academy";
-    const invoiceNo = `INV-${Date.now().toString().slice(-6)}`;
-    const paymentMode = paymentModeOverride || `School UPI QR (UTR: ${cleanUtr})`;
+    const invoiceNo = isPartial ? `INV-${Date.now().toString().slice(-6)}-PARTIAL` : `INV-${Date.now().toString().slice(-6)}`;
+    const paymentMode = paymentModeOverride || (isPartial ? `School UPI QR (UTR: ${cleanUtr}) [PARTIAL]` : `School UPI QR (UTR: ${cleanUtr})`);
 
     try {
-      // 1. Supabase fee_ledger insertion with pending_verification
+      // 1. Supabase fee_ledger insertion with pending_verification and PARTIAL tag
       try {
         const { error: ledgerError } = await supabase.from("fee_ledger").insert([
           {
@@ -213,6 +213,7 @@ export default function StudentRazorpayCheckout() {
             payment_mode: paymentMode,
             razorpay_payment_id: cleanUtr,
             date: today,
+            term: isPartial ? `${selectedFee.title} [PARTIAL]` : selectedFee.title,
           },
         ]);
         if (ledgerError) console.warn("fee_ledger sync notice:", ledgerError.message);
@@ -235,7 +236,7 @@ export default function StudentRazorpayCheckout() {
         console.warn("fees table sync notice:", fErr);
       }
 
-      // 3. LocalStorage persistence (erp_fee_ledger) with status: pending_verification
+      // 3. LocalStorage persistence (erp_fee_ledger) with status: pending_verification and PARTIAL tag
       try {
         const existingRaw = localStorage.getItem("erp_fee_ledger");
         const existingList = existingRaw ? JSON.parse(existingRaw) : [];
@@ -248,14 +249,16 @@ export default function StudentRazorpayCheckout() {
           total_due: Number(selectedFee.amount),
           is_partial: isPartial,
           remaining_balance: remainingBalance,
+          receipt_tag: isPartial ? "PARTIAL" : "FULL",
+          receipt_type: isPartial ? "PARTIAL" : "FULL",
           status: "pending_verification",
           payment_mode: paymentMode,
           razorpay_payment_id: cleanUtr,
           utr: cleanUtr,
           date: today,
           invoice_no: invoiceNo,
-          title: selectedFee.title,
-          term: selectedFee.title,
+          title: isPartial ? `${selectedFee.title} (PARTIAL)` : selectedFee.title,
+          term: isPartial ? `${selectedFee.title} (PARTIAL)` : selectedFee.title,
           screenshot: screenshotName || null,
           screenshot_data: screenshotData || null,
           submitted_at: new Date().toISOString(),

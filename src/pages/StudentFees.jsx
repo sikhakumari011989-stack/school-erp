@@ -61,6 +61,8 @@ export default function StudentFees() {
               mode: d.payment_mode || "School UPI QR",
               utr: d.razorpay_payment_id || d.utr || null,
               invoice_no: d.invoice_no || null,
+              is_partial: Boolean(d.is_partial || d.payment_mode?.includes("PARTIAL") || d.term?.includes("PARTIAL")),
+              receipt_tag: d.receipt_tag || (d.payment_mode?.includes("PARTIAL") || d.term?.includes("PARTIAL") ? "PARTIAL" : "FULL"),
             };
           });
         }
@@ -82,6 +84,8 @@ export default function StudentFees() {
             mode: lr.payment_mode || `School UPI QR (UTR: ${lr.utr || "Verified"})`,
             utr: lr.utr || lr.razorpay_payment_id || null,
             invoice_no: lr.invoice_no || null,
+            is_partial: Boolean(lr.is_partial || lr.receipt_tag === "PARTIAL" || lr.payment_mode?.includes("PARTIAL") || lr.term?.includes("PARTIAL")),
+            receipt_tag: lr.receipt_tag || (lr.payment_mode?.includes("PARTIAL") || lr.term?.includes("PARTIAL") ? "PARTIAL" : "FULL"),
           });
         }
       });
@@ -255,7 +259,14 @@ export default function StudentFees() {
                   {fees.map((f) => (
                     <tr key={f.id} className="hover:bg-slate-800/30 transition-colors">
                       <td className="p-5">
-                        <p className="font-bold text-white">{f.term}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-bold text-white">{f.term}</p>
+                          {(f.is_partial || f.receipt_tag === "PARTIAL" || String(f.term || "").includes("PARTIAL") || String(f.mode || "").includes("PARTIAL")) && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
+                              PARTIAL
+                            </span>
+                          )}
+                        </div>
                         {f.mode && <p className="text-xs text-slate-400 mt-0.5">{f.mode}</p>}
                       </td>
                       <td className="p-5 font-extrabold text-emerald-400">

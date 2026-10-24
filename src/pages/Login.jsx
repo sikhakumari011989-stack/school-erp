@@ -70,6 +70,23 @@ export default function Login({ isDirectPortal = false }) {
   const [loading, setLoading] = useState(false);
   const [suspendedNotice, setSuspendedNotice] = useState(null);
 
+  // Auto-route on mount if persistent session already exists in localStorage (Swipe-to-refresh fix)
+  useEffect(() => {
+    if (searchParams.get("signedOut") === "true") return;
+    try {
+      const saved = localStorage.getItem("erp_session_user") || localStorage.getItem("erp_demo_session");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && (parsed.role || parsed.role_code)) {
+          const dest = dashboardFor(parsed.role || inferRoleFromCode(parsed.role_code || parsed.roll_number));
+          navigate(dest, { replace: true });
+        }
+      }
+    } catch (e) {
+      console.warn("Auto-route check notice:", e);
+    }
+  }, [location.search]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");

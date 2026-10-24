@@ -178,12 +178,16 @@ export default function TeacherAttendance() {
           console.warn("Supabase students fetch notice:", dbErr);
         }
 
-        // Combine and normalize students (role === 'student')
+        // Combine and normalize students (role === 'student' and not admin/staff)
         const allStudentsMap = new Map();
 
         // Add default/local students first
         localDir
-          .filter((item) => (item.role || "student").toLowerCase() === "student")
+          .filter((item) => {
+            const role = (item.role || "student").toLowerCase();
+            const code = (item.role_code || item.roll_number || item.personal_code || item.id || "").toUpperCase();
+            return role === "student" && !code.startsWith("HOD-") && !code.startsWith("PRIN-") && !code.startsWith("TR-") && !code.startsWith("ACC-") && !code.startsWith("TCH-") && !code.startsWith("FAC-");
+          })
           .forEach((item) => {
             const roll = item.roll_number || item.role_code || item.personal_code || item.id;
             allStudentsMap.set(roll, {
@@ -196,7 +200,12 @@ export default function TeacherAttendance() {
           });
 
         // Merge Supabase students
-        dbStudents.forEach((item) => {
+        dbStudents
+          .filter((item) => {
+            const code = (item.roll_number || item.id || "").toUpperCase();
+            return !code.startsWith("HOD-") && !code.startsWith("PRIN-") && !code.startsWith("TR-") && !code.startsWith("ACC-") && !code.startsWith("TCH-") && !code.startsWith("FAC-");
+          })
+          .forEach((item) => {
           const roll = item.roll_number || item.id;
           if (roll) {
             allStudentsMap.set(roll, {
@@ -233,7 +242,13 @@ export default function TeacherAttendance() {
             }));
           } else {
             // Fallback default students
-            const defaults = getDefaultSchoolDirectory(activeSchoolId).filter((d) => d.role === "student");
+            const defaults = getDefaultSchoolDirectory(activeSchoolId).filter(
+              (d) =>
+                d.role === "student" &&
+                !(d.role_code || d.roll_number || "").startsWith("HOD-") &&
+                !(d.role_code || d.roll_number || "").startsWith("ACC-") &&
+                !(d.role_code || d.roll_number || "").startsWith("TCH-")
+            );
             batchStudents = defaults.map((d) => ({
               ...d,
               class_name: selectedBatch,

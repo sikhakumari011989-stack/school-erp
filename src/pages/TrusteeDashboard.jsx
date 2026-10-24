@@ -8,6 +8,7 @@ import NoticeBanner from "../Components/NoticeBanner";
 import { getNotices, publishNotice, deleteNotice } from "../utils/noticeService";
 import BulkImportModal from "../Components/BulkImportModal";
 import SchoolUpiQrConfig from "../Components/SchoolUpiQrConfig";
+import CustomLogoUploader from "../Components/CustomLogoUploader";
 import SystemDiagnostic from "../Components/SystemDiagnostic";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
 import NonTeachingStaffManager from "../Components/NonTeachingStaffManager";
@@ -17,6 +18,7 @@ import ComprehensiveMemberModal from "../Components/ComprehensiveMemberModal";
 import { buildStandardErpEmail } from "./Login";
 import { getNextMemberId, getDefaultSchoolDirectory } from "../utils/idGenerator";
 import { enrollMemberInCloud, fetchCloudDirectory, detectRoleFromId } from "../utils/cloudSyncService";
+import { exportToCSV } from "../utils/exportUtils";
 
 export { detectRoleFromId };
 
@@ -41,6 +43,7 @@ export default function TrusteeDashboard() {
   const [isComprehensiveModalOpen, setIsComprehensiveModalOpen] = useState(false);
   const [comprehensiveModalRole, setComprehensiveModalRole] = useState("student");
   const [showDiagnosticModal, setShowDiagnosticModal] = useState(false);
+  const [memberFilter, setMemberFilter] = useState("all");
 
   // Notices state
   const [noticesList, setNoticesList] = useState([]);
@@ -178,6 +181,7 @@ export default function TrusteeDashboard() {
             roll_number: key,
             class_name: s.class_name || s.class || (resolvedRole === "trustee" || resolvedRole === "principal" ? "Executive Management" : resolvedRole === "teacher" ? "Faculty" : "Class 10-ICSE"),
             role: resolvedRole,
+            status: s.status || "active",
           });
         }
       });
@@ -195,7 +199,7 @@ export default function TrusteeDashboard() {
             role: resolvedRole,
             phone: m.phone || "+91 9800000000",
             email: m.email,
-            status: "active",
+            status: m.status || "active",
           });
         }
       });
@@ -352,16 +356,11 @@ export default function TrusteeDashboard() {
       }
     });
 
-    const csvContent = credentialRows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${institutionCode.toLowerCase()}_student_teacher_credentials.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    exportToCSV({
+      filename: `${institutionCode.toLowerCase()}_student_teacher_credentials`,
+      headers: credentialRows[0],
+      rows: credentialRows.slice(1),
+    });
     showToast(`Downloaded credentials sheet for ${credentialRows.length - 1} campus members!`, "success");
   };
 
@@ -376,8 +375,14 @@ export default function TrusteeDashboard() {
 
   const handleQuickAddMember = async (e) => {
     e.preventDefault();
+    if ((newStudent.role === "student" || !newStudent.role) && (!newStudent.name?.trim() || !newStudent.class?.trim())) {
+      showToast("Name and Class are required.", "error");
+      setFormError("Name and Class are required.");
+      return;
+    }
     if (!newStudent.name || !newStudent.name.trim()) {
-      setFormError("Member name is required.");
+      showToast("Name and Class are required.", "error");
+      setFormError("Name and Class are required.");
       return;
     }
 
@@ -447,21 +452,41 @@ export default function TrusteeDashboard() {
   };
 
   const handleToggleArchiveMember = async (st) => {
-    const personalCode = (st.roll_number || st.personal_code || st.role_code || "").toUpperCase();
-    const isArchived = (st.status || "").toLowerCase().includes("archived") || (st.status || "").toLowerCase().includes("inactive");
-    const nextStatus = isArchived ? "Active" : "Archived / Inactive";
+    const personalCode = (st.roll_number || st.personal_code || st.role_code || st.id || "").toUpperCase();
+    const isArchived = (st.status || "").toLowerCase() === "archived";
+    const nextStatus = isArchived ? "active" : "archived";
 
     try {
       const rawDir = localStorage.getItem(`erp_directory_${institutionCode}`);
       let dir = rawDir ? JSON.parse(rawDir) : [];
+      let foundInDir = false;
       dir = dir.map((m) => {
-        const mCode = (m.roll_number || m.personal_code || m.role_code || "").toUpperCase();
+        const mCode = (m.roll_number || m.personal_code || m.role_code || m.id || "").toUpperCase();
         if (mCode === personalCode) {
+          foundInDir = true;
           return { ...m, status: nextStatus };
         }
         return m;
       });
+      if (!foundInDir) {
+        dir.push({ ...st, status: nextStatus });
+      }
       localStorage.setItem(`erp_directory_${institutionCode}`, JSON.stringify(dir));
+
+      try {
+        if (supabase) {
+          await supabase
+            .from("profiles")
+            .update({ status: nextStatus })
+            .or(`role_code.eq.${personalCode},id.eq.${st.id}`);
+          await supabase
+            .from("students")
+            .update({ status: nextStatus })
+            .or(`roll_number.eq.${personalCode},id.eq.${st.id}`);
+        }
+      } catch (sbErr) {
+        console.warn("Supabase archive sync notice:", sbErr);
+      }
 
       logSecurityAction({
         action: isArchived ? "MEMBER_REACTIVATED" : "MEMBER_ARCHIVED",
@@ -486,6 +511,30 @@ export default function TrusteeDashboard() {
       showToast("Failed to update member status", "error");
     }
   };
+
+  const filteredStudents = students.filter((u) => {
+    const roleCode = (u.roll_number || u.personal_code || u.role_code || "").toUpperCase();
+    const resolvedRole = detectRoleFromId(roleCode, u.role);
+    if (memberFilter === "student") {
+      return (
+        resolvedRole === "student" &&
+        !roleCode.startsWith("HOD-") &&
+        !roleCode.startsWith("PRIN-") &&
+        !roleCode.startsWith("TR-") &&
+        !roleCode.startsWith("ACC-") &&
+        !roleCode.startsWith("TCH-") &&
+        !roleCode.startsWith("FAC-")
+      );
+    }
+    if (memberFilter === "teacher") {
+      return (
+        resolvedRole === "teacher" ||
+        roleCode.startsWith("TCH-") ||
+        roleCode.startsWith("FAC-")
+      );
+    }
+    return true;
+  });
 
   return (
     <div className="relative text-slate-200 min-h-full pb-10 font-sans">
@@ -717,6 +766,32 @@ export default function TrusteeDashboard() {
                   <p className="text-xs text-slate-400">Institutional members with verified Tier-1 and Tier-2 access codes</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-1 bg-slate-900/60 p-1 rounded-xl border border-slate-700 mr-2">
+                    <button
+                      onClick={() => setMemberFilter("all")}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        memberFilter === "all" ? "bg-purple-600 text-white shadow" : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      All ({students.length})
+                    </button>
+                    <button
+                      onClick={() => setMemberFilter("student")}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        memberFilter === "student" ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      🎓 Students Only
+                    </button>
+                    <button
+                      onClick={() => setMemberFilter("teacher")}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        memberFilter === "teacher" ? "bg-blue-600 text-white shadow" : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      👨‍🏫 Faculty Only
+                    </button>
+                  </div>
                   <button
                     onClick={() => {
                       setComprehensiveModalRole("student");
@@ -813,7 +888,7 @@ export default function TrusteeDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-700/50 text-sm">
-                      {students.map((st, idx) => {
+                      {filteredStudents.map((st, idx) => {
                         const matchedClass = classes.find((c) => c.id === st.class_id);
                         const displayClass = matchedClass
                           ? `Class ${matchedClass.name}`
@@ -821,7 +896,7 @@ export default function TrusteeDashboard() {
                         const personalCode = (st.roll_number || st.personal_code || `STU-${1001 + idx}`).toUpperCase();
                         const effectiveRole = detectRoleFromId(personalCode, st.role);
                         const mappedEmail = buildStandardErpEmail(institutionCode, personalCode);
-                        const isArchived = (st.status || "").toLowerCase().includes("archived") || (st.status || "").toLowerCase().includes("inactive");
+                        const isArchived = (st.status || "").toLowerCase() === "archived";
 
                         return (
                           <tr key={st.id || idx} className="hover:bg-slate-800/30 transition-colors">
@@ -862,21 +937,24 @@ export default function TrusteeDashboard() {
                               </span>
                             </td>
                             <td className="p-4 text-right">
-                              <button
-                                onClick={() => handleToggleArchiveMember(st)}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                  isArchived
-                                    ? "bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/40"
-                                    : "bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40"
-                                }`}
-                                title={
-                                  isArchived
-                                    ? "Restore member to active directory"
-                                    : "Safely deactivate/archive member (historical logs preserved)"
-                                }
-                              >
-                                {isArchived ? "✓ Reactivate" : "📦 Archive"}
-                              </button>
+                              <div className="flex items-center justify-end gap-4 p-2">
+                                <button
+                                  onClick={() => handleToggleArchiveMember(st)}
+                                  disabled={st.status === 'archived'}
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                    st.status === 'archived'
+                                      ? "bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed"
+                                      : "bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40 cursor-pointer"
+                                  }`}
+                                  title={
+                                    st.status === 'archived'
+                                      ? "Member is archived"
+                                      : "Safely deactivate/archive member (historical logs preserved)"
+                                  }
+                                >
+                                  {st.status === 'archived' ? 'Archive Done' : 'Archive'}
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -896,6 +974,7 @@ export default function TrusteeDashboard() {
           <CertificateManagementCard mode="trustee" />
         ) : activeTab === "upi_qr" ? (
           <div className="space-y-8">
+            <CustomLogoUploader schoolCode={institutionCode} />
             <SchoolUpiQrConfig
               schoolId={institutionCode}
               institutionName={user?.institution_name || "Apex International Academy"}
