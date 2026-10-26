@@ -18,7 +18,7 @@ export function detectRoleFromId(personalId = "", existingRole = "") {
   if (cleanId.startsWith("HOD") || cleanId.startsWith("TR-") || cleanId.startsWith("TRUSTEE")) return "trustee";
   if (cleanId.startsWith("TCH") || cleanId.startsWith("FAC") || cleanId.startsWith("TEACHER")) return "teacher";
   if (cleanId.startsWith("ACC")) return "accountant";
-  if (cleanId.startsWith("NON") || cleanId.startsWith("STF") || cleanId.startsWith("STAFF")) return "staff";
+  if (cleanId.startsWith("NON") || cleanId.startsWith("NTS") || cleanId.startsWith("STF") || cleanId.startsWith("STAFF")) return "staff";
   if (cleanId.startsWith("ADM") || cleanId.startsWith("SUPER")) return "admin";
 
   const cleanRole = String(existingRole || "").trim().toLowerCase();

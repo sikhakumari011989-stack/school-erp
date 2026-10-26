@@ -204,6 +204,30 @@ export default function TrusteeDashboard() {
         }
       });
 
+      // Merge Non-Teaching staff from erp_non_teaching_staff_${institutionCode}
+      try {
+        const rawNts = localStorage.getItem(`erp_non_teaching_staff_${institutionCode}`);
+        if (rawNts) {
+          const ntsStaff = JSON.parse(rawNts);
+          ntsStaff.forEach((s) => {
+            const key = s.customId || s.role_code || s.id;
+            if (key && !mergedMap.has(key)) {
+              mergedMap.set(key, {
+                id: key,
+                name: s.fullName || s.name || s.full_name,
+                full_name: s.fullName || s.name || s.full_name,
+                roll_number: key,
+                class_name: s.designation || s.category || "Campus Support Staff",
+                role: "staff",
+                phone: s.phone || "+91 9800000000",
+                email: s.email || `${String(key).toLowerCase()}@${institutionCode.toLowerCase()}.internal`,
+                status: s.status || "active",
+              });
+            }
+          });
+        }
+      } catch (ntsErr) {}
+
       const finalMembers = Array.from(mergedMap.values());
       setStudents(finalMembers);
     } catch (err) {
@@ -243,9 +267,11 @@ export default function TrusteeDashboard() {
       fetchFinancialStats();
     };
     window.addEventListener("erp-directory-updated", handleDirUpdate);
+    window.addEventListener("erp-non-teaching-updated", handleDirUpdate);
     window.addEventListener("erp-fee-ledger-updated", fetchFinancialStats);
     return () => {
       window.removeEventListener("erp-directory-updated", handleDirUpdate);
+      window.removeEventListener("erp-non-teaching-updated", handleDirUpdate);
       window.removeEventListener("erp-fee-ledger-updated", fetchFinancialStats);
     };
   }, [user?.institution_code, user?.school_id, institutionCode]);
@@ -523,7 +549,9 @@ export default function TrusteeDashboard() {
         !roleCode.startsWith("TR-") &&
         !roleCode.startsWith("ACC-") &&
         !roleCode.startsWith("TCH-") &&
-        !roleCode.startsWith("FAC-")
+        !roleCode.startsWith("FAC-") &&
+        !roleCode.startsWith("NTS-") &&
+        !roleCode.startsWith("NON-")
       );
     }
     if (memberFilter === "teacher") {
@@ -531,6 +559,15 @@ export default function TrusteeDashboard() {
         resolvedRole === "teacher" ||
         roleCode.startsWith("TCH-") ||
         roleCode.startsWith("FAC-")
+      );
+    }
+    if (memberFilter === "staff") {
+      return (
+        resolvedRole === "staff" ||
+        resolvedRole === "non_teaching" ||
+        roleCode.startsWith("NTS-") ||
+        roleCode.startsWith("NON-") ||
+        roleCode.startsWith("STAFF-")
       );
     }
     return true;
@@ -791,6 +828,14 @@ export default function TrusteeDashboard() {
                     >
                       👨‍🏫 Faculty Only
                     </button>
+                    <button
+                      onClick={() => setMemberFilter("staff")}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        memberFilter === "staff" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      🧹 Non-Teaching (NTS)
+                    </button>
                   </div>
                   <button
                     onClick={() => {
@@ -811,6 +856,16 @@ export default function TrusteeDashboard() {
                   >
                     <span>👨‍🏫</span>
                     <span>+ Onboard Faculty</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setComprehensiveModalRole("nts");
+                      setIsComprehensiveModalOpen(true);
+                    }}
+                    className="text-xs bg-purple-600 hover:bg-purple-500 border border-purple-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>🧹</span>
+                    <span>+ Onboard NTS</span>
                   </button>
                   <button
                     onClick={handleDownloadCredentialsSheet}
@@ -911,6 +966,14 @@ export default function TrusteeDashboard() {
                               ) : effectiveRole === "teacher" ? (
                                 <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-bold uppercase">
                                   Teacher
+                                </span>
+                              ) : effectiveRole === "accountant" || personalCode.startsWith("ACC") ? (
+                                <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase">
+                                  Accountant
+                                </span>
+                              ) : effectiveRole === "staff" || effectiveRole === "non_teaching" || personalCode.startsWith("NTS") || personalCode.startsWith("NON") ? (
+                                <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase">
+                                  Non-Teaching (NTS)
                                 </span>
                               ) : (
                                 <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase">

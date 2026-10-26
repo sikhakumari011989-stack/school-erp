@@ -95,15 +95,18 @@ export default function InstitutionalDirectory() {
         if (rawNonTeaching) {
           const nonTeachingStaff = JSON.parse(rawNonTeaching);
           nonTeachingStaff.forEach((s) => {
-            if (!staffMap.has(s.id)) {
-              staffMap.set(s.id, {
-                id: s.id,
-                name: s.fullName,
-                role: `${s.category} (${s.shiftTiming})`,
+            const key = s.customId || s.role_code || s.id;
+            const staffName = s.fullName || s.name || s.full_name || "Support Staff";
+            const roleDesc = s.designation || s.category || "Campus Support Staff";
+            if (!staffMap.has(key)) {
+              staffMap.set(key, {
+                id: key,
+                name: staffName,
+                role: s.shiftTiming ? `${roleDesc} (${s.shiftTiming})` : roleDesc,
                 dept: "Facilities & Support Services",
                 category: "Non-Teaching",
-                phone: s.phone,
-                email: `${s.fullName.toLowerCase().replace(/[^a-z0-9]/g, "")}@support.internal`,
+                phone: s.phone || "+91 98000 00000",
+                email: s.email || `${staffName.toLowerCase().replace(/[^a-z0-9]/g, "")}@support.internal`,
               });
             }
           });

@@ -50,6 +50,7 @@ export function generateFeeInvoicePDF({
     (() => {
       try {
         return (
+          localStorage.getItem(`erp_logo_${institutionCode}`) ||
           localStorage.getItem(`erp_school_logo_${institutionCode}`) ||
           localStorage.getItem("erp_school_logo_default") ||
           null
@@ -266,6 +267,7 @@ export function generateReportCardPDF({
     (() => {
       try {
         return (
+          localStorage.getItem(`erp_logo_${institutionCode}`) ||
           localStorage.getItem(`erp_school_logo_${institutionCode}`) ||
           localStorage.getItem("erp_school_logo_default") ||
           null
@@ -679,6 +681,7 @@ export function generatePayslipPDF({
     (() => {
       try {
         return (
+          localStorage.getItem(`erp_logo_${institutionCode}`) ||
           localStorage.getItem(`erp_school_logo_${institutionCode}`) ||
           localStorage.getItem("erp_school_logo_default") ||
           null

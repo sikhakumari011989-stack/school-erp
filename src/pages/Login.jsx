@@ -31,7 +31,7 @@ export const inferRoleFromCode = (code) => {
   if (upper.startsWith("HOD") || upper.startsWith("TR")) return "trustee";
   if (upper.startsWith("ACC")) return "accountant";
   if (upper.startsWith("TCH") || upper.startsWith("FAC")) return "teacher";
-  if (upper.startsWith("NON") || upper.startsWith("STF") || upper.startsWith("STAFF")) return "staff";
+  if (upper.startsWith("NON") || upper.startsWith("NTS") || upper.startsWith("STF") || upper.startsWith("STAFF")) return "staff";
   if (upper.startsWith("ADM") || upper.startsWith("SUPER")) return "admin";
   return "student";
 };
@@ -253,19 +253,19 @@ export default function Login({ isDirectPortal = false }) {
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-[#0F172A] relative overflow-hidden font-sans p-4">
+    <div className="flex min-h-screen w-full items-center justify-center bg-slate-900 relative overflow-hidden font-sans p-4">
       {/* Ambient Radial Lighting */}
-      <div className="absolute top-[-15%] left-[-10%] w-[600px] h-[600px] bg-blue-600/15 rounded-full blur-[180px] pointer-events-none"></div>
+      <div className="absolute top-[-15%] left-[-10%] w-[600px] h-[600px] bg-cyan-600/15 rounded-full blur-[180px] pointer-events-none"></div>
       <div className="absolute bottom-[-15%] right-[-10%] w-[600px] h-[600px] bg-purple-600/15 rounded-full blur-[180px] pointer-events-none"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-emerald-600/10 rounded-full blur-[200px] pointer-events-none"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[200px] pointer-events-none"></div>
 
-      <div className="bg-slate-900/70 backdrop-blur-2xl p-8 sm:p-10 rounded-[2.5rem] shadow-2xl border border-slate-700/60 max-w-lg w-full relative z-10 transition-all">
+      <div className="bg-white/5 backdrop-blur-2xl p-8 sm:p-10 rounded-[2.5rem] shadow-2xl shadow-cyan-500/10 border border-white/10 max-w-lg w-full relative z-10 transition-all duration-300 ease-in-out">
         {/* Brand Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <BrandLogo size="lg" className="shadow-xl shadow-indigo-600/30" />
+            <BrandLogo size="lg" className="shadow-xl shadow-cyan-500/20" />
           </div>
-          <span className="inline-block bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[11px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full mb-2">
+          <span className="inline-block bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 text-[11px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full mb-2">
             {isDirect ? "Dedicated Campus Portal" : "Multi-Tenant Enterprise ERP"}
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
@@ -273,8 +273,8 @@ export default function Login({ isDirectPortal = false }) {
           </h1>
           <p className="text-slate-400 text-xs sm:text-sm mt-1">
             {isDirect
-              ? "Enter your School Code and Personal ID (STU-*, TCH-*, ACC-*, HOD-*) to access your portal"
-              : "Enter your 2-Tier institutional credentials to access your command center"}
+              ? "Enter your School Code and Personal ID (PRIN, HOD, ACC, TCH, STU, NTS) to access your portal"
+              : "Enter your 2-Tier institutional credentials to access your isolated command center"}
           </p>
         </div>
 
@@ -296,7 +296,7 @@ export default function Login({ isDirectPortal = false }) {
                 type="text"
                 required
                 placeholder="e.g., PALGHAR-01"
-                className="w-full bg-slate-950/60 border border-slate-700 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono uppercase tracking-wider text-sm"
+                className="w-full bg-slate-950/60 border border-white/10 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-mono uppercase tracking-wider text-sm"
                 value={formData.institutionCode}
                 onChange={(e) => setFormData({ ...formData, institutionCode: e.target.value })}
               />
@@ -306,21 +306,21 @@ export default function Login({ isDirectPortal = false }) {
           {/* TIER 2: PERSONAL ROLE CODE */}
           <div>
             <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-widest mb-1.5 ml-1">
-              Tier 2: Personal Role ID (HOD, ACC, TCH, STU)
+              Tier 2: Personal Role ID (PRIN, HOD, ACC, TCH, STU, NTS)
             </label>
             <div className="relative">
               <span className="absolute left-4 top-3.5 text-slate-400">👤</span>
               <input
                 type="text"
                 required
-                placeholder="e.g., HOD-01, TCH-01, STU-101"
-                className="w-full bg-slate-950/60 border border-slate-700 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono uppercase tracking-wider text-sm"
+                placeholder="e.g., PRIN-01, HOD-01, ACC-01, TCH-01, STU-101, NTS-101"
+                className="w-full bg-slate-950/60 border border-white/10 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-mono uppercase tracking-wider text-sm"
                 value={formData.personalCode}
                 onChange={(e) => setFormData({ ...formData, personalCode: e.target.value })}
               />
             </div>
             <p className="text-[11px] text-slate-500 mt-1.5 font-mono truncate px-1">
-              Mapped Auth ID: <span className="text-blue-400/90">{buildStandardErpEmail(formData.institutionCode, formData.personalCode)}</span>
+              Mapped Auth ID: <span className="text-cyan-400/90">{buildStandardErpEmail(formData.institutionCode, formData.personalCode)}</span>
             </p>
           </div>
 
@@ -335,7 +335,7 @@ export default function Login({ isDirectPortal = false }) {
                 type="password"
                 required
                 placeholder="••••••••"
-                className="w-full bg-slate-950/60 border border-slate-700 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+                className="w-full bg-slate-950/60 border border-white/10 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all text-sm"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
@@ -345,7 +345,7 @@ export default function Login({ isDirectPortal = false }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black py-4 px-4 rounded-xl shadow-lg shadow-blue-600/30 disabled:opacity-50 transition-all mt-3 border border-blue-500/40 hover:scale-[1.01] cursor-pointer"
+            className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black py-4 px-4 rounded-xl shadow-lg shadow-cyan-500/20 disabled:opacity-50 transition-all duration-300 ease-in-out hover:scale-[1.02] mt-3 border border-white/20 cursor-pointer"
           >
             {loading ? "Verifying Credentials & Institutional Node..." : "Sign In to Institutional Portal 🚀"}
           </button>

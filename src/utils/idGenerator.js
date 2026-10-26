@@ -17,7 +17,10 @@ export function getNextMemberId(role = "student", directory = [], existingMember
   } else if (r === "accountant") {
     prefix = "ACC";
     maxNum = 0;
-  } else if (r === "staff" || r === "non_teaching") {
+  } else if (r === "nts" || r === "non_teaching" || r === "non-teaching") {
+    prefix = "NTS";
+    maxNum = 100;
+  } else if (r === "staff") {
     prefix = "NON";
     maxNum = 0;
   } else if (r === "trustee" || r === "principal") {
@@ -34,6 +37,7 @@ export function getNextMemberId(role = "student", directory = [], existingMember
       item.role_code ||
       item.roll_number ||
       item.personal_code ||
+      item.customId ||
       item.id ||
       ""
     ).toString().toUpperCase().trim();
@@ -48,9 +52,9 @@ export function getNextMemberId(role = "student", directory = [], existingMember
   });
 
   const nextNum = maxNum + 1;
-  if (prefix === "STU") {
-    // Format STU-101, STU-102 ...
-    return `STU-${nextNum}`;
+  if (prefix === "STU" || prefix === "NTS") {
+    // Format STU-101, NTS-101 ...
+    return `${prefix}-${nextNum}`;
   } else {
     // Format TCH-01, ACC-01, NON-01, PRIN-01 ...
     return `${prefix}-${String(nextNum).padStart(2, "0")}`;

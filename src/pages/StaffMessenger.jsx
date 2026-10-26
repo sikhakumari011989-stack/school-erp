@@ -118,6 +118,7 @@ export default function StaffMessenger() {
           code.startsWith("TCH-") ||
           code.startsWith("FAC-") ||
           code.startsWith("NON-") ||
+          code.startsWith("NTS-") ||
           code.startsWith("STF-") ||
           role === "teacher" ||
           role === "principal" ||
@@ -267,7 +268,7 @@ export default function StaffMessenger() {
     if (c.startsWith("ACC") || r === "accountant") {
       return { label: "Accountant", bg: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" };
     }
-    if (c.startsWith("NON") || c.startsWith("STF") || r === "staff") {
+    if (c.startsWith("NON") || c.startsWith("NTS") || c.startsWith("STF") || r === "staff") {
       return { label: "Operations Staff", bg: "bg-amber-500/20 text-amber-300 border-amber-500/30" };
     }
     return { label: "Faculty / Teacher", bg: "bg-blue-500/20 text-blue-300 border-blue-500/30" };

@@ -2,9 +2,9 @@ import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 
 /**
- * Visual SVG Icon: The EduSaaS Nexus Crest
- * Electric Indigo (#4F46E5) to Deep Violet (#7C3AED) squircle container
- * with crisp white Academic Shield & Mortarboard + Emerald/Cyan ascending data bars
+ * Visual SVG Icon: Premium Blue/Purple Gradient Book & Chart Vector Emblem
+ * Represents academic excellence & fiscal intelligence in the EduSaaS platform.
+ * Features an open knowledge book at the foundation and an ascending growth/analytics chart.
  */
 export function EduSaaSVectorEmblem({ className = "w-full h-full" }) {
   return (
@@ -13,100 +13,169 @@ export function EduSaaSVectorEmblem({ className = "w-full h-full" }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label="EduSaaS Nexus Crest"
+      aria-label="EduSaaS Book & Chart Emblem"
     >
       <defs>
+        {/* Futuristic Blue to Purple Linear Gradient */}
         <linearGradient
-          id="edusaas-indigo-violet"
+          id="edusaas-book-chart-grad"
           x1="0"
           y1="0"
           x2="64"
           y2="64"
           gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0%" stopColor="#4F46E5" />
+          <stop offset="0%" stopColor="#2563EB" />
+          <stop offset="45%" stopColor="#4F46E5" />
           <stop offset="100%" stopColor="#7C3AED" />
         </linearGradient>
+
+        {/* Neon Glow Cyan / Emerald Rim */}
         <linearGradient
-          id="edusaas-glow-border"
+          id="edusaas-neon-rim"
           x1="0"
           y1="0"
           x2="64"
           y2="64"
           gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.45" />
-          <stop offset="100%" stopColor="#34D399" stopOpacity="0.15" />
+          <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#34D399" stopOpacity="0.4" />
+        </linearGradient>
+
+        <linearGradient
+          id="chart-line-glow"
+          x1="18"
+          y1="34"
+          x2="48"
+          y2="16"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor="#38BDF8" />
+          <stop offset="50%" stopColor="#A78BFA" />
+          <stop offset="100%" stopColor="#34D399" />
         </linearGradient>
       </defs>
 
       {/* Rounded Squircle Container */}
       <rect
-        x="1"
-        y="1"
-        width="62"
-        height="62"
+        x="1.5"
+        y="1.5"
+        width="61"
+        height="61"
         rx="16"
-        fill="url(#edusaas-indigo-violet)"
-        stroke="rgba(255, 255, 255, 0.22)"
-        strokeWidth="1.5"
+        fill="url(#edusaas-book-chart-grad)"
+        stroke="rgba(255, 255, 255, 0.2)"
+        strokeWidth="1.2"
       />
       <rect
-        x="2.5"
-        y="2.5"
-        width="59"
-        height="59"
+        x="3"
+        y="3"
+        width="58"
+        height="58"
         rx="14.5"
-        stroke="url(#edusaas-glow-border)"
+        stroke="url(#edusaas-neon-rim)"
         strokeWidth="1"
+        strokeOpacity="0.6"
       />
 
-      {/* Academic Mortarboard Cap */}
-      {/* Top Diamond Rhombus */}
-      <path
-        d="M32 12.5L49.5 19.5L32 26.5L14.5 19.5L32 12.5Z"
-        fill="#FFFFFF"
+      {/* --- SECTION 1: ASCENDING GROWTH BARS & TREND LINE (CHART LOGIC) --- */}
+      {/* Bar 1 (Left - Blue/Cyan) */}
+      <rect
+        x="21"
+        y="25"
+        width="4"
+        height="12"
+        rx="1.5"
+        fill="#38BDF8"
+        fillOpacity="0.9"
       />
-      {/* Cap Skull Band Underneath */}
-      <path
-        d="M21 23.2V27.8C21 31.8 43 31.8 43 27.8V23.2L32 27.6L21 23.2Z"
-        fill="#E0E7FF"
+      {/* Bar 2 (Center - Violet/Purple) */}
+      <rect
+        x="29"
+        y="19"
+        width="4"
+        height="18"
+        rx="1.5"
+        fill="#A78BFA"
+        fillOpacity="0.9"
+      />
+      {/* Bar 3 (Right - Emerald) */}
+      <rect
+        x="37"
+        y="14"
+        width="4"
+        height="23"
+        rx="1.5"
+        fill="#34D399"
         fillOpacity="0.95"
       />
-      {/* Tassel Cord & Hanging Cyan Droplet */}
-      <path
-        d="M43.5 21.5L47.5 26.5V32"
-        stroke="#38BDF8"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="47.5" cy="33.5" r="1.5" fill="#38BDF8" />
 
-      {/* Geometric Academic Shield Contour */}
+      {/* Upward Trending Growth Vector Polyline */}
       <path
-        d="M19 29.5C19 41.5 32 48.5 32 48.5C32 48.5 45 41.5 45 29.5"
-        stroke="#FFFFFF"
+        d="M17 31 L23 23 L31 18 L39 12 L47 11"
+        stroke="url(#chart-line-glow)"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {/* Glowing Peak Node */}
+      <circle cx="47" cy="11" r="2.2" fill="#FFFFFF" />
+      <circle cx="47" cy="11" r="4.2" stroke="#34D399" strokeWidth="1" strokeOpacity="0.7" />
 
-      {/* Three Ascending Data Bars (Institutional Growth & Ledger Sync) */}
-      {/* Bar 1 (Left - Emerald #34D399) */}
-      <rect x="24.5" y="38" width="3.5" height="6" rx="1.5" fill="#34D399" />
-      {/* Bar 2 (Center - Cyan #38BDF8) */}
-      <rect x="30.25" y="33.5" width="3.5" height="10.5" rx="1.5" fill="#38BDF8" />
-      {/* Bar 3 (Right - Emerald #34D399) */}
-      <rect x="36" y="29" width="3.5" height="15" rx="1.5" fill="#34D399" />
-
-      {/* Dynamic Ledger Sync Node Ray */}
+      {/* --- SECTION 2: OPEN ACADEMIC KNOWLEDGE BOOK (BOOK LOGIC) --- */}
+      {/* Left Page (Spread with curvature) */}
       <path
-        d="M26.25 38L32 33.5L37.75 29"
-        stroke="#A7F3D0"
-        strokeWidth="1"
+        d="M32 44.5 C26 42 19 43 14 45.5 V35.5 C19 33 26 34 32 36.5 Z"
+        fill="#FFFFFF"
+        fillOpacity="0.95"
+      />
+      {/* Right Page (Spread with curvature) */}
+      <path
+        d="M32 44.5 C38 42 45 43 50 45.5 V35.5 C45 33 38 34 32 36.5 Z"
+        fill="#F1F5F9"
+        fillOpacity="0.95"
+      />
+      {/* Page Inset Seam Lines (Left Page Details) */}
+      <path
+        d="M18 38 C22 36.5 27 36 30 37.5"
+        stroke="#94A3B8"
+        strokeWidth="0.8"
         strokeLinecap="round"
-        strokeDasharray="1.5 1.5"
+      />
+      <path
+        d="M18 41 C22 39.5 27 39 30 40.5"
+        stroke="#94A3B8"
+        strokeWidth="0.8"
+        strokeLinecap="round"
+      />
+      {/* Page Inset Seam Lines (Right Page Details) */}
+      <path
+        d="M34 37.5 C37 36 42 36.5 46 38"
+        stroke="#94A3B8"
+        strokeWidth="0.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M34 40.5 C37 39 42 39.5 46 41"
+        stroke="#94A3B8"
+        strokeWidth="0.8"
+        strokeLinecap="round"
+      />
+
+      {/* Book Spine Center Ridge */}
+      <path
+        d="M32 36.5 V49"
+        stroke="#4F46E5"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      {/* Book Under-Cover Depth Contour */}
+      <path
+        d="M14 46 C21 44 28 45 32 48 C36 45 43 44 50 46"
+        stroke="#E2E8F0"
+        strokeWidth="1.5"
+        strokeLinecap="round"
       />
     </svg>
   );

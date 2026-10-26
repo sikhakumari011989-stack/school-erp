@@ -17,11 +17,19 @@ export default function ComprehensiveMemberModal({
   const { showToast } = useToast();
   const activeSchoolId = (schoolId || "CAMPUS-01").toUpperCase();
 
-  const [activeTab, setActiveTab] = useState(initialRole === "teacher" ? "teacher" : "student");
+  const [activeTab, setActiveTab] = useState(
+    initialRole === "accountant"
+      ? "accountant"
+      : initialRole === "teacher"
+      ? "teacher"
+      : initialRole === "nts" || initialRole === "staff" || initialRole === "non_teaching"
+      ? "nts"
+      : "student"
+  );
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Student Form State
+  // Student Form State (Biographical + Financial & Baseline tracking)
   const [studentForm, setStudentForm] = useState({
     name: "",
     customId: "",
@@ -32,7 +40,15 @@ export default function ComprehensiveMemberModal({
     dob: "",
     address: "",
     password: "password123",
+    totalFees: "",
+    initialPaid: "",
+    attendanceBaseline: "",
   });
+
+  // Dynamic calculations for student financial splitter
+  const studentTotalFees = parseFloat(studentForm.totalFees) || 0;
+  const studentInitialPaid = parseFloat(studentForm.initialPaid) || 0;
+  const studentRemainingBalance = Math.max(0, studentTotalFees - studentInitialPaid);
 
   // Teacher Form State
   const [teacherForm, setTeacherForm] = useState({
@@ -55,7 +71,17 @@ export default function ComprehensiveMemberModal({
     password: "password123",
   });
 
-  // Helper to get local directory
+  // Non-Teaching Staff (NTS) Form State
+  const [ntsForm, setNtsForm] = useState({
+    name: "",
+    customId: "",
+    designation: "Campus Administrator",
+    phone: "",
+    salary: "18000",
+    password: "password123",
+  });
+
+  // Helpers to get local directory & NTS registry
   const getLocalDirectory = () => {
     try {
       return JSON.parse(localStorage.getItem(`erp_directory_${activeSchoolId}`) || "[]");
@@ -64,17 +90,33 @@ export default function ComprehensiveMemberModal({
     }
   };
 
+  const getNonTeachingStaff = () => {
+    try {
+      return JSON.parse(localStorage.getItem(`erp_non_teaching_staff_${activeSchoolId}`) || "[]");
+    } catch {
+      return [];
+    }
+  };
+
   // Auto-generate suggested ID
   const generateSuggestedId = (role) => {
     const dir = getLocalDirectory();
-    return getNextMemberId(role, dir);
+    const nts = getNonTeachingStaff();
+    return getNextMemberId(role, dir, nts);
   };
 
   // Pre-populate suggested IDs on open or tab change
   useEffect(() => {
     if (isOpen) {
       setErrorMessage("");
-      const targetRole = initialRole === "accountant" ? "accountant" : initialRole === "teacher" ? "teacher" : "student";
+      const targetRole =
+        initialRole === "accountant"
+          ? "accountant"
+          : initialRole === "teacher"
+          ? "teacher"
+          : initialRole === "nts" || initialRole === "staff" || initialRole === "non_teaching"
+          ? "nts"
+          : "student";
       setActiveTab(targetRole);
 
       // Pre-populate student ID if empty
@@ -98,6 +140,13 @@ export default function ComprehensiveMemberModal({
         ...prev,
         customId: prev.customId ? prev.customId : suggestedAcc,
       }));
+
+      // Pre-populate NTS ID if empty
+      const suggestedNts = generateSuggestedId("nts");
+      setNtsForm((prev) => ({
+        ...prev,
+        customId: prev.customId ? prev.customId : suggestedNts,
+      }));
     }
   }, [isOpen, initialRole, activeSchoolId]);
 
@@ -112,9 +161,12 @@ export default function ComprehensiveMemberModal({
       setTeacherForm((prev) => ({ ...prev, customId: generateSuggestedId("teacher") }));
     } else if (tab === "accountant" && !accountantForm.customId) {
       setAccountantForm((prev) => ({ ...prev, customId: generateSuggestedId("accountant") }));
+    } else if (tab === "nts" && !ntsForm.customId) {
+      setNtsForm((prev) => ({ ...prev, customId: generateSuggestedId("nts") }));
     }
   };
 
+  // 1. SUBMIT: STUDENT ENROLLMENT WITH FEES & BASELINE
   const handleStudentSubmit = async (e) => {
     e.preventDefault();
     if (!studentForm.name.trim() || !studentForm.className?.trim()) {
@@ -134,6 +186,11 @@ export default function ComprehensiveMemberModal({
     const cleanName = studentForm.name.trim();
     const defaultPassword = studentForm.password.trim() || "password123";
     const mappedEmail = studentForm.email.trim() || buildStandardErpEmail(activeSchoolId, cleanCustomId);
+
+    const totalFeesNum = parseFloat(studentForm.totalFees) || 0;
+    const initialPaidNum = parseFloat(studentForm.initialPaid) || 0;
+    const remainingBalance = Math.max(0, totalFeesNum - initialPaidNum);
+    const attendanceBaseline = studentForm.attendanceBaseline ? parseFloat(studentForm.attendanceBaseline) : null;
 
     try {
       const newStudentRecord = {
@@ -155,6 +212,16 @@ export default function ComprehensiveMemberModal({
         school_id: activeSchoolId,
         status: "active",
         created_at: new Date().toISOString(),
+
+        // Financial & Admission Metrics
+        total_annual_fees: totalFeesNum,
+        annual_fees: totalFeesNum,
+        initial_amount_paid: initialPaidNum,
+        amount_paid: initialPaidNum,
+        remaining_balance: remainingBalance,
+        pending_fees: remainingBalance,
+        attendance_baseline: attendanceBaseline,
+        attendance_percentage: attendanceBaseline !== null ? attendanceBaseline : 100,
       };
 
       // 1. Cloud-First Enrollment into Supabase (profiles, students, and cloud directory)
@@ -163,16 +230,99 @@ export default function ComprehensiveMemberModal({
         member: newStudentRecord,
       });
 
+      // 2. Ledger Automation: If Initial Amount Paid > 0, generate approved fee receipt entry
+      if (initialPaidNum > 0) {
+        const today = new Date().toISOString().split("T")[0];
+        const receiptNo = `REC-${Date.now().toString().slice(-6)}`;
+        const invoiceNo = `INV-${Date.now().toString().slice(-6)}`;
+        const paymentMode = "Admission Counter Receipt (Direct)";
+
+        const approvedReceipt = {
+          id: receiptNo,
+          invoice_no: invoiceNo,
+          school_id: activeSchoolId,
+          student_name: cleanName,
+          roll_number: cleanCustomId,
+          class_name: studentForm.className.trim(),
+          amount: initialPaidNum,
+          total_due: totalFeesNum,
+          remaining_balance: remainingBalance,
+          payment_mode: paymentMode,
+          term: `Admission & Annual Tuition Fee (${studentForm.className.trim()})`,
+          title: `Admission & Annual Tuition Fee (${studentForm.className.trim()})`,
+          status: "paid", // Approved fee receipt
+          date: today,
+          receipt_tag: remainingBalance === 0 ? "FULL" : "PARTIAL",
+          receipt_type: remainingBalance === 0 ? "FULL" : "PARTIAL",
+          notes: `Admission fee payment. Total Annual: ₹${totalFeesNum}, Paid at Admission: ₹${initialPaidNum}, Remaining: ₹${remainingBalance}`,
+          created_at: new Date().toISOString(),
+        };
+
+        // Save to erp_fees_${schoolCode}
+        try {
+          const feesKey = `erp_fees_${activeSchoolId}`;
+          const currentFees = JSON.parse(localStorage.getItem(feesKey) || "[]");
+          currentFees.unshift(approvedReceipt);
+          localStorage.setItem(feesKey, JSON.stringify(currentFees));
+        } catch (e) {
+          console.warn("erp_fees storage notice:", e);
+        }
+
+        // Save to erp_fee_ledger_${schoolCode} & global erp_fee_ledger
+        try {
+          const ledgerKey = `erp_fee_ledger_${activeSchoolId}`;
+          const currentLedger = JSON.parse(localStorage.getItem(ledgerKey) || "[]");
+          currentLedger.unshift(approvedReceipt);
+          localStorage.setItem(ledgerKey, JSON.stringify(currentLedger));
+
+          const globalLedger = JSON.parse(localStorage.getItem("erp_fee_ledger") || "[]");
+          globalLedger.unshift(approvedReceipt);
+          localStorage.setItem("erp_fee_ledger", JSON.stringify(globalLedger));
+        } catch (e) {
+          console.warn("erp_fee_ledger storage notice:", e);
+        }
+
+        // Supabase cloud sync for fee ledger
+        try {
+          if (supabase) {
+            await supabase.from("fee_ledger").insert([
+              {
+                school_id: activeSchoolId,
+                student_name: cleanName,
+                class_name: studentForm.className.trim(),
+                amount: initialPaidNum,
+                status: "paid",
+                payment_mode: paymentMode,
+                razorpay_payment_id: receiptNo,
+                date: today,
+                term: approvedReceipt.term,
+              },
+            ]);
+          }
+        } catch (sbFeeErr) {
+          console.warn("Supabase fee_ledger sync notice:", sbFeeErr);
+        }
+
+        // Trigger updates across components
+        window.dispatchEvent(new Event("erp-fee-ledger-updated"));
+        window.dispatchEvent(new Event("erp-fees-updated"));
+      }
+
       // 3. Security audit logging
       logSecurityAction({
         action: AUDIT_ACTIONS.STUDENT_ADMITTED || "STUDENT_ENROLLED",
         entityType: "STUDENT",
         entityId: cleanCustomId,
-        details: `Enrolled student "${cleanName}" with custom code ${cleanCustomId} in ${studentForm.className}`,
+        details: `Enrolled student "${cleanName}" with custom code ${cleanCustomId} in ${studentForm.className}. Annual Fees: ₹${totalFeesNum}, Initial Paid: ₹${initialPaidNum}, Balance: ₹${remainingBalance}`,
         schoolId: activeSchoolId,
       });
 
-      showToast(`Enrolled student ${cleanName} (${cleanCustomId})! Login PIN: ${defaultPassword}`, "success");
+      showToast(
+        initialPaidNum > 0
+          ? `Enrolled student ${cleanName} (${cleanCustomId}) & posted ₹${initialPaidNum.toLocaleString()} fee receipt! Login PIN: ${defaultPassword}`
+          : `Enrolled student ${cleanName} (${cleanCustomId})! Login PIN: ${defaultPassword}`,
+        "success"
+      );
 
       // Reset form
       setStudentForm({
@@ -185,6 +335,9 @@ export default function ComprehensiveMemberModal({
         dob: "",
         address: "",
         password: "password123",
+        totalFees: "",
+        initialPaid: "",
+        attendanceBaseline: "",
       });
 
       if (onSuccess) onSuccess(newStudentRecord);
@@ -197,6 +350,7 @@ export default function ComprehensiveMemberModal({
     }
   };
 
+  // 2. SUBMIT: TEACHER ONBOARDING
   const handleTeacherSubmit = async (e) => {
     e.preventDefault();
     if (!teacherForm.name.trim()) {
@@ -237,13 +391,11 @@ export default function ComprehensiveMemberModal({
         created_at: new Date().toISOString(),
       };
 
-      // 1. Cloud-First Enrollment into Supabase (profiles, teachers, and cloud directory)
       await enrollMemberInCloud({
         schoolCode: activeSchoolId,
         member: newTeacherRecord,
       });
 
-      // 3. Security audit logging
       logSecurityAction({
         action: "FACULTY_ONBOARDED",
         entityType: "TEACHER",
@@ -254,7 +406,6 @@ export default function ComprehensiveMemberModal({
 
       showToast(`Onboarded faculty ${cleanName} (${cleanCustomId})! Login PIN: ${defaultPassword}`, "success");
 
-      // Reset form
       setTeacherForm({
         name: "",
         customId: generateSuggestedId("teacher"),
@@ -275,6 +426,7 @@ export default function ComprehensiveMemberModal({
     }
   };
 
+  // 3. SUBMIT: ACCOUNTANT ONBOARDING
   const handleAccountantSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
@@ -291,23 +443,12 @@ export default function ComprehensiveMemberModal({
       cleanCustomId = generateSuggestedId("accountant");
     }
 
-    // Check duplicate ID
-    const dir = getLocalDirectory();
-    const isDuplicate = dir.some(
-      (m) =>
-        (m.role_code || m.roll_number || m.personal_code || "").toUpperCase() === cleanCustomId &&
-        (m.school_id || "").toUpperCase() === activeSchoolId
-    );
-    if (isDuplicate) {
-      setErrorMessage(`Accountant ID "${cleanCustomId}" is already assigned in ${activeSchoolId}. Please pick a unique ID.`);
-      return;
-    }
-
     setSubmitting(true);
-    try {
-      const mappedEmail = accountantForm.email.trim() || buildStandardErpEmail(activeSchoolId, cleanCustomId);
-      const defaultPassword = accountantForm.password.trim() || "password123";
 
+    const defaultPassword = accountantForm.password.trim() || "password123";
+    const mappedEmail = accountantForm.email.trim() || buildStandardErpEmail(activeSchoolId, cleanCustomId);
+
+    try {
       const newAccountantRecord = {
         id: `mem_acc_${Date.now()}`,
         name: cleanName,
@@ -316,9 +457,9 @@ export default function ComprehensiveMemberModal({
         role_code: cleanCustomId,
         roll_number: cleanCustomId,
         personal_code: cleanCustomId,
-        class_name: "Financial Treasury",
-        department: "Accounts & Finance Department",
-        designation: accountantForm.designation.trim() || "Accounts Officer",
+        class_name: accountantForm.designation.trim() || "Head of Accounts & Treasury",
+        department: "Finance & Accounts",
+        designation: accountantForm.designation.trim() || "Head of Accounts & Treasury",
         phone: accountantForm.phone.trim(),
         email: mappedEmail,
         default_password: defaultPassword,
@@ -327,13 +468,11 @@ export default function ComprehensiveMemberModal({
         created_at: new Date().toISOString(),
       };
 
-      // 1. Cloud-First Enrollment
       await enrollMemberInCloud({
         schoolCode: activeSchoolId,
         member: newAccountantRecord,
       });
 
-      // 2. Security audit logging
       logSecurityAction({
         action: "ACCOUNTANT_ONBOARDED",
         entityType: "ACCOUNTANT",
@@ -363,9 +502,123 @@ export default function ComprehensiveMemberModal({
     }
   };
 
+  // 4. SUBMIT: NON-TEACHING STAFF (NTS) ONBOARDING
+  const handleNtsSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMessage("");
+
+    const cleanName = ntsForm.name.trim();
+    let cleanCustomId = (ntsForm.customId || "").trim().toUpperCase();
+    const designation = ntsForm.designation.trim() || "Campus Administrator";
+    const phone = ntsForm.phone.trim();
+    const salaryNum = parseFloat(ntsForm.salary) || 18000;
+    const defaultPassword = ntsForm.password.trim() || "password123";
+
+    if (!cleanName) {
+      setErrorMessage("Please enter the staff member's full name.");
+      return;
+    }
+
+    if (!cleanCustomId) {
+      cleanCustomId = generateSuggestedId("nts");
+    }
+
+    setSubmitting(true);
+
+    try {
+      // 1. Dedicated Non-Teaching Staff Record
+      const newNtsRecord = {
+        id: `staff_${Date.now()}`,
+        school_id: activeSchoolId,
+        fullName: cleanName,
+        name: cleanName,
+        full_name: cleanName,
+        customId: cleanCustomId,
+        role_code: cleanCustomId,
+        personal_code: cleanCustomId,
+        category: designation,
+        designation: designation,
+        phone: phone || "+91 98000 00000",
+        salary: `₹${salaryNum.toLocaleString("en-IN")}`,
+        base_salary: salaryNum,
+        shiftTiming: "General Shift",
+        joiningDate: new Date().toISOString().split("T")[0],
+        status: "Active Duty",
+        default_password: defaultPassword,
+        role: "staff",
+        created_at: new Date().toISOString(),
+      };
+
+      // Save to erp_non_teaching_staff_${schoolCode}
+      const ntsKey = `erp_non_teaching_staff_${activeSchoolId}`;
+      const existingNts = JSON.parse(localStorage.getItem(ntsKey) || "[]");
+      const updatedNts = [
+        newNtsRecord,
+        ...existingNts.filter((s) => (s.customId || s.role_code || s.id) !== cleanCustomId),
+      ];
+      localStorage.setItem(ntsKey, JSON.stringify(updatedNts));
+
+      // 2. Register in institutional directory (erp_directory_${schoolCode})
+      const dirRecord = {
+        id: newNtsRecord.id,
+        name: cleanName,
+        full_name: cleanName,
+        role: "staff",
+        role_code: cleanCustomId,
+        roll_number: cleanCustomId,
+        personal_code: cleanCustomId,
+        category: designation,
+        dept: `${designation} (Facilities & Support)`,
+        class_name: designation,
+        phone: phone || "+91 98000 00000",
+        email: `${cleanCustomId.toLowerCase()}@${activeSchoolId.toLowerCase()}.internal`,
+        school_id: activeSchoolId,
+        default_password: defaultPassword,
+        status: "active",
+        created_at: new Date().toISOString(),
+      };
+
+      await enrollMemberInCloud({
+        schoolCode: activeSchoolId,
+        member: dirRecord,
+      });
+
+      // 3. Security audit logging
+      logSecurityAction({
+        action: "NON_TEACHING_STAFF_ONBOARDED",
+        entityType: "STAFF",
+        entityId: cleanCustomId,
+        details: `Onboarded non-teaching personnel "${cleanName}" (${designation}) with ID ${cleanCustomId}, Salary: ₹${salaryNum}`,
+        schoolId: activeSchoolId,
+      });
+
+      window.dispatchEvent(new Event("erp-non-teaching-updated"));
+      window.dispatchEvent(new Event("erp-directory-updated"));
+
+      showToast(`Onboarded non-teaching staff ${cleanName} (${cleanCustomId})! Login Password: ${defaultPassword}`, "success");
+
+      setNtsForm({
+        name: "",
+        customId: generateSuggestedId("nts"),
+        designation: "Campus Administrator",
+        phone: "",
+        salary: "18000",
+        password: "password123",
+      });
+
+      if (onSuccess) onSuccess(newNtsRecord);
+      onClose();
+    } catch (err) {
+      console.error("Error onboarding non-teaching staff:", err);
+      setErrorMessage(err.message || "Failed to onboard non-teaching staff.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in overflow-y-auto">
-      <div className="bg-[#1E293B] border border-slate-700/80 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl relative my-8">
+      <div className="bg-[#1E293B] border border-slate-700/80 rounded-3xl p-5 sm:p-7 max-w-2xl w-full shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
           <div>
@@ -377,10 +630,12 @@ export default function ComprehensiveMemberModal({
                 ? "➕ Enroll New Student"
                 : activeTab === "teacher"
                 ? "➕ Onboard New Faculty"
-                : "➕ Onboard New Accountant"}
+                : activeTab === "accountant"
+                ? "➕ Onboard New Accountant"
+                : "➕ Onboard Non-Teaching Staff"}
             </h2>
             <p className="text-xs text-slate-400 mt-1">
-              Create complete biographical profiles with customizable 2-Tier access credentials.
+              Create complete biographical & financial profiles with customizable Tier-2 access credentials.
             </p>
           </div>
           <button
@@ -392,12 +647,12 @@ export default function ComprehensiveMemberModal({
           </button>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="grid grid-cols-3 gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 mb-6">
+        {/* Tab Switcher - 4 Tabs with Responsive Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 mb-6">
           <button
             type="button"
             onClick={() => handleTabSwitch("student")}
-            className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`py-2.5 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === "student"
                 ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-600/30 border border-emerald-400/40"
                 : "text-slate-400 hover:text-white"
@@ -409,7 +664,7 @@ export default function ComprehensiveMemberModal({
           <button
             type="button"
             onClick={() => handleTabSwitch("teacher")}
-            className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`py-2.5 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === "teacher"
                 ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 border border-blue-400/40"
                 : "text-slate-400 hover:text-white"
@@ -421,7 +676,7 @@ export default function ComprehensiveMemberModal({
           <button
             type="button"
             onClick={() => handleTabSwitch("accountant")}
-            className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`py-2.5 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === "accountant"
                 ? "bg-gradient-to-r from-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30 border border-amber-400/40"
                 : "text-slate-400 hover:text-white"
@@ -429,6 +684,18 @@ export default function ComprehensiveMemberModal({
           >
             <span>💰</span>
             <span className="truncate">Accountant (ACC)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabSwitch("nts")}
+            className={`py-2.5 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              activeTab === "nts"
+                ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 text-white shadow-lg shadow-purple-600/30 border border-purple-400/40"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <span>🧹</span>
+            <span className="truncate">Non-Teaching (NTS)</span>
           </button>
         </div>
 
@@ -440,7 +707,7 @@ export default function ComprehensiveMemberModal({
         )}
 
         {/* TAB 1: ENROLL NEW STUDENT */}
-        {activeTab === "student" ? (
+        {activeTab === "student" && (
           <form onSubmit={handleStudentSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Full Name */}
@@ -606,10 +873,97 @@ export default function ComprehensiveMemberModal({
               <textarea
                 rows={2}
                 placeholder="e.g. Flat 201, Jyodani Chaya, near Rajshri Hospital, Palghar 401404"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
                 value={studentForm.address}
                 onChange={(e) => setStudentForm({ ...studentForm, address: e.target.value })}
               />
+            </div>
+
+            {/* SUB-SECTION: FINANCIAL & ADMISSION DETAILS (2-COLUMN GRID) */}
+            <div className="p-4 rounded-2xl bg-slate-900/90 border border-emerald-500/30 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-emerald-400 text-sm">💵</span>
+                  <span className="text-xs font-black uppercase tracking-wider text-emerald-300">
+                    Financial & Admission Ledger
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  Instant Receipt
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Total Annual Fees */}
+                <div>
+                  <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1">
+                    Total Annual Fees (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="e.g. 45000"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white font-mono font-bold text-sm focus:outline-none focus:border-emerald-500"
+                    value={studentForm.totalFees}
+                    onChange={(e) => setStudentForm({ ...studentForm, totalFees: e.target.value })}
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Total agreed academic year fee</span>
+                </div>
+
+                {/* Initial Amount Paid */}
+                <div>
+                  <label className="block text-[11px] font-extrabold text-emerald-300 uppercase tracking-wider mb-1">
+                    Initial Amount Paid (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="e.g. 15000"
+                    className="w-full bg-slate-950 border border-emerald-500/50 rounded-xl px-3.5 py-2 text-emerald-300 font-mono font-bold text-sm focus:outline-none focus:border-emerald-400"
+                    value={studentForm.initialPaid}
+                    onChange={(e) => setStudentForm({ ...studentForm, initialPaid: e.target.value })}
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Generates approved receipt if &gt; 0</span>
+                </div>
+
+                {/* Remaining Balance (Read-Only) */}
+                <div>
+                  <label className="block text-[11px] font-extrabold text-rose-300 uppercase tracking-wider mb-1">
+                    Remaining Balance (₹) [Auto]
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      readOnly
+                      className="w-full bg-slate-950/70 border border-rose-500/40 rounded-xl px-3.5 py-2 text-rose-400 font-mono font-black text-sm cursor-not-allowed select-none"
+                      value={studentRemainingBalance}
+                    />
+                    <span className="absolute right-2.5 top-2 text-[9px] font-bold uppercase text-rose-400/80">
+                      {studentRemainingBalance === 0 ? "CLEAR" : "DUE"}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Auto: (Annual Fees − Paid Now)</span>
+                </div>
+
+                {/* Current Attendance Baseline (%) */}
+                <div>
+                  <label className="block text-[11px] font-extrabold text-cyan-300 uppercase tracking-wider mb-1">
+                    Attendance Baseline (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="e.g. 92 (Optional for transfers)"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-cyan-300 font-mono font-bold text-sm focus:outline-none focus:border-cyan-400"
+                    value={studentForm.attendanceBaseline}
+                    onChange={(e) => setStudentForm({ ...studentForm, attendanceBaseline: e.target.value })}
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Starting attendance baseline</span>
+                </div>
+              </div>
             </div>
 
             {/* Footer Actions */}
@@ -637,8 +991,10 @@ export default function ComprehensiveMemberModal({
               </button>
             </div>
           </form>
-        ) : (
-          /* TAB 2: ONBOARD NEW FACULTY */
+        )}
+
+        {/* TAB 2: ONBOARD NEW FACULTY */}
+        {activeTab === "teacher" && (
           <form onSubmit={handleTeacherSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Full Name */}
@@ -934,8 +1290,167 @@ export default function ComprehensiveMemberModal({
             </div>
           </form>
         )}
+
+        {/* TAB 4: ONBOARD NON-TEACHING STAFF (NTS) */}
+        {activeTab === "nts" && (
+          <form onSubmit={handleNtsSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Full Name */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ramesh Shankar Shinde"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500"
+                  value={ntsForm.name}
+                  onChange={(e) => setNtsForm({ ...ntsForm, name: e.target.value })}
+                />
+              </div>
+
+              {/* Custom NTS ID */}
+              <div>
+                <div className="flex justify-between items-center mb-1.5 ml-1">
+                  <label className="text-[11px] font-extrabold text-slate-300 uppercase tracking-wider">
+                    Custom Staff ID (NTS-*) *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setNtsForm((prev) => ({
+                        ...prev,
+                        customId: generateSuggestedId("nts"),
+                      }))
+                    }
+                    className="text-[10px] text-purple-400 hover:text-purple-300 font-bold cursor-pointer"
+                  >
+                    ⚡ Suggest Next
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. NTS-101 or NTS-102"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-purple-400 font-mono font-bold text-sm focus:outline-none focus:border-purple-500 uppercase tracking-wider"
+                  value={ntsForm.customId}
+                  onChange={(e) =>
+                    setNtsForm({
+                      ...ntsForm,
+                      customId: e.target.value.toUpperCase().replace(/\s+/g, "-"),
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Designation / Job Role */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Designation / Job Role *
+                </label>
+                <input
+                  type="text"
+                  required
+                  list="ntsDesignationSuggestions"
+                  placeholder="e.g. Admin, Peon, Security Guard, Driver"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500"
+                  value={ntsForm.designation}
+                  onChange={(e) => setNtsForm({ ...ntsForm, designation: e.target.value })}
+                />
+                <datalist id="ntsDesignationSuggestions">
+                  <option value="Campus Administrator" />
+                  <option value="Office Executive" />
+                  <option value="Senior Security Guard" />
+                  <option value="Peon / Support Staff" />
+                  <option value="Bus Driver / Transport" />
+                  <option value="Science Lab Assistant" />
+                  <option value="Housekeeping Supervisor" />
+                  <option value="Electrician / Maintenance" />
+                </datalist>
+              </div>
+
+              {/* Contact Phone */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Contact Phone (WhatsApp) *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="e.g. +91 98200 88990"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500 font-mono"
+                  value={ntsForm.phone}
+                  onChange={(e) => setNtsForm({ ...ntsForm, phone: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Base Monthly Salary */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-emerald-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Base Monthly Salary (₹) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    placeholder="e.g. 18000"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-emerald-400 font-mono font-bold text-sm focus:outline-none focus:border-purple-500"
+                    value={ntsForm.salary}
+                    onChange={(e) => setNtsForm({ ...ntsForm, salary: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Login Password */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Login Password / PIN *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="password123"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-amber-300 font-mono text-sm focus:outline-none focus:border-purple-500"
+                  value={ntsForm.password}
+                  onChange={(e) => setNtsForm({ ...ntsForm, password: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold text-xs cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white font-black px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-purple-600/30 transition-all cursor-pointer flex items-center gap-2 border border-purple-400/40"
+              >
+                {submitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Onboarding NTS...</span>
+                  </>
+                ) : (
+                  <span>➕ Onboard Non-Teaching Staff & Issue ID</span>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
 }
-
