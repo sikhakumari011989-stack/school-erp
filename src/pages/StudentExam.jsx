@@ -64,77 +64,80 @@ export default function StudentExam() {
       if (examsRaw) {
         setExams(JSON.parse(examsRaw));
       } else {
-        // Fallback default sample exam
-        const sample = [
-          {
-            id: "exam_demo_101",
-            title: "Periodic Test: General Science & Aptitude",
-            subject: "Science",
-            targetClass: "Class 10",
-            durationMinutes: 15,
-            passingPercentage: 40,
-            questions: [
-              {
-                id: "q_demo_1",
-                text: "What is the SI unit of electric current?",
-                options: ["Volt", "Ampere", "Ohm", "Watt"],
-                correctOption: 1,
-                positiveMarks: 4,
-                negativeMarks: 1,
-              },
-              {
-                id: "q_demo_2",
-                text: "Which gas is most abundant in the Earth's atmosphere?",
-                options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Argon"],
-                correctOption: 2,
-                positiveMarks: 4,
-                negativeMarks: 1,
-              },
-              {
-                id: "q_demo_3",
-                text: "What is the chemical formula of common baking soda?",
-                options: ["NaHCO3", "Na2CO3", "NaCl", "NaOH"],
-                correctOption: 0,
-                positiveMarks: 4,
-                negativeMarks: 1,
-              },
-            ],
-          },
-        ];
-        setExams(sample);
+        setExams([]);
       }
 
       const subsRaw = localStorage.getItem(`erp_exam_submissions_${schoolCode}`);
       if (subsRaw) {
         setSubmissions(JSON.parse(subsRaw));
+      } else {
+        setSubmissions([]);
       }
     } catch (e) {
       console.warn("Could not load exam data:", e);
+      setExams([]);
+      setSubmissions([]);
     }
   };
 
-  // Timer Countdown logic
+  // Server-Locked Tamper-Resistant Countdown logic
   useEffect(() => {
     if (activeExam && !examFinished) {
-      timerRef.current = setInterval(() => {
-        setTimeLeftSeconds((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            handleAutoSubmit();
-            return 0;
+      const sessionKey = `erp_exam_session_${activeExam.id}_${studentRoll}`;
+      
+      const checkAndTick = () => {
+        try {
+          const raw = localStorage.getItem(sessionKey);
+          let session = raw ? JSON.parse(raw) : null;
+          if (!session) {
+            session = {
+              startedAt: Date.now(),
+              durationMs: (activeExam.durationMinutes || 30) * 60 * 1000,
+              gracePeriodMs: 60 * 1000,
+            };
+            localStorage.setItem(sessionKey, JSON.stringify(session));
           }
-          return prev - 1;
-        });
-      }, 1000);
+
+          const now = Date.now();
+          const totalAllowedMs = (session.durationMs || 1800000) + (session.gracePeriodMs || 60000);
+          const elapsed = now - session.startedAt;
+          const remainingSec = Math.max(0, Math.floor((totalAllowedMs - elapsed) / 1000));
+
+          setTimeLeftSeconds(remainingSec);
+
+          if (remainingSec <= 0) {
+            if (timerRef.current) clearInterval(timerRef.current);
+            handleAutoSubmit();
+          }
+        } catch (e) {
+          console.warn("Timer check notice:", e);
+        }
+      };
+
+      // Initial check immediately
+      checkAndTick();
+      timerRef.current = setInterval(checkAndTick, 1000);
     }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [activeExam, examFinished]);
+  }, [activeExam, examFinished, studentRoll]);
 
-  // Start Exam
+  // Start Exam with Server-Locked Session Key
   const handleStartExam = (exam) => {
+    const sessionKey = `erp_exam_session_${exam.id}_${studentRoll}`;
+    const sessionData = {
+      startedAt: Date.now(),
+      durationMs: (exam.durationMinutes || 30) * 60 * 1000,
+      gracePeriodMs: 60 * 1000,
+    };
+    try {
+      localStorage.setItem(sessionKey, JSON.stringify(sessionData));
+    } catch (e) {
+      console.warn("Could not persist exam session:", e);
+    }
+
     setActiveExam(exam);
     setCurrentQuestionIndex(0);
     setSelectedAnswers({});
@@ -293,6 +296,10 @@ export default function StudentExam() {
     } catch (e) {
       console.warn("Marks ledger sync notice:", e);
     }
+
+    try {
+      localStorage.removeItem(`erp_exam_session_${activeExam.id}_${studentRoll}`);
+    } catch {}
 
     setLatestResult(submissionRecord);
     setExamFinished(true);

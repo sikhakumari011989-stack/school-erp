@@ -8,9 +8,9 @@ const ASSET_CATEGORIES = [
   "Laboratory Apparatus & Chemicals",
   "IT Hardware & Laptops",
   "Library Books & Volumes",
-  "School Buses & Fleet",
+  "Smart Classroom Projectors & AV",
   "Athletics & Sports Gear",
-  "Classroom Furniture & Audio-Visual",
+  "Classroom Furniture & Fixtures",
 ];
 
 export default function AssetRegistry({ schoolId: propSchoolId }) {
@@ -139,7 +139,7 @@ export default function AssetRegistry({ schoolId: propSchoolId }) {
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight">Asset & Inventory Registry</h2>
           <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-xl">
-            Audit and track campus property: laboratory equipment, laptops, library volumes, and school transport buses.
+            Audit and track campus property: laboratory equipment, laptops, library volumes, and digital classroom infrastructure.
           </p>
         </div>
         <button
@@ -170,9 +170,9 @@ export default function AssetRegistry({ schoolId: propSchoolId }) {
           </p>
         </div>
         <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-xl shadow-cyan-500/5">
-          <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest">School Transport Fleet</p>
+          <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest">IT & Lab Assets</p>
           <p className="text-2xl font-black text-cyan-400 mt-1">
-            {assets.filter((a) => a.category.includes("Buses")).length} Vehicles
+            {assets.filter((a) => a.category.includes("IT") || a.category.includes("Laboratory")).length} Items
           </p>
         </div>
       </div>

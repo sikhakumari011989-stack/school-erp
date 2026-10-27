@@ -272,9 +272,7 @@ export default function Login({ isDirectPortal = false }) {
             {isDirect ? "Student & Faculty Portal Login" : "Institutional Portal Login"}
           </h1>
           <p className="text-slate-400 text-xs sm:text-sm mt-1">
-            {isDirect
-              ? "Enter your School Code and Personal ID (PRIN, HOD, ACC, TCH, STU, NTS) to access your portal"
-              : "Enter your 2-Tier institutional credentials to access your isolated command center"}
+            Enter your secure institutional credentials to access your isolated command center
           </p>
         </div>
 
@@ -285,17 +283,17 @@ export default function Login({ isDirectPortal = false }) {
         )}
 
         <form onSubmit={handleLogin} className="space-y-4">
-          {/* TIER 1: INSTITUTION CODE */}
+          {/* TIER 1: INSTITUTION ACCESS CODE */}
           <div>
             <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-widest mb-1.5 ml-1">
-              Tier 1: Institution / School Code
+              Institution Access Code
             </label>
             <div className="relative">
               <span className="absolute left-4 top-3.5 text-slate-400">🏢</span>
               <input
                 type="text"
                 required
-                placeholder="e.g., PALGHAR-01"
+                placeholder="••••••••"
                 className="w-full bg-slate-950/60 border border-white/10 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-mono uppercase tracking-wider text-sm"
                 value={formData.institutionCode}
                 onChange={(e) => setFormData({ ...formData, institutionCode: e.target.value })}
@@ -303,25 +301,22 @@ export default function Login({ isDirectPortal = false }) {
             </div>
           </div>
 
-          {/* TIER 2: PERSONAL ROLE CODE */}
+          {/* TIER 2: PERSONAL CREDENTIAL ID */}
           <div>
             <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-widest mb-1.5 ml-1">
-              Tier 2: Personal Role ID (PRIN, HOD, ACC, TCH, STU, NTS)
+              Personal Credential ID
             </label>
             <div className="relative">
               <span className="absolute left-4 top-3.5 text-slate-400">👤</span>
               <input
                 type="text"
                 required
-                placeholder="e.g., PRIN-01, HOD-01, ACC-01, TCH-01, STU-101, NTS-101"
+                placeholder="••••••••"
                 className="w-full bg-slate-950/60 border border-white/10 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-mono uppercase tracking-wider text-sm"
                 value={formData.personalCode}
                 onChange={(e) => setFormData({ ...formData, personalCode: e.target.value })}
               />
             </div>
-            <p className="text-[11px] text-slate-500 mt-1.5 font-mono truncate px-1">
-              Mapped Auth ID: <span className="text-cyan-400/90">{buildStandardErpEmail(formData.institutionCode, formData.personalCode)}</span>
-            </p>
           </div>
 
           {/* PASSWORD */}

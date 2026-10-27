@@ -12,7 +12,7 @@ import PrincipalDashboard from "./pages/PrincipalDashboard";
 import AccountantDashboard from "./pages/AccountantDashboard";
 import TrusteeDashboard from "./pages/TrusteeDashboard";
 import StaffDashboard from "./pages/StaffDashboard";
-import SystemAudit from "./pages/SystemAudit";
+import AcademicCalendar from "./pages/AcademicCalendar";
 import InstitutionalDirectory from "./pages/InstitutionalDirectory";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import TeacherHomework from "./pages/TeacherHomework";
@@ -206,10 +206,10 @@ export default function App() {
               }
             />
             <Route
-              path="/admin/audit"
+              path="/admin/calendar"
               element={
                 <ProtectedRoute allowedRoles={["admin", "trustee", "principal"]}>
-                  <SystemAudit />
+                  <AcademicCalendar />
                 </ProtectedRoute>
               }
             />
@@ -276,7 +276,7 @@ export default function App() {
             <Route
               path="/accountant/dashboard"
               element={
-                <ProtectedRoute allowedRoles={["accountant", "admin"]}>
+                <ProtectedRoute allowedRoles={["accountant", "admin", "trustee", "principal"]}>
                   <AccountantDashboard />
                 </ProtectedRoute>
               }

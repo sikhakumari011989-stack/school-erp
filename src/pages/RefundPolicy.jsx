@@ -149,7 +149,7 @@ export default function RefundPolicy() {
               <span className="text-rose-400">4.</span> Student Tuition & Academy Fee Payments
             </h2>
             <p>
-              Please note that student tuition fee settlements, bus transport fees, and examination charges paid through the Student
+              Please note that student tuition fee settlements, ancillary development fees, and examination charges paid through the Student
               Portal are credited directly to the respective educational institution&apos;s linked merchant bank account.
             </p>
             <p className="text-slate-400 text-xs mt-2">

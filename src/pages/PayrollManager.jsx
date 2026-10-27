@@ -614,7 +614,7 @@ export default function PayrollManager() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">Special / Transport (₹)</label>
+                    <label className="block text-[11px] text-slate-400 mb-1">Special Allowance (₹)</label>
                     <input
                       type="number"
                       value={editSalaryForm.special}

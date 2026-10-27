@@ -218,7 +218,7 @@ export default function CctvFeedManager({ schoolId: propSchoolId }) {
                   <option value="Computer & Science Labs">Computer & Science Labs</option>
                   <option value="Playground & Sports Field">Playground & Sports Field</option>
                   <option value="Classroom Corridor Floor 1">Classroom Corridor Floor 1</option>
-                  <option value="Bus Parking Yard">Bus Parking Yard</option>
+                  <option value="Auditorium & Seminar Hall">Auditorium & Seminar Hall</option>
                 </select>
               </div>
 

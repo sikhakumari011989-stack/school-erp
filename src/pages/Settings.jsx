@@ -8,7 +8,7 @@ export default function Settings() {
   const [fees, setFees] = useState({
     tuition: 30000,
     exam: 5000,
-    transport: 10000
+    labEquipment: 10000
   });
 
   return (
@@ -65,9 +65,9 @@ export default function Settings() {
 
           <input
             className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white"
-            value={fees.transport}
-            onChange={(e) => setFees({ ...fees, transport: e.target.value })}
-            placeholder="Transport Fee"
+            value={fees.labEquipment}
+            onChange={(e) => setFees({ ...fees, labEquipment: e.target.value })}
+            placeholder="Laboratory & IT Fee"
           />
         </div>
 

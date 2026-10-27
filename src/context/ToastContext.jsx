@@ -1,17 +1,41 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useRef } from "react";
 
 const ToastContext = createContext(null);
 
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
+  const recentToastsRef = useRef(new Map()); // Map<message, timestamp>
 
   const showToast = useCallback((message, type = "success", duration = 4000) => {
-    const id = Date.now() + Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, message, type }]);
+    if (!message) return;
+    const cleanMsg = String(message).trim();
+    const now = Date.now();
 
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, duration);
+    // Strict deduplication: suppress identical message within 3 seconds
+    const lastSeen = recentToastsRef.current.get(cleanMsg);
+    if (lastSeen && now - lastSeen < 3000) {
+      return;
+    }
+    recentToastsRef.current.set(cleanMsg, now);
+
+    // Garbage collect stale keys in cache
+    for (const [msg, time] of recentToastsRef.current.entries()) {
+      if (now - time > 10000) {
+        recentToastsRef.current.delete(msg);
+      }
+    }
+
+    setToasts((prev) => {
+      // Also prevent duplicate message currently active in state array
+      if (prev.some((t) => t.message === cleanMsg)) {
+        return prev;
+      }
+      const id = now + Math.random().toString(36).substring(2, 9);
+      setTimeout(() => {
+        setToasts((curr) => curr.filter((t) => t.id !== id));
+      }, duration);
+      return [...prev, { id, message: cleanMsg, type }];
+    });
   }, []);
 
   const removeToast = useCallback((id) => {
@@ -62,4 +86,3 @@ export const useToast = () => {
   }
   return ctx;
 };
-

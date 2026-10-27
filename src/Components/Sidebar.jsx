@@ -81,7 +81,7 @@ export default function Sidebar() {
         { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
         { name: "Expense Tracker", path: "/accountant/expenses", icon: "🧾" },
         { name: "Institutional Directory", path: "/admin/directory", icon: "📞" },
-        { name: "Security Audit", path: "/admin/audit", icon: "⚙️" },
+        { name: "Academic Calendar", path: "/admin/calendar", icon: "📅" },
       ];
     } else if (roleType === "trustee") {
       return [
@@ -94,7 +94,7 @@ export default function Sidebar() {
         { name: "Expense Tracker", path: "/accountant/expenses", icon: "🧾" },
         { name: "Treasury Ledger", path: "/accountant/dashboard", icon: "💰" },
         { name: "Institutional Directory", path: "/admin/directory", icon: "📞" },
-        { name: "Security Audit", path: "/admin/audit", icon: "⚙️" },
+        { name: "Academic Calendar", path: "/admin/calendar", icon: "📅" },
       ];
     } else if (roleType === "accountant") {
       return [
@@ -128,7 +128,7 @@ export default function Sidebar() {
       return [
         { name: "Super Admin Hub", path: "/admin/dashboard", icon: "🛡️" },
         { name: "Principal Suite", path: "/principal/dashboard", icon: "🏛️" },
-        { name: "Trustee Audit", path: "/trustee/dashboard", icon: "📈" },
+        { name: "Trustee Suite", path: "/trustee/dashboard", icon: "📈" },
         { name: "Treasury Suite", path: "/accountant/dashboard", icon: "💰" },
         { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
         { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
@@ -137,7 +137,7 @@ export default function Sidebar() {
         { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
         { name: "Expense Tracker", path: "/accountant/expenses", icon: "🧾" },
         { name: "Online Exams (CBT)", path: "/teacher/exams", icon: "📝" },
-        { name: "Security Audit Vault", path: "/admin/audit", icon: "⚙️" },
+        { name: "Academic Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Institutional Directory", path: "/admin/directory", icon: "📞" },
       ];
     } else {

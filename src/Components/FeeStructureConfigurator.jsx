@@ -227,7 +227,7 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
               <option value="Annual">Annual General Fee</option>
               <option value="Quarterly">Quarterly Installment</option>
               <option value="Laboratory">Laboratory & Library</option>
-              <option value="Transport">Campus Transport Fleet</option>
+              <option value="IT Infrastructure">IT & Digital Learning</option>
               <option value="Examination">Board Examination Fee</option>
               <option value="Admission">One-Time Admission Fee</option>
             </select>

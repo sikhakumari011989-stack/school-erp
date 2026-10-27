@@ -5,6 +5,7 @@ import { supabase } from "../supabaseClient";
 import { StatSkeleton, TableSkeleton } from "../Components/Skeleton";
 import { logSecurityAction, AUDIT_ACTIONS } from "../utils/auditLogger";
 import NoticeBanner from "../Components/NoticeBanner";
+import CampusPulseCard from "../Components/CampusPulseCard";
 import { getNotices, publishNotice, deleteNotice } from "../utils/noticeService";
 import BulkImportModal from "../Components/BulkImportModal";
 import SchoolUpiQrConfig from "../Components/SchoolUpiQrConfig";
@@ -666,6 +667,11 @@ export default function TrusteeDashboard() {
 
         {/* ACTIVE INSTITUTION NOTICE BANNER */}
         <NoticeBanner role="Trustee" schoolId={institutionCode} />
+
+        {/* DAILY CAMPUS PULSE RADAR */}
+        <div className="mb-8">
+          <CampusPulseCard schoolCode={institutionCode} />
+        </div>
 
         {activeTab === "overview" ? (
           <div className="space-y-8">

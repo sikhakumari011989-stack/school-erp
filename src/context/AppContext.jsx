@@ -1,7 +1,8 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 
 export const AppContext = createContext();
+export const useAppContext = () => useContext(AppContext);
 
 /**
  * Resolves active tenant from subdomain, query params (?tenant=...), or storage

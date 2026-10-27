@@ -16,7 +16,7 @@ export default function GrievanceTicketing({ schoolId: propSchoolId }) {
   const [form, setForm] = useState({
     complainantName: "",
     relationship: "Parent / Guardian", // Parent | Student | Staff
-    category: "Academic Support", // Academic Support | Fee Query | Campus Transport | Facilities & Safety
+    category: "Academic Support", // Academic Support | Fee Query | Infrastructure & Labs | Facilities & Safety
     priority: "High", // Urgent | High | Normal
     subject: "",
     description: "",
@@ -283,7 +283,7 @@ export default function GrievanceTicketing({ schoolId: propSchoolId }) {
                           <option value="Head Accountant">Head Accountant</option>
                           <option value="Senior Academic Coordinator">Academic Coordinator</option>
                           <option value="Campus Facilities Officer">Facilities Officer</option>
-                          <option value="Transport Supervisor">Transport Supervisor</option>
+                          <option value="IT & Lab Administrator">IT & Lab Administrator</option>
                         </select>
                       )}
                     </td>
@@ -397,7 +397,7 @@ export default function GrievanceTicketing({ schoolId: propSchoolId }) {
                   >
                     <option value="Academic Support">Academic Support</option>
                     <option value="Fee Query & Receipts">Fee Query</option>
-                    <option value="Campus Transport">Campus Transport</option>
+                    <option value="Infrastructure & Labs">Infrastructure & Labs</option>
                     <option value="Facilities & Safety">Facilities & Safety</option>
                   </select>
                 </div>
@@ -425,7 +425,7 @@ export default function GrievanceTicketing({ schoolId: propSchoolId }) {
                 <input
                   type="text"
                   required
-                  placeholder="e.g., Bus route 4 timing delayed by 30 mins"
+                  placeholder="e.g., Chemistry lab apparatus requirement or fee receipt query"
                   value={form.subject}
                   onChange={(e) => setForm({ ...form, subject: e.target.value })}
                   className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400"

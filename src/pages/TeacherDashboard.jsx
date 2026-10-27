@@ -6,6 +6,7 @@ import { StatSkeleton } from "../Components/Skeleton";
 import { useToast } from "../context/ToastContext";
 import { generateReportCardPDF } from "../utils/pdfGenerator";
 import NoticeBanner from "../Components/NoticeBanner";
+import CampusPulseCard from "../Components/CampusPulseCard";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
 
 export default function TeacherDashboard() {
@@ -200,6 +201,11 @@ export default function TeacherDashboard() {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* DAILY CAMPUS PULSE RADAR */}
+        <div className="mb-8">
+          <CampusPulseCard schoolCode={user?.institution_code || user?.school_id || "CAMPUS-01"} />
         </div>
 
         {/* STATS */}

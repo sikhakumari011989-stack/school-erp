@@ -145,7 +145,7 @@ export default function Fees() {
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Fee Type</label>
                 <select className="w-full bg-[#0F172A] border border-slate-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
                   <option>Term 2 Tuition Fee</option>
-                  <option>Transport Fee</option>
+                  <option>Laboratory & Digital Learning Fee</option>
                   <option>Library Fine</option>
                   <option>Annual Sports Fee</option>
                 </select>

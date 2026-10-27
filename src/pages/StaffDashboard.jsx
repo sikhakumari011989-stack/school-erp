@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { logSecurityAction } from "../utils/auditLogger";
+import QRScannerModule from "../Components/QRScannerModule";
 
 export default function StaffDashboard() {
   const { user } = useContext(AppContext);
@@ -247,6 +248,16 @@ export default function StaffDashboard() {
             📝 My Leave Applications ({myLeaves.length})
           </button>
           <button
+            onClick={() => setActiveTab("scanner")}
+            className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === "scanner"
+                ? "bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/30"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            🔍 QR Gate & Equipment Scanner
+          </button>
+          <button
             onClick={() => setActiveTab("contacts")}
             className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === "contacts"
@@ -416,6 +427,11 @@ export default function StaffDashboard() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* TAB 4: WEB-FIRST QR GATE & ASSET SCANNER */}
+        {activeTab === "scanner" && (
+          <QRScannerModule schoolCode={schoolId} />
         )}
       </div>
 

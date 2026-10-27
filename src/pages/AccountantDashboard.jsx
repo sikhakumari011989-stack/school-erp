@@ -6,7 +6,9 @@ import { supabase } from "../supabaseClient";
 import { StatSkeleton, TableSkeleton } from "../Components/Skeleton";
 import { generateFeeInvoicePDF } from "../utils/pdfGenerator";
 import { notifyFeePaymentConfirmed } from "../utils/notifications";
-import { Eye, CheckCircle2, XCircle, AlertCircle, FileText, Image as ImageIcon } from "lucide-react";
+import { Eye, CheckCircle2, XCircle, AlertCircle, FileText, Image as ImageIcon, RotateCcw } from "lucide-react";
+import FeeRiskRadar from "../Components/FeeRiskRadar";
+import BankReconciliationWorkbench from "../Components/BankReconciliationWorkbench";
 
 export default function AccountantDashboard() {
   const navigate = useNavigate();
@@ -33,7 +35,53 @@ export default function AccountantDashboard() {
     payment_mode: "Cash / Cheque",
   });
 
+  // Maker-Checker Credit Note & Reversal State
+  const [reversalTarget, setReversalTarget] = useState(null);
+  const [reversalReason, setReversalReason] = useState("Scholarship / Fee Concession");
+  const [reversalAmount, setReversalAmount] = useState("");
+  const [submittingReversal, setSubmittingReversal] = useState(false);
+
   const schoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
+
+  const handleInitiateReversal = (item) => {
+    setReversalTarget(item);
+    setReversalAmount(String(item.amount || ""));
+    setReversalReason("Scholarship / Fee Concession");
+  };
+
+  const handleConfirmReversalRequest = (e) => {
+    e.preventDefault();
+    if (!reversalTarget || !reversalAmount) return;
+
+    setSubmittingReversal(true);
+    try {
+      const revRecord = {
+        id: `rev_${Date.now()}`,
+        receiptId: reversalTarget.id,
+        studentName: reversalTarget.student_name,
+        rollNumber: reversalTarget.roll_number || reversalTarget.student_roll || reversalTarget.student_name,
+        className: reversalTarget.class_name,
+        amount: Number(reversalAmount),
+        reason: reversalReason,
+        makerName: user?.name || user?.full_name || "Accountant",
+        makerRole: "Accountant",
+        status: "pending_approval",
+        requestedAt: new Date().toISOString(),
+      };
+
+      const revKey = `erp_fee_reversals_${schoolId}`;
+      const existing = JSON.parse(localStorage.getItem(revKey) || "[]");
+      localStorage.setItem(revKey, JSON.stringify([revRecord, ...existing]));
+
+      window.dispatchEvent(new Event("erp-fee-reversals-updated"));
+      showToast("Reversal request routed to Principal's Operational Approval Inbox (Maker-Checker enforced).", "success");
+      setReversalTarget(null);
+    } catch (err) {
+      showToast("Failed to submit reversal request.", "error");
+    } finally {
+      setSubmittingReversal(false);
+    }
+  };
 
   const fetchLedger = async () => {
     setLoading(true);
@@ -852,14 +900,24 @@ export default function AccountantDashboard() {
                                 </button>
                               </div>
                             ) : isPaid ? (
-                              <button
-                                onClick={() => handleDownloadTaxInvoice(item)}
-                                className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
-                                title="Download Tax Invoice PDF"
-                              >
-                                <span>🧾</span>
-                                <span>Tax Invoice</span>
-                              </button>
+                              <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                <button
+                                  onClick={() => handleDownloadTaxInvoice(item)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                                  title="Download Tax Invoice PDF"
+                                >
+                                  <span>🧾</span>
+                                  <span>Tax Invoice</span>
+                                </button>
+                                <button
+                                  onClick={() => handleInitiateReversal(item)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                                  title="Request Maker-Checker Credit Note / Reversal from Principal"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                  <span>Reversal</span>
+                                </button>
+                              </div>
                             ) : (
                               <button
                                 onClick={() => handleSendWhatsAppReminder(item)}
@@ -880,7 +938,94 @@ export default function AccountantDashboard() {
             )}
           </div>
         </div>
+
+        {/* PREDICTIVE FEE DEFAULTER RISK RADAR */}
+        <FeeRiskRadar schoolCode={schoolId} />
+
+        {/* 3-COLUMN BANK RECONCILIATION WORKBENCH & TALLY/GST ENGINE */}
+        <BankReconciliationWorkbench schoolCode={schoolId} />
       </div>
+
+      {/* MAKER-CHECKER REVERSAL & CREDIT NOTE REQUEST MODAL */}
+      {reversalTarget && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+            <div className="flex justify-between items-center border-b border-slate-700 pb-3">
+              <div>
+                <span className="text-[10px] font-mono font-bold uppercase text-amber-400">
+                  Maker-Checker Dual Control
+                </span>
+                <h3 className="font-extrabold text-white text-base">Request Fee Reversal / Credit Note</h3>
+              </div>
+              <button
+                onClick={() => setReversalTarget(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmReversalRequest} className="space-y-4 text-xs">
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                <p className="font-bold text-white text-sm">{reversalTarget.student_name}</p>
+                <p className="text-slate-400">{reversalTarget.class_name} • Receipt: #{reversalTarget.id}</p>
+                <p className="text-emerald-400 font-mono font-bold">Original Settled Amount: ₹{Number(reversalTarget.amount).toLocaleString()}</p>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  Adjustment Amount (₹) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={reversalAmount}
+                  onChange={(e) => setReversalAmount(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-amber-400 font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  Reason for Reversal / Adjustment *
+                </label>
+                <select
+                  value={reversalReason}
+                  onChange={(e) => setReversalReason(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-amber-400"
+                >
+                  <option value="Scholarship / Fee Concession">Scholarship / Fee Concession Granted</option>
+                  <option value="Duplicate Payment Refund">Duplicate Payment by Parent</option>
+                  <option value="Incorrect Amount Entered">Clerical Error / Incorrect Billing</option>
+                  <option value="Sibling Concession">Sibling Discount Adjustment</option>
+                  <option value="Withdrawal Settlement">Mid-term Scholar Relocation / Transfer</option>
+                </select>
+              </div>
+
+              <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 text-[11px] text-amber-200">
+                ⚠️ Notice: Receipts cannot be deleted directly. This request routes immediately to the Principal's Operational Approval Inbox for executive authorization.
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setReversalTarget(null)}
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReversal}
+                  className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-amber-600/30 cursor-pointer"
+                >
+                  {submittingReversal ? "Routing..." : "Submit to Principal"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* SCREENSHOT LIGHTBOX MODAL */}
       {previewReceipt && (

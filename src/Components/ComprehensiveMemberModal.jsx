@@ -1365,7 +1365,7 @@ export default function ComprehensiveMemberModal({
                   <option value="Office Executive" />
                   <option value="Senior Security Guard" />
                   <option value="Peon / Support Staff" />
-                  <option value="Bus Driver / Transport" />
+                  <option value="Campus Safety Officer" />
                   <option value="Science Lab Assistant" />
                   <option value="Housekeeping Supervisor" />
                   <option value="Electrician / Maintenance" />
