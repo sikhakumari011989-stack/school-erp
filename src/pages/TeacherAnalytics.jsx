@@ -168,7 +168,7 @@ export default function TeacherAnalytics() {
 
       generateReportCardPDF({
         tenant: {
-          name: user?.school_name || "Apex International Academy",
+          name: user?.school_name || user?.institution_name || "Institutional Campus",
           code: schoolId,
           address: user?.address || "Mahim Manohar Highway, Palghar 401404",
           email: user?.email || "principal@campus.edu",

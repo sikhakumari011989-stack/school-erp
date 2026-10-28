@@ -830,7 +830,7 @@ export async function getAllRegisteredSchools() {
   const defaultSchools = [
     {
       code: "PALGHAR-01",
-      name: "Apex International Academy",
+      name: "Palghar International Academy",
       adminName: "Dr. Vikramaditya Singhania",
       adminId: "HOD-01",
       institutionMode: "school",

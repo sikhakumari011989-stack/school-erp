@@ -55,7 +55,7 @@ export default function TeacherAttendance() {
         studentName: absentStudent.name,
         rollNumber: absentStudent.roll_number,
         guardianPhone: absentStudent.phone || "+91 98765 43210",
-        schoolName: tenant?.name || user?.institution_name || "Apex International Academy",
+        schoolName: tenant?.name || user?.institution_name || user?.school_name || "Institutional Campus",
         date: dateStr,
         className: batchName,
       });

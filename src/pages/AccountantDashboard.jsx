@@ -315,7 +315,7 @@ export default function AccountantDashboard() {
     try {
       generateFeeInvoicePDF({
         tenant: {
-          name: user?.school_name || "Apex International Academy",
+          name: user?.school_name || user?.institution_name || "Institutional Campus",
           code: schoolId,
           address: user?.address || "Flat number 201, Jivdani Chaya, Mahim Highway, Palghar 401404",
           email: user?.email || "accounts@campus.edu",
@@ -388,7 +388,7 @@ export default function AccountantDashboard() {
       try {
         generateFeeInvoicePDF({
           tenant: {
-            name: user?.school_name || "Apex International Academy",
+            name: user?.school_name || user?.institution_name || "Institutional Campus",
             code: schoolId,
             address: user?.address || "Flat number 201, Jivdani Chaya, Mahim Highway, Palghar 401404",
             email: user?.email || "accounts@campus.edu",

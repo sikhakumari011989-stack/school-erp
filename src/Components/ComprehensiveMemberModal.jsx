@@ -18,7 +18,9 @@ export default function ComprehensiveMemberModal({
   const activeSchoolId = (schoolId || "CAMPUS-01").toUpperCase();
 
   const [activeTab, setActiveTab] = useState(
-    initialRole === "accountant"
+    initialRole === "principal"
+      ? "principal"
+      : initialRole === "accountant"
       ? "accountant"
       : initialRole === "teacher"
       ? "teacher"
@@ -57,6 +59,7 @@ export default function ComprehensiveMemberModal({
     subject: "",
     phone: "",
     email: "",
+    salary: "45000",
     joiningDate: new Date().toISOString().split("T")[0],
     password: "password123",
   });
@@ -67,9 +70,44 @@ export default function ComprehensiveMemberModal({
     customId: "",
     phone: "",
     email: "",
+    salary: "40000",
     designation: "Head of Accounts & Treasury",
     password: "password123",
   });
+
+  // Principal (PRIN) Form State
+  const [principalForm, setPrincipalForm] = useState({
+    name: "",
+    customId: "",
+    designation: "Head of School / Executive Principal",
+    phone: "",
+    email: "",
+    salary: "75000",
+    password: "password123",
+  });
+
+  // Mandatory Salary Initialization Helper: Writes directly to Payroll Engine
+  const syncSalaryToPayroll = (memberId, baseSalary) => {
+    try {
+      const key = `erp_salary_structures_${activeSchoolId}`;
+      const structures = JSON.parse(localStorage.getItem(key) || "{}");
+      const sal = Number(baseSalary) || 35000;
+      structures[memberId] = {
+        basic: sal,
+        hra: Math.round(sal * 0.3),
+        da: Math.round(sal * 0.1),
+        special: Math.round(sal * 0.1),
+        pf: 1800,
+        professionalTax: 200,
+        tds: sal > 50000 ? Math.round(sal * 0.05) : 0,
+        leaveDeduction: 0,
+      };
+      localStorage.setItem(key, JSON.stringify(structures));
+      window.dispatchEvent(new CustomEvent("erp-payroll-updated"));
+    } catch (e) {
+      console.warn("Payroll salary sync notice:", e);
+    }
+  };
 
   // Non-Teaching Staff (NTS) Form State
   const [ntsForm, setNtsForm] = useState({
@@ -147,6 +185,13 @@ export default function ComprehensiveMemberModal({
         ...prev,
         customId: prev.customId ? prev.customId : suggestedNts,
       }));
+
+      // Pre-populate Principal ID if empty
+      const suggestedPrin = generateSuggestedId("principal");
+      setPrincipalForm((prev) => ({
+        ...prev,
+        customId: prev.customId ? prev.customId : suggestedPrin,
+      }));
     }
   }, [isOpen, initialRole, activeSchoolId]);
 
@@ -163,6 +208,8 @@ export default function ComprehensiveMemberModal({
       setAccountantForm((prev) => ({ ...prev, customId: generateSuggestedId("accountant") }));
     } else if (tab === "nts" && !ntsForm.customId) {
       setNtsForm((prev) => ({ ...prev, customId: generateSuggestedId("nts") }));
+    } else if (tab === "principal" && !principalForm.customId) {
+      setPrincipalForm((prev) => ({ ...prev, customId: generateSuggestedId("principal") }));
     }
   };
 
@@ -396,6 +443,8 @@ export default function ComprehensiveMemberModal({
         member: newTeacherRecord,
       });
 
+      syncSalaryToPayroll(cleanCustomId, teacherForm.salary);
+
       logSecurityAction({
         action: "FACULTY_ONBOARDED",
         entityType: "TEACHER",
@@ -472,6 +521,8 @@ export default function ComprehensiveMemberModal({
         schoolCode: activeSchoolId,
         member: newAccountantRecord,
       });
+
+      syncSalaryToPayroll(cleanCustomId, accountantForm.salary);
 
       logSecurityAction({
         action: "ACCOUNTANT_ONBOARDED",
@@ -583,6 +634,8 @@ export default function ComprehensiveMemberModal({
         member: dirRecord,
       });
 
+      syncSalaryToPayroll(cleanCustomId, salaryNum);
+
       // 3. Security audit logging
       logSecurityAction({
         action: "NON_TEACHING_STAFF_ONBOARDED",
@@ -616,6 +669,85 @@ export default function ComprehensiveMemberModal({
     }
   };
 
+
+  // 5. SUBMIT: PRINCIPAL ONBOARDING
+  const handlePrincipalSubmit = async (e) => {
+    e.preventDefault();
+    if (!principalForm.name.trim()) {
+      setErrorMessage("Please enter the Principal's full name.");
+      return;
+    }
+    const cleanName = principalForm.name.trim();
+    let cleanCustomId = (principalForm.customId || "").trim().toUpperCase();
+    if (!cleanCustomId) {
+      cleanCustomId = generateSuggestedId("principal");
+    }
+    setSubmitting(true);
+    setErrorMessage("");
+
+    const defaultPassword = principalForm.password.trim() || "password123";
+    const mappedEmail = principalForm.email.trim() || buildStandardErpEmail(activeSchoolId, cleanCustomId);
+    const salaryNum = parseFloat(principalForm.salary) || 75000;
+
+    try {
+      const newPrincipalRecord = {
+        id: `mem_prin_${Date.now()}`,
+        name: cleanName,
+        full_name: cleanName,
+        role: "principal",
+        role_code: cleanCustomId,
+        roll_number: cleanCustomId,
+        personal_code: cleanCustomId,
+        class_name: "Executive Administration",
+        dept: "Executive Leadership & Academics",
+        designation: principalForm.designation.trim() || "Head of School / Executive Principal",
+        phone: principalForm.phone.trim() || "+91 98000 00000",
+        email: mappedEmail,
+        default_password: defaultPassword,
+        base_salary: salaryNum,
+        salary: `₹${salaryNum.toLocaleString("en-IN")}`,
+        school_id: activeSchoolId,
+        status: "active",
+        created_at: new Date().toISOString(),
+      };
+
+      await enrollMemberInCloud({
+        schoolCode: activeSchoolId,
+        member: newPrincipalRecord,
+      });
+
+      syncSalaryToPayroll(cleanCustomId, salaryNum);
+
+      logSecurityAction({
+        action: "PRINCIPAL_ONBOARDED",
+        entityType: "PRINCIPAL",
+        entityId: cleanCustomId,
+        details: `Onboarded Principal "${cleanName}" with ID ${cleanCustomId}, Base Salary: ₹${salaryNum}`,
+        schoolId: activeSchoolId,
+      });
+
+      showToast(`Onboarded Principal ${cleanName} (${cleanCustomId})! Login PIN: ${defaultPassword}`, "success");
+
+      setPrincipalForm({
+        name: "",
+        customId: generateSuggestedId("principal"),
+        designation: "Head of School / Executive Principal",
+        phone: "",
+        email: "",
+        salary: "75000",
+        password: "password123",
+      });
+
+      if (onSuccess) onSuccess(newPrincipalRecord);
+      onClose();
+    } catch (err) {
+      console.error("Error onboarding principal:", err);
+      setErrorMessage(err.message || "Failed to onboard principal.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in overflow-y-auto">
       <div className="bg-[#1E293B] border border-slate-700/80 rounded-3xl p-5 sm:p-7 max-w-2xl w-full shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto">
@@ -632,6 +764,8 @@ export default function ComprehensiveMemberModal({
                 ? "➕ Onboard New Faculty"
                 : activeTab === "accountant"
                 ? "➕ Onboard New Accountant"
+                : activeTab === "principal"
+                ? "➕ Onboard New Principal"
                 : "➕ Onboard Non-Teaching Staff"}
             </h2>
             <p className="text-xs text-slate-400 mt-1">
@@ -648,7 +782,7 @@ export default function ComprehensiveMemberModal({
         </div>
 
         {/* Tab Switcher - 4 Tabs with Responsive Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 mb-6">
           <button
             type="button"
             onClick={() => handleTabSwitch("student")}
@@ -697,6 +831,18 @@ export default function ComprehensiveMemberModal({
             <span>🧹</span>
             <span className="truncate">Non-Teaching (NTS)</span>
           </button>
+          <button
+            type="button"
+            onClick={() => handleTabSwitch("principal")}
+            className={`py-2.5 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              activeTab === "principal"
+                ? "bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white shadow-lg shadow-cyan-600/30 border border-cyan-400/40"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <span>🏛️</span>
+            <span className="truncate">Principal (PRIN)</span>
+          </button>
         </div>
 
         {errorMessage && (
@@ -704,6 +850,156 @@ export default function ComprehensiveMemberModal({
             <span>⚠️</span>
             <span>{errorMessage}</span>
           </div>
+        )}
+
+
+        {/* TAB 5: ONBOARD NEW PRINCIPAL (PRIN) */}
+        {activeTab === "principal" && (
+          <form onSubmit={handlePrincipalSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Full Name */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Principal Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Dr. Sikha K. Sharma"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500"
+                  value={principalForm.name}
+                  onChange={(e) => setPrincipalForm({ ...principalForm, name: e.target.value })}
+                />
+              </div>
+
+              {/* Custom Principal ID */}
+              <div>
+                <div className="flex justify-between items-center mb-1.5 ml-1">
+                  <label className="text-[11px] font-extrabold text-slate-300 uppercase tracking-wider">
+                    Custom Principal ID (PRIN-*) *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPrincipalForm((prev) => ({
+                        ...prev,
+                        customId: generateSuggestedId("principal"),
+                      }))
+                    }
+                    className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold cursor-pointer"
+                  >
+                    ⚡ Suggest Next
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. PRIN-01"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-cyan-400 font-mono font-bold text-sm focus:outline-none focus:border-cyan-500 uppercase tracking-wider"
+                  value={principalForm.customId}
+                  onChange={(e) =>
+                    setPrincipalForm({
+                      ...principalForm,
+                      customId: e.target.value.toUpperCase().replace(/\s+/g, "-"),
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Designation */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Designation / Role Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Head of School / Executive Principal"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500"
+                  value={principalForm.designation}
+                  onChange={(e) => setPrincipalForm({ ...principalForm, designation: e.target.value })}
+                />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Contact Phone (WhatsApp) *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="e.g. +91 98200 99887"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500 font-mono"
+                  value={principalForm.phone}
+                  onChange={(e) => setPrincipalForm({ ...principalForm, phone: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Initial Monthly Base Salary */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-emerald-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Initial Monthly Base Salary (₹) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    placeholder="e.g. 75000"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-emerald-400 font-mono font-bold text-sm focus:outline-none focus:border-cyan-500"
+                    value={principalForm.salary}
+                    onChange={(e) => setPrincipalForm({ ...principalForm, salary: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Login Password */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Login Password / PIN *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="password123"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-amber-300 font-mono text-sm focus:outline-none focus:border-cyan-500"
+                  value={principalForm.password}
+                  onChange={(e) => setPrincipalForm({ ...principalForm, password: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold text-xs cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-black px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-cyan-600/30 transition-all cursor-pointer flex items-center gap-2 border border-cyan-400/40"
+              >
+                {submitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Onboarding Principal...</span>
+                  </>
+                ) : (
+                  <span>➕ Onboard Principal & Issue PRIN Credentials</span>
+                )}
+              </button>
+            </div>
+          </form>
         )}
 
         {/* TAB 1: ENROLL NEW STUDENT */}
@@ -1093,6 +1389,25 @@ export default function ComprehensiveMemberModal({
                   value={teacherForm.email}
                   onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })}
                 />
+              </div>
+
+              {/* Base Monthly Salary */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-emerald-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Initial Monthly Base Salary (₹) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    placeholder="e.g. 45000"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-emerald-400 font-mono font-bold text-sm focus:outline-none focus:border-blue-500"
+                    value={teacherForm.salary}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, salary: e.target.value })}
+                  />
+                </div>
               </div>
 
               {/* Joining Date */}

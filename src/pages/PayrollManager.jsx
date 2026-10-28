@@ -44,7 +44,7 @@ export default function PayrollManager() {
     tenant?.name ||
     user?.institution_name ||
     user?.institutionName ||
-    "Apex International Academy";
+    "Institutional Campus";
 
   // Selected Pay Period
   const [selectedMonth, setSelectedMonth] = useState("October");
@@ -649,7 +649,7 @@ export default function PayrollManager() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">TDS / Income Tax (₹)</label>
+                    <label className="block text-[11px] text-slate-400 mb-1">Section 192 Salary TDS (₹)</label>
                     <input
                       type="number"
                       value={editSalaryForm.tds}

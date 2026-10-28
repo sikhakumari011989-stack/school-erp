@@ -16,8 +16,8 @@ export default function JoinSchool() {
 
   const [loading, setLoading] = useState(false);
   const [schools, setSchools] = useState([
-    { code: "CAMPUS-01", name: "Apex International Academy" },
-    { code: "APEX-INTERNATIONAL", name: "Apex International School" },
+    { code: "CAMPUS-01", name: "Greenwood International Academy" },
+    { code: "PALGHAR-01", name: "Palghar International School" },
   ]);
 
   const [formData, setFormData] = useState({

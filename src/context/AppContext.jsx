@@ -64,8 +64,8 @@ export const AppProvider = ({ children }) => {
   });
 
   const [tenant, setTenant] = useState({
-    id: "campus-default-node",
-    name: "EduSaaS Institutional Node",
+    id: "campus-default",
+    name: "Institutional Campus",
     code: "CAMPUS-01",
     address: "Flat number 201, Jivdani Chaya, near Rajshree Hospital, beside Kalavati Mandir, Mahim Manohar Highway, Palghar 401404",
     city: "Palghar",
@@ -89,7 +89,7 @@ export const AppProvider = ({ children }) => {
       if (data) {
         const resolved = {
           id: data.id,
-          name: data.name || "Apex International Academy",
+          name: data.name || "Institutional Campus",
           code: data.code || code,
           city: data.city || "Mumbai",
           state: data.state || "Maharashtra",

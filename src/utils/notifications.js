@@ -154,7 +154,7 @@ export async function notifyAttendanceAbsent({
   studentName,
   rollNumber = "N/A",
   guardianPhone = "+91 98765 43210",
-  schoolName = "Apex International Academy",
+  schoolName = "Institutional Campus",
   date = new Date().toLocaleDateString("en-IN"),
   className = "10th Standard",
 }) {
@@ -181,7 +181,7 @@ export async function notifyFeePaymentConfirmed({
   amount,
   invoiceNo,
   guardianPhone = "+91 98765 43210",
-  schoolName = "Apex International Academy",
+  schoolName = "Institutional Campus",
   date = new Date().toLocaleDateString("en-IN"),
   paymentId = "PAY-REF",
 }) {

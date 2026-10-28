@@ -1,3 +1,30 @@
+export function resolveInstitutionName(tenant = {}) {
+  const isInvalid = (str) => !str || typeof str !== "string" || str.toLowerCase().includes("apex") || str.toLowerCase().includes("institutional node");
+
+  if (!isInvalid(tenant.name)) return tenant.name;
+  if (!isInvalid(tenant.institution_name)) return tenant.institution_name;
+  if (!isInvalid(tenant.institutionName)) return tenant.institutionName;
+  if (!isInvalid(tenant.schoolName)) return tenant.schoolName;
+  if (!isInvalid(tenant.school_name)) return tenant.school_name;
+
+  try {
+    if (typeof window !== "undefined") {
+      const savedUser = localStorage.getItem("erp_session_user") || localStorage.getItem("erp_demo_session");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (!isInvalid(parsed.institution_name)) return parsed.institution_name;
+        if (!isInvalid(parsed.school_name)) return parsed.school_name;
+        if (!isInvalid(parsed.schoolName)) return parsed.schoolName;
+        if (!isInvalid(parsed.name) && (parsed.role === "admin" || parsed.role === "principal")) return parsed.name;
+      }
+      const activeTenant = localStorage.getItem("erp_active_tenant_name");
+      if (!isInvalid(activeTenant)) return activeTenant;
+    }
+  } catch {}
+
+  return "INSTITUTION CAMPUS";
+}
+
 /**
  * Dynamic PDF Generator Utility
  * Uses jsPDF and jspdf-autotable to produce official institutional Tax Invoices and Academic Report Cards
@@ -71,7 +98,7 @@ export function drawCryptoSealAndQR(doc, { docType = "TAX_INVOICE", id = "DOC-01
   doc.setTextColor(100, 116, 139);
   doc.text(`Doc: ${docType}`, textX, y + 10);
   doc.text(`Ref: ${id}`, textX, y + 14);
-  doc.text(`Node: ${institutionCode}`, textX, y + 18);
+  doc.text(`Code: ${institutionCode}`, textX, y + 18);
 
   doc.setFont("courier", "bold");
   doc.setFontSize(5);
@@ -80,6 +107,8 @@ export function drawCryptoSealAndQR(doc, { docType = "TAX_INVOICE", id = "DOC-01
   doc.setFont("helvetica", "normal");
   doc.text("DPDP-2023 Compliant", textX, y + 26);
 }
+
+export const generateFeeReceiptPDF = generateFeeInvoicePDF;
 
 /**
  * Generates an official, branded Institutional Fee Tax Invoice
@@ -95,7 +124,7 @@ export function generateFeeInvoicePDF({
     format: "a4",
   });
 
-  const institutionName = tenant.name || "Apex International Academy";
+  const institutionName = resolveInstitutionName(tenant);
   const institutionCode = tenant.code || "CAMPUS-01";
   const institutionAddress = tenant.address || "Flat number 201, Jivdani Chaya, near Rajshree Hospital, beside Kalavati Mandir, Mahim Manohar Highway, Palghar 401404";
   const contactEmail = tenant.email || "sikhakumari011989@gmail.com";
@@ -319,7 +348,7 @@ export function generateReportCardPDF({
     format: "a4",
   });
 
-  const institutionName = tenant.name || "Apex International Academy";
+  const institutionName = resolveInstitutionName(tenant);
   const institutionCode = tenant.code || "CAMPUS-01";
   const studentName = student.name || "Enrolled Student";
   const studentRoll = student.roll_number || "STU-101";
@@ -369,7 +398,7 @@ export function generateReportCardPDF({
   doc.setTextColor(192, 132, 252); // Purple 300
   doc.text(`OFFICIAL ACADEMIC TRANSCRIPT & PERFORMANCE REPORT`, titleOffset, 25);
   doc.setTextColor(148, 163, 184);
-  doc.text(`Institutional Node: ${institutionCode} | Academic Session 2026-2027`, titleOffset, 31);
+  doc.text(`Institution Code: ${institutionCode} | Academic Session 2026-2027`, titleOffset, 31);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
@@ -523,7 +552,7 @@ export function generateOfficialCertificatePDF({
     format: "a4",
   });
 
-  const institutionName = tenant.name || "Apex International Academy";
+  const institutionName = resolveInstitutionName(tenant);
   const institutionCode = tenant.code || "CAMPUS-01";
   const institutionAddress = tenant.address || "Flat number 201, Jivdani Chaya, near Rajshree Hospital, beside Kalavati Mandir, Mahim Manohar Highway, Palghar 401404";
 
@@ -553,7 +582,7 @@ export function generateOfficialCertificatePDF({
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(100, 116, 139);
-  doc.text(`${institutionAddress} | Institutional Affiliation Node: ${institutionCode}`, 148.5, 37, { align: "center" });
+  doc.text(`${institutionAddress} | Affiliation Code: ${institutionCode}`, 148.5, 37, { align: "center" });
   doc.text("Recognized by the Department of School Education | Academic Session 2026-2027", 148.5, 42, { align: "center" });
 
   // Certificate Title Ribbon
@@ -720,7 +749,7 @@ export function generatePayslipPDF({
     format: "a4",
   });
 
-  const institutionName = tenant.name || "Apex International Academy";
+  const institutionName = resolveInstitutionName(tenant);
   const institutionCode = (tenant.code || "CAMPUS-01").toUpperCase();
   const institutionAddress =
     tenant.address ||
@@ -949,7 +978,7 @@ export function generatePayslipPDF({
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
   doc.text(`Cryptographic Security Hash: SHA256-PAYSLIP-${staffId}-${monthYear.replace(/[^a-zA-Z0-9]/g, "")}-${refNo}`, 20, auditY + 13);
-  doc.text(`Generated on: ${new Date().toISOString()} | Tenant Cloud Node: ${institutionCode} | Status: DISBURSED`, 20, auditY + 18);
+  doc.text(`Generated on: ${new Date().toISOString()} | Affiliation Code: ${institutionCode} | Status: DISBURSED`, 20, auditY + 18);
 
   // --- SIGNATURE BLOCKS ---
   const sigY = auditY + 38;

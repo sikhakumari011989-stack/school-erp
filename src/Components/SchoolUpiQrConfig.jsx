@@ -96,7 +96,7 @@ export default function SchoolUpiQrConfig({ schoolId = "CAMPUS-01", institutionN
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [config, setConfig] = useState({
     upiId: `${activeCode.toLowerCase().replace(/[^a-z0-9]/g, "")}.edu@okaxis`,
-    merchantName: institutionName || "Apex International Academy",
+    merchantName: institutionName || "Institutional Campus",
     instructions: "Scan via Google Pay, PhonePe, Paytm, or BHIM. Enter student name in remarks, then input 12-digit UTR below.",
     accountNumber: "910020084918234",
     ifscCode: "UTIB0001245",
@@ -248,7 +248,7 @@ export default function SchoolUpiQrConfig({ schoolId = "CAMPUS-01", institutionN
     setQrImage(DEFAULT_DEMO_QR_SVG);
     const demoMeta = {
       upiId: `${activeCode.toLowerCase().replace(/[^a-z0-9]/g, "")}.edu@okaxis`,
-      merchantName: institutionName || "Apex International Academy",
+      merchantName: institutionName || "Institutional Campus",
       instructions: "Scan via Google Pay, PhonePe, Paytm, or BHIM. Enter student name in remarks, then input 12-digit UTR below.",
       accountNumber: "910020084918234",
       ifscCode: "UTIB0001245",
@@ -438,7 +438,7 @@ export default function SchoolUpiQrConfig({ schoolId = "CAMPUS-01", institutionN
                   type="text"
                   value={config.merchantName}
                   onChange={(e) => setConfig({ ...config, merchantName: e.target.value })}
-                  placeholder="e.g. Apex International Academy"
+                  placeholder="e.g. Greenwood International Academy"
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500"
                   required
                 />

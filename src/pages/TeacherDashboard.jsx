@@ -8,6 +8,7 @@ import { generateReportCardPDF } from "../utils/pdfGenerator";
 import NoticeBanner from "../Components/NoticeBanner";
 import CampusPulseCard from "../Components/CampusPulseCard";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
+import QRScannerModule from "../Components/QRScannerModule";
 
 export default function TeacherDashboard() {
   const { user } = useContext(AppContext);
@@ -37,6 +38,7 @@ export default function TeacherDashboard() {
     homeworkCount: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [showScannerModal, setShowScannerModal] = useState(false);
 
   useEffect(() => {
     const fetchTeacherStats = async () => {
@@ -147,11 +149,18 @@ export default function TeacherDashboard() {
       path: "/teacher/messages",
     },
     {
-      name: "Staff Directory",
-      desc: "HOD & department phone extensions",
-      icon: "📞",
+      name: "Academic Calendar",
+      desc: "Campus schedule, terms & holidays",
+      icon: "📅",
       color: "from-slate-500/20 to-gray-500/10 text-slate-300 border-slate-500/30",
-      path: "/admin/directory",
+      path: "/admin/calendar",
+    },
+    {
+      name: "QR Gate & Library Scanner",
+      desc: "Camera scan student ID cards for library issue / entry",
+      icon: "📷",
+      color: "from-cyan-500/20 to-teal-500/10 text-cyan-400 border-cyan-500/30",
+      action: "openScanner",
     },
   ];
 
@@ -187,6 +196,12 @@ export default function TeacherDashboard() {
               className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/40 px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 shadow-lg cursor-pointer"
             >
               <span>🗓️</span> Weekly Master Timetable
+            </button>
+            <button
+              onClick={() => setShowScannerModal(true)}
+              className="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-300 border border-cyan-500/40 px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 shadow-lg cursor-pointer"
+            >
+              <span>📷</span> Scan ID Card (QR)
             </button>
             <button
               onClick={handleGenerateSampleReport}
@@ -266,7 +281,13 @@ export default function TeacherDashboard() {
           {teacherActions.map((action, idx) => (
             <button
               key={idx}
-              onClick={() => navigate(action.path)}
+              onClick={() => {
+                if (action.action === "openScanner") {
+                  setShowScannerModal(true);
+                } else if (action.path) {
+                  navigate(action.path);
+                }
+              }}
               className="group relative flex flex-col justify-between p-6 rounded-2xl bg-[#1E293B]/70 backdrop-blur-md border border-slate-700/60 hover:border-slate-500 hover:-translate-y-1.5 transition-all w-full text-left shadow-lg"
             >
               <div>
@@ -291,6 +312,19 @@ export default function TeacherDashboard() {
 
         {/* STUDENT CERTIFICATE REQUESTS APPROVAL WORKFLOW */}
         <CertificateManagementCard mode="teacher" />
+
+        {/* QR SCANNER MODAL */}
+        {showScannerModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+            <div className="max-w-2xl w-full">
+              <QRScannerModule
+                schoolCode={user?.institution_code || user?.school_id || "CAMPUS-01"}
+                mode="library"
+                onClose={() => setShowScannerModal(false)}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

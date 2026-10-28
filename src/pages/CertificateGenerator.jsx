@@ -106,7 +106,7 @@ export default function CertificateGenerator() {
     try {
       generateOfficialCertificatePDF({
         tenant: {
-          name: tenant?.name || user?.institution_name || "Apex International Academy",
+          name: tenant?.name || user?.institution_name || user?.school_name || "Institutional Campus",
           code: activeSchoolId,
           address: tenant?.address || "Flat number 201, Jivdani Chaya, near Rajshree Hospital, beside Kalavati Mandir, Mahim Manohar Highway, Palghar 401404",
         },
@@ -195,7 +195,7 @@ export default function CertificateGenerator() {
                 <input
                   type="text"
                   readOnly
-                  value={`${activeSchoolId} • ${tenant?.name || "Apex International Academy"}`}
+                  value={`${activeSchoolId} • ${tenant?.name || user?.institution_name || user?.school_name || "Institutional Campus"}`}
                   className="w-full bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-slate-400 text-sm font-mono cursor-not-allowed"
                 />
               </div>

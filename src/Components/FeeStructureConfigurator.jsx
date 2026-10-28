@@ -10,13 +10,16 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
   const storageKey = `erp_fee_structure_${activeCode}`;
 
   const [feeComponents, setFeeComponents] = useState([]);
+  const [classesList, setClassesList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form State
+  // Form State with Target Class / Batch
   const [form, setForm] = useState({
     title: "",
     term: "Term 1",
+    targetClass: "ALL",
+    gstStatus: "GST_EXEMPT",
     amount: "",
     description: "",
   });
@@ -68,11 +71,40 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
     setLoading(false);
   };
 
+  const loadUniqueClasses = () => {
+    try {
+      const raw = localStorage.getItem(`erp_directory_${activeCode}`);
+      if (raw) {
+        const dir = JSON.parse(raw);
+        const unique = Array.from(
+          new Set(
+            dir
+              .filter((m) => (m.role || "student").toLowerCase() === "student" && (m.class_name || m.class))
+              .map((m) => (m.class_name || m.class).trim())
+          )
+        ).filter(Boolean);
+        if (unique.length > 0) {
+          setClassesList(unique);
+          return;
+        }
+      }
+    } catch {}
+    setClassesList(["Class 9-A", "Class 10-A", "Class 10-ICSE", "Class 11-Science", "Class 12-Science", "General Batch"]);
+  };
+
   useEffect(() => {
     loadFeeStructures();
-    const handleUpdate = () => loadFeeStructures();
+    loadUniqueClasses();
+    const handleUpdate = () => {
+      loadFeeStructures();
+      loadUniqueClasses();
+    };
     window.addEventListener("erp-fee-structure-updated", handleUpdate);
-    return () => window.removeEventListener("erp-fee-structure-updated", handleUpdate);
+    window.addEventListener("erp-directory-updated", handleUpdate);
+    return () => {
+      window.removeEventListener("erp-fee-structure-updated", handleUpdate);
+      window.removeEventListener("erp-directory-updated", handleUpdate);
+    };
   }, [activeCode]);
 
   const handleAddFeeComponent = async (e) => {
@@ -90,10 +122,14 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
     }
 
     setSubmitting(true);
+    const targetClassesPayload = form.targetClass === "ALL" ? ["ALL"] : [form.targetClass];
     const newComponent = {
       id: `fee-comp-${Date.now()}`,
       title: cleanTitle,
       term: form.term,
+      targetClass: form.targetClass,
+      target_classes: targetClassesPayload,
+      gstStatus: form.gstStatus || "GST_EXEMPT",
       amount: numAmount,
       description: form.description.trim() || `${form.term} Official Institutional Dues`,
       school_id: activeCode,
@@ -142,7 +178,7 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
     } catch {}
 
     showToast(`Published "${newComponent.title}" (₹${newComponent.amount.toLocaleString()}) to student payment portal!`, "success");
-    setForm({ title: "", term: "Term 1", amount: "", description: "" });
+    setForm({ title: "", term: "Term 1", targetClass: "ALL", gstStatus: "GST_EXEMPT", amount: "", description: "" });
     setSubmitting(false);
   };
 
@@ -197,7 +233,7 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
           <Plus className="w-4 h-4 text-emerald-400" />
           <span>Define & Publish New Fee Component</span>
         </h3>
-        <form onSubmit={handleAddFeeComponent} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <form onSubmit={handleAddFeeComponent} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
           <div>
             <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
               Component Title *
@@ -219,7 +255,7 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
             <select
               value={form.term}
               onChange={(e) => setForm({ ...form, term: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
             >
               <option value="Term 1">Term 1 Tuition</option>
               <option value="Term 2">Term 2 Tuition</option>
@@ -230,6 +266,37 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
               <option value="IT Infrastructure">IT & Digital Learning</option>
               <option value="Examination">Board Examination Fee</option>
               <option value="Admission">One-Time Admission Fee</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-cyan-400 uppercase tracking-wider mb-1">
+              Target Class / Batch *
+            </label>
+            <select
+              value={form.targetClass}
+              onChange={(e) => setForm({ ...form, targetClass: e.target.value })}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-bold cursor-pointer"
+              required
+            >
+              <option value="ALL">All Batches (Global Campus)</option>
+              {classesList.map((cls) => (
+                <option key={cls} value={cls}>{cls}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+              Indian GST Tag *
+            </label>
+            <select
+              value={form.gstStatus}
+              onChange={(e) => setForm({ ...form, gstStatus: e.target.value })}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+            >
+              <option value="GST_EXEMPT">GST Exempt</option>
+              <option value="TAXABLE_18">Taxable (18% GST)</option>
             </select>
           </div>
 
@@ -294,6 +361,8 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
                 <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/40">
                   <th className="p-4 pl-6">Fee Component Title</th>
                   <th className="p-4">Billing Category</th>
+                  <th className="p-4">Assigned Batches</th>
+                  <th className="p-4">GST Status</th>
                   <th className="p-4">Settlement Amount</th>
                   <th className="p-4 text-center">Student Portal Status</th>
                   <th className="p-4 text-right pr-6">Action</th>
@@ -311,6 +380,22 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
                     <td className="p-4">
                       <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2.5 py-0.5 rounded-full text-xs font-semibold">
                         {fee.term}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <span className="bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+                        {fee.targetClass === "ALL" || fee.target_classes?.includes("ALL")
+                          ? "All Batches"
+                          : fee.targetClass || fee.target_classes?.join(", ") || "All Batches"}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                        fee.gstStatus === "TAXABLE_18"
+                          ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                          : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                      }`}>
+                        {fee.gstStatus === "TAXABLE_18" ? "18% GST (Taxable)" : "GST Exempt"}
                       </span>
                     </td>
                     <td className="p-4 font-mono font-black text-emerald-400">

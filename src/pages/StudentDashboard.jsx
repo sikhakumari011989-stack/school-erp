@@ -19,6 +19,7 @@ export default function StudentDashboard() {
 
   // State metrics
   const [loading, setLoading] = useState(true);
+  const [publishedFees, setPublishedFees] = useState([]);
   const [metrics, setMetrics] = useState({
     attendancePercentage: 94,
     totalClasses: 32,
@@ -96,6 +97,21 @@ export default function StudentDashboard() {
           }
         } catch {}
 
+        // Strict Batch-Targeted Fee Publishing Logic
+        try {
+          const rawStructures = localStorage.getItem(`erp_fee_structure_${schoolId}`);
+          if (rawStructures) {
+            const list = JSON.parse(rawStructures);
+            const cleanStudentBatch = String(studentBatch || "").trim().toLowerCase();
+            const targeted = list.filter((fee) => {
+              const targets = fee.target_classes || (fee.targetClass ? [fee.targetClass] : ["ALL"]);
+              if (targets.includes("ALL")) return true;
+              return targets.some((cls) => String(cls).trim().toLowerCase() === cleanStudentBatch);
+            });
+            setPublishedFees(targeted);
+          }
+        } catch {}
+
         setMetrics((prev) => ({
           ...prev,
           attendancePercentage: totalClasses > 0 ? calculatedPercent : 94,
@@ -115,11 +131,13 @@ export default function StudentDashboard() {
     fetchLiveStudentData();
     window.addEventListener("erp-attendance-updated", fetchLiveStudentData);
     window.addEventListener("erp-fee-ledger-updated", fetchLiveStudentData);
+    window.addEventListener("erp-fee-structure-updated", fetchLiveStudentData);
 
     return () => {
       isMounted = false;
       window.removeEventListener("erp-attendance-updated", fetchLiveStudentData);
       window.removeEventListener("erp-fee-ledger-updated", fetchLiveStudentData);
+      window.removeEventListener("erp-fee-structure-updated", fetchLiveStudentData);
     };
   }, [schoolId]);
 
@@ -175,7 +193,7 @@ export default function StudentDashboard() {
     try {
       generateReportCardPDF({
         tenant: {
-          name: user?.institution_name || "Apex International Academy",
+          name: user?.institution_name || user?.school_name || "Institutional Campus",
           code: schoolId,
         },
         student: {
@@ -581,6 +599,21 @@ export default function StudentDashboard() {
                 </div>
                 <span className="text-[11px] text-cyan-400 font-semibold">Partial Pay Supported</span>
               </div>
+
+              {/* Batch-Targeted Fee Heads Preview */}
+              {publishedFees.length > 0 && (
+                <div className="mt-3 pt-2.5 border-t border-white/10 space-y-1.5">
+                  <span className="text-[10px] font-bold text-cyan-300 uppercase tracking-wider block">
+                    Assigned Fees for {studentBatch}:
+                  </span>
+                  {publishedFees.slice(0, 2).map((fee) => (
+                    <div key={fee.id} className="flex justify-between items-center text-[11px] p-1.5 rounded-lg bg-slate-900/60 border border-white/5">
+                      <span className="text-slate-200 font-medium truncate max-w-[150px]">{fee.title}</span>
+                      <span className="text-emerald-400 font-mono font-bold">₹{Number(fee.amount).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2 mt-3">

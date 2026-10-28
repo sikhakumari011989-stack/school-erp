@@ -13,7 +13,7 @@ import AccountantDashboard from "./pages/AccountantDashboard";
 import TrusteeDashboard from "./pages/TrusteeDashboard";
 import StaffDashboard from "./pages/StaffDashboard";
 import AcademicCalendar from "./pages/AcademicCalendar";
-import InstitutionalDirectory from "./pages/InstitutionalDirectory";
+
 import TeacherDashboard from "./pages/TeacherDashboard";
 import TeacherHomework from "./pages/TeacherHomework";
 import TeacherAttendance from "./pages/TeacherAttendance";
@@ -37,7 +37,7 @@ import ContactUs from "./pages/ContactUs";
 import SystemDiagnosticPage from "./pages/SystemDiagnosticPage";
 import MasterSchoolSetup from "./pages/MasterSchoolSetup";
 import AdmissionsCRM from "./pages/AdmissionsCRM";
-import IdCardGenerator from "./pages/IdCardGenerator";
+
 import OnlineExams from "./pages/OnlineExams";
 import StudentExam from "./pages/StudentExam";
 import PayrollManager from "./pages/PayrollManager";
@@ -214,26 +214,10 @@ export default function App() {
               }
             />
             <Route
-              path="/admin/directory"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant", "teacher"]}>
-                  <InstitutionalDirectory />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/admin/admissions"
               element={
                 <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant"]}>
                   <AdmissionsCRM />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/id-cards"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant", "teacher"]}>
-                  <IdCardGenerator />
                 </ProtectedRoute>
               }
             />

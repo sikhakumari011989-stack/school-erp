@@ -24,7 +24,7 @@ import MasterTimetableManager from "../Components/MasterTimetableManager";
 import StaffEvaluationManager from "../Components/StaffEvaluationManager";
 import InventoryAssetManager from "../Components/InventoryAssetManager";
 import DisciplinaryLogManager from "../Components/DisciplinaryLogManager";
-import CustomReportBuilder from "../Components/CustomReportBuilder";
+import BrandCertificateStudio from "../Components/BrandCertificateStudio";
 import AcademicCalendar from "./AcademicCalendar";
 import CampusPulseCard from "../Components/CampusPulseCard";
 import BulkImportModal from "../Components/BulkImportModal";
@@ -105,6 +105,31 @@ export default function PrincipalDashboard() {
 
   // Module 2: User Roster State
   const [rosterMembers, setRosterMembers] = useState([]);
+  const [dpdpConsentMap, setDpdpConsentMap] = useState(() => {
+    try {
+      const raw = localStorage.getItem(`erp_dpdp_consent_${institutionCode}`);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const handleToggleDpdpConsent = (studentCode, studentName) => {
+    const updated = {
+      ...dpdpConsentMap,
+      [studentCode]: dpdpConsentMap[studentCode] === false ? true : false,
+    };
+    setDpdpConsentMap(updated);
+    try {
+      localStorage.setItem(`erp_dpdp_consent_${institutionCode}`, JSON.stringify(updated));
+    } catch {}
+    showToast(
+      updated[studentCode]
+        ? `Parental DPDP 2023 Consent verified for ${studentName} ✅`
+        : `Parental DPDP 2023 Consent marked pending for ${studentName} ⚠️`,
+      "info"
+    );
+  };
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
   const [comprehensiveModalRole, setComprehensiveModalRole] = useState("student");
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -620,8 +645,8 @@ export default function PrincipalDashboard() {
     );
   });
 
-  // THE 15 CONSOLIDATED EXECUTIVE MODULES
-  const modules15 = [
+  // THE 12 CONSOLIDATED EXECUTIVE MASTER MODULES
+  const modules12 = [
     { id: 1, name: "Master Revenue & Fee Treasury", icon: "💰", category: "Treasury", desc: "Configure school UPI QR codes, view live fee ledgers, log manual cash payments, and generate tax invoices." },
     { id: 2, name: "User & Roster Management", icon: "👥", category: "Directory", desc: "Bulk CSV import wizard, single-member quick add, and WhatsApp credential sheet exporter." },
     { id: 3, name: "Non-Teaching Staff Directory & Payroll", icon: "🧹", category: "Operations", desc: "Complete CRUD for drivers, cleaners, gardeners, security guards, helpers, and cafeteria personnel." },
@@ -632,10 +657,8 @@ export default function PrincipalDashboard() {
     { id: 8, name: "Master Timetable & Period Scheduler", icon: "⏰", category: "Curriculum", desc: "Monday–Saturday curriculum timeline configuration grid (Period timings, room numbers, subjects)." },
     { id: 9, name: "Staff Evaluation & Syllabus Progress", icon: "⭐", category: "Pedagogy", desc: "Monitor faculty teaching milestones and lesson plan completion status." },
     { id: 10, name: "Academic Calendar & Daily Pulse Studio", icon: "📅", category: "Calendar", desc: "Manage sparse special dates (holidays, exams, functions) with automatic working day fallbacks." },
-    { id: 12, name: "Inventory & Asset Master", icon: "📦", category: "Plant & Assets", desc: "Track school uniforms, textbooks, library books, laboratory chemicals, and computer hardware." },
-    { id: 13, name: "Digital Certificate Signatures", icon: "✍️", category: "Registrar", desc: "Review and digitally sign student certificate requests (Bonafide, Transfer, Character) with instant sync." },
-    { id: 14, name: "Disciplinary & Conduct Log", icon: "⚖️", category: "Student Affairs", desc: "Record and manage student merit commendations, sportsmanship awards, and disciplinary infractions." },
-    { id: 15, name: "Custom Report & Government Audit Builder", icon: "📑", category: "Governance", desc: "Export certified institutional datasets, student census CSVs, and financial audit PDFs." },
+    { id: 11, name: "Inventory & Asset Master", icon: "📦", category: "Plant & Assets", desc: "Track school uniforms, textbooks, library books, laboratory chemicals, and computer hardware." },
+    { id: 12, name: "Brand & Certificate Studio", icon: "🎨", category: "Registrar & Branding", desc: "White-label branding studio, 1-click sample report cards/fee receipts, and digital certificate signatures." },
   ];
 
   return (
@@ -722,7 +745,7 @@ export default function PrincipalDashboard() {
                 onClick={() => setActiveModuleId(null)}
                 className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm border border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
               >
-                <span>← Back to 15 Modules</span>
+                <span>← Back to 12 Modules</span>
               </button>
             )}
           </div>
@@ -736,7 +759,7 @@ export default function PrincipalDashboard() {
                 onClick={() => setActiveModuleId(null)}
                 className="text-blue-400 hover:text-white font-bold text-sm flex items-center gap-2 cursor-pointer transition-colors"
               >
-                <span>← Return to 15 Master Modules</span>
+                <span>← Return to 12 Master Modules</span>
               </button>
             </div>
 
@@ -959,6 +982,7 @@ export default function PrincipalDashboard() {
                             <th className="p-4">Phone Number</th>
                             <th className="p-4">Login Email</th>
                             <th className="p-4 text-center">Default PIN</th>
+                            <th className="p-4 text-center">DPDP 2023 Consent</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/60 text-sm">
@@ -976,6 +1000,25 @@ export default function PrincipalDashboard() {
                                 <span className="bg-slate-900 border border-slate-700 text-amber-300 font-mono text-xs px-2.5 py-1 rounded">
                                   {m.default_password || "password123"}
                                 </span>
+                              </td>
+                              <td className="p-4 text-center whitespace-nowrap">
+                                {m.role === "student" ? (
+                                  <button
+                                    onClick={() => handleToggleDpdpConsent(m.role_code || m.roll_number || m.id, m.full_name || m.name)}
+                                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+                                      dpdpConsentMap[m.role_code || m.roll_number || m.id] !== false
+                                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30"
+                                        : "bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30"
+                                    }`}
+                                    title="Click to toggle DPDP 2023 parental consent status"
+                                  >
+                                    {dpdpConsentMap[m.role_code || m.roll_number || m.id] !== false
+                                      ? "Verified ✅"
+                                      : "Pending Consent ⚠️"}
+                                  </button>
+                                ) : (
+                                  <span className="text-[10px] text-slate-500 font-mono">N/A (Staff)</span>
+                                )}
                               </td>
                             </tr>
                           ))}
@@ -1134,17 +1177,11 @@ export default function PrincipalDashboard() {
             {/* MODULE 10: ACADEMIC CALENDAR & DAILY PULSE STUDIO */}
             {activeModuleId === 10 && <AcademicCalendar />}
 
-            {/* MODULE 12: INVENTORY & ASSET MASTER */}
-            {activeModuleId === 12 && <AssetRegistry schoolId={institutionCode} />}
+            {/* MODULE 11: INVENTORY & ASSET MASTER */}
+            {activeModuleId === 11 && <AssetRegistry schoolId={institutionCode} />}
 
-            {/* MODULE 13: DIGITAL CERTIFICATE SIGNATURES */}
-            {activeModuleId === 13 && <CertificateManagementCard mode="principal" />}
-
-            {/* MODULE 14: DISCIPLINARY & CONDUCT LOG */}
-            {activeModuleId === 14 && <BehaviorLog schoolId={institutionCode} />}
-
-            {/* MODULE 15: CUSTOM REPORT & AUDIT BUILDER */}
-            {activeModuleId === 15 && <CustomReportBuilder schoolId={institutionCode} />}
+            {/* MODULE 12: BRAND & CERTIFICATE STUDIO */}
+            {activeModuleId === 12 && <BrandCertificateStudio schoolId={institutionCode} mode="principal" />}
           </div>
         ) : (
           <div className="space-y-8">
@@ -1159,7 +1196,7 @@ export default function PrincipalDashboard() {
                 { id: "grievances", label: "Grievance Ticketing", icon: "📩" },
                 { id: "scheduler", label: "15-Min Meeting Scheduler", icon: "📅" },
                 { id: "alumni", label: "Alumni Directory", icon: "🎓" },
-                { id: "modules", label: "All 15 Executive Modules", icon: "🏛️" },
+                { id: "modules", label: "All 12 Executive Modules", icon: "🏛️" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -1626,7 +1663,7 @@ export default function PrincipalDashboard() {
             {/* TAB 8: ALUMNI DIRECTORY */}
             {activeTab === "alumni" && <AlumniDB schoolId={institutionCode} />}
 
-            {/* TAB 9: ALL 15 EXECUTIVE MODULES */}
+            {/* TAB 9: ALL 12 EXECUTIVE MODULES */}
             {activeTab === "modules" && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
@@ -1635,7 +1672,7 @@ export default function PrincipalDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {modules15.map((mod) => (
+                  {modules12.map((mod) => (
                     <div
                       key={mod.id}
                       onClick={() => setActiveModuleId(mod.id)}

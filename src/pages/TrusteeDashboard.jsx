@@ -12,6 +12,7 @@ import SchoolUpiQrConfig from "../Components/SchoolUpiQrConfig";
 import CustomLogoUploader from "../Components/CustomLogoUploader";
 import SystemDiagnostic from "../Components/SystemDiagnostic";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
+import BrandCertificateStudio from "../Components/BrandCertificateStudio";
 import NonTeachingStaffManager from "../Components/NonTeachingStaffManager";
 import FeeStructureConfigurator from "../Components/FeeStructureConfigurator";
 import BroadcastManager from "../Components/BroadcastManager";
@@ -640,8 +641,8 @@ export default function TrusteeDashboard() {
                   activeTab === "certificates" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30" : "text-slate-400 hover:text-white"
                 }`}
               >
-                <span>📜</span>
-                <span>Digital Certificate Signatures</span>
+                <span>🎨</span>
+                <span>Brand & Certificate Studio</span>
               </button>
               <button
                 onClick={() => setActiveTab("non_teaching")}
@@ -1040,17 +1041,17 @@ export default function TrusteeDashboard() {
         ) : activeTab === "non_teaching" ? (
           <NonTeachingStaffManager schoolId={institutionCode} />
         ) : activeTab === "certificates" ? (
-          <CertificateManagementCard mode="trustee" />
+          <BrandCertificateStudio schoolId={institutionCode} mode="trustee" />
         ) : activeTab === "upi_qr" ? (
           <div className="space-y-8">
             <CustomLogoUploader schoolCode={institutionCode} />
             <SchoolUpiQrConfig
               schoolId={institutionCode}
-              institutionName={user?.institution_name || "Apex International Academy"}
+              institutionName={user?.institution_name || user?.school_name || "Institutional Campus"}
             />
             <FeeStructureConfigurator
               schoolId={institutionCode}
-              institutionName={user?.institution_name || "Apex International Academy"}
+              institutionName={user?.institution_name || user?.school_name || "Institutional Campus"}
             />
           </div>
         ) : null}

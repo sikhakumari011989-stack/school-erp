@@ -77,10 +77,8 @@ export default function Sidebar() {
         { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
         { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
         { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
-        { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
         { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
         { name: "Expense Tracker", path: "/accountant/expenses", icon: "🧾" },
-        { name: "Institutional Directory", path: "/admin/directory", icon: "📞" },
         { name: "Academic Calendar", path: "/admin/calendar", icon: "📅" },
       ];
     } else if (roleType === "trustee") {
@@ -93,7 +91,6 @@ export default function Sidebar() {
         { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
         { name: "Expense Tracker", path: "/accountant/expenses", icon: "🧾" },
         { name: "Treasury Ledger", path: "/accountant/dashboard", icon: "💰" },
-        { name: "Institutional Directory", path: "/admin/directory", icon: "📞" },
         { name: "Academic Calendar", path: "/admin/calendar", icon: "📅" },
       ];
     } else if (roleType === "accountant") {
@@ -103,8 +100,6 @@ export default function Sidebar() {
         { name: "Expense Ledger", path: "/accountant/expenses", icon: "🧾" },
         { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
         { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
-        { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
-        { name: "Directory & Contacts", path: "/admin/directory", icon: "📞" },
       ];
     } else if (roleType === "teacher") {
       return [
@@ -116,13 +111,11 @@ export default function Sidebar() {
         { name: "Homework & Quizzes", path: "/teacher/homework", icon: "📚" },
         { name: "Analytics & Marks", path: "/teacher/analytics", icon: "📊" },
         { name: "Curriculum Planner", path: "/teacher/planner", icon: "📝" },
-        { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
       ];
     } else if (roleType === "staff") {
       return [
         { name: "Operations Command", path: "/staff/dashboard", icon: "🛠️" },
         { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
-        { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
       ];
     } else if (roleType === "admin") {
       return [
@@ -133,12 +126,10 @@ export default function Sidebar() {
         { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
         { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
         { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
-        { name: "ID Card Studio", path: "/admin/id-cards", icon: "🪪" },
         { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
         { name: "Expense Tracker", path: "/accountant/expenses", icon: "🧾" },
         { name: "Online Exams (CBT)", path: "/teacher/exams", icon: "📝" },
         { name: "Academic Calendar", path: "/admin/calendar", icon: "📅" },
-        { name: "Institutional Directory", path: "/admin/directory", icon: "📞" },
       ];
     } else {
       // Default: Student / Parent
@@ -184,7 +175,7 @@ export default function Sidebar() {
         { name: "Command", path: "/principal/dashboard", icon: "🏛️" },
         { name: "Chat", path: "/admin/messages", icon: "💬" },
         { name: "Broadcasts", path: "/admin/broadcasts", icon: "📢" },
-        { name: "Directory", path: "/admin/directory", icon: "📞" },
+        { name: "Calendar", path: "/admin/calendar", icon: "📅" },
       ];
     } else {
       return links.slice(0, 4);

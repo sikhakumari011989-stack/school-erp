@@ -96,7 +96,7 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
       // Generate & Download the authentic PDF
       generateOfficialCertificatePDF({
         tenant: {
-          name: tenant?.name || user?.institution_name || "Apex International Academy",
+          name: tenant?.name || user?.institution_name || user?.school_name || "Institutional Campus",
           code: activeSchoolId,
           address: tenant?.address || "Flat number 201, Jivdani Chaya, near Rajshree Hospital, beside Kalavati Mandir, Mahim Manohar Highway, Palghar 401404",
         },

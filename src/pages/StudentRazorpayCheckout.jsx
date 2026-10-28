@@ -49,7 +49,7 @@ export default function StudentRazorpayCheckout() {
   const [schoolQr, setSchoolQr] = useState(DEFAULT_DEMO_QR_SVG);
   const [schoolUpiMeta, setSchoolUpiMeta] = useState({
     upiId: `${activeSchoolCode.toLowerCase().replace(/[^a-z0-9]/g, "")}.edu@okaxis`,
-    merchantName: user?.institution_name || "Apex International Academy",
+    merchantName: user?.institution_name || user?.school_name || "Institutional Campus",
     instructions:
       "Scan via Google Pay, PhonePe, Paytm, or BHIM. Enter student name in remarks, then input 12-digit UTR below.",
   });
@@ -196,7 +196,7 @@ export default function StudentRazorpayCheckout() {
     const rawPhone = user?.parent_phone || user?.phone || "9876543210";
     const studentPhone = rawPhone.replace(/[^0-9]/g, "").slice(-10) || "9876543210";
     const schoolId = user?.school_id || activeSchoolCode;
-    const institutionName = user?.institution_name || schoolUpiMeta.merchantName || "Apex International Academy";
+    const institutionName = user?.institution_name || schoolUpiMeta.merchantName || "Institutional Campus";
     const invoiceNo = isPartial ? `INV-${Date.now().toString().slice(-6)}-PARTIAL` : `INV-${Date.now().toString().slice(-6)}`;
     const paymentMode = paymentModeOverride || (isPartial ? `School UPI QR (UTR: ${cleanUtr}) [PARTIAL]` : `School UPI QR (UTR: ${cleanUtr})`);
 
