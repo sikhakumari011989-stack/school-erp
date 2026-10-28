@@ -203,10 +203,16 @@ export default function StudentRazorpayCheckout() {
     try {
       // 1. Supabase fee_ledger insertion with pending_verification and PARTIAL tag
       try {
+        const studentRoll = String(user?.personal_code || user?.roll_number || user?.id || "").trim().toUpperCase();
+        const studentEmail = String(user?.email || "").trim().toLowerCase();
+
         const { error: ledgerError } = await supabase.from("fee_ledger").insert([
           {
             school_id: schoolId,
             student_name: studentName,
+            roll_number: studentRoll,
+            student_id: user?.id || studentRoll,
+            student_email: studentEmail,
             class_name: user?.class_name || "Class 10 ICSE",
             amount: amountToSettle,
             status: "pending_verification",
@@ -238,12 +244,18 @@ export default function StudentRazorpayCheckout() {
 
       // 3. LocalStorage persistence (erp_fee_ledger) with status: pending_verification and PARTIAL tag
       try {
+        const studentRoll = String(user?.personal_code || user?.roll_number || user?.id || "").trim().toUpperCase();
+        const studentEmail = String(user?.email || "").trim().toLowerCase();
+
         const existingRaw = localStorage.getItem("erp_fee_ledger");
         const existingList = existingRaw ? JSON.parse(existingRaw) : [];
         const newRecord = {
           id: `TXN-${Date.now()}`,
           school_id: schoolId,
           student_name: studentName,
+          roll_number: studentRoll,
+          student_id: user?.id || studentRoll,
+          student_email: studentEmail,
           class_name: user?.class_name || "Class 10 ICSE",
           amount: amountToSettle,
           total_due: Number(selectedFee.amount),

@@ -3,6 +3,7 @@ import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { TableSkeleton } from "../Components/Skeleton";
+import ComprehensiveMemberModal from "../Components/ComprehensiveMemberModal";
 
 export default function InstitutionalDirectory() {
   const { user, tenant } = useContext(AppContext) || {};
@@ -10,6 +11,7 @@ export default function InstitutionalDirectory() {
   const [directory, setDirectory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("ALL");
+  const [showOnboardModal, setShowOnboardModal] = useState(false);
 
   const activeSchoolId = user?.institution_code || user?.school_id || tenant?.code || "CAMPUS-01";
 
@@ -31,18 +33,32 @@ export default function InstitutionalDirectory() {
           if (data && data.length > 0) {
             data.forEach((p) => {
               const key = p.role_code || p.id;
+              const isHod = p.role === "trustee" || (p.role_code || "").startsWith("HOD");
+              const isPrin = p.role === "principal" || (p.role_code || "").startsWith("PRIN");
+              const isAcc = p.role === "accountant" || (p.role_code || "").startsWith("ACC");
+              const isTch = p.role === "teacher" || (p.role_code || "").startsWith("TCH");
+
               staffMap.set(key, {
                 id: key,
                 name: p.full_name || "Faculty Member",
-                role:
-                  p.role === "trustee"
-                    ? "Principal / Trustee"
-                    : p.role === "accountant"
-                    ? "Chief Accountant"
-                    : p.role === "teacher"
-                    ? "Teaching Faculty"
-                    : "Administrator",
-                dept: p.role === "teacher" ? "Academics" : p.role === "accountant" ? "Finance & Accounts" : "Administration",
+                role: isHod
+                  ? "Trustee / HOD"
+                  : isPrin
+                  ? "Executive Principal"
+                  : isAcc
+                  ? "Chief Accountant"
+                  : isTch
+                  ? "Teaching Faculty"
+                  : "Administrator",
+                dept: isTch
+                  ? "Academics"
+                  : isAcc
+                  ? "Finance & Treasury"
+                  : isHod
+                  ? "Executive Governance & Board"
+                  : isPrin
+                  ? "Executive Leadership"
+                  : "Administration",
                 category: "Teaching & Admin",
                 phone: p.phone || "+91 9518388499",
                 email: p.email || `${String(p.role_code || "staff").toLowerCase()}@institution.edu`,
@@ -64,20 +80,27 @@ export default function InstitutionalDirectory() {
             .forEach((m) => {
               const key = m.role_code || m.roll_number || m.personal_code || m.id;
               if (key && !staffMap.has(key)) {
-                const isNonTeach = m.category || m.role === "staff";
+                const isNonTeach = m.category || m.role === "staff" || String(key).startsWith("NTS");
+                const isHod = m.role === "trustee" || String(key).startsWith("HOD");
+                const isPrin = m.role === "principal" || String(key).startsWith("PRIN");
+                const isAcc = m.role === "accountant" || String(key).startsWith("ACC");
+                const isTch = m.role === "teacher" || String(key).startsWith("TCH");
+
                 staffMap.set(key, {
                   id: key,
                   name: m.full_name || m.name || "Staff Member",
                   role: isNonTeach
-                    ? m.category || "Campus Support Staff"
-                    : m.role === "trustee"
-                    ? "Principal / Trustee"
-                    : m.role === "accountant"
+                    ? m.category || m.designation || "Campus Support Staff"
+                    : isHod
+                    ? "Trustee / HOD"
+                    : isPrin
+                    ? "Executive Principal"
+                    : isAcc
                     ? "Chief Accountant"
-                    : m.role === "teacher"
+                    : isTch
                     ? "Teaching Faculty"
                     : "Administrator",
-                  dept: m.dept || m.class_name || (isNonTeach ? "Support Services" : "Administration"),
+                  dept: m.dept || m.class_name || (isNonTeach ? "Support Services" : isHod ? "Executive Governance & Board" : isPrin ? "Executive Leadership" : "Administration"),
                   category: isNonTeach ? "Non-Teaching" : "Teaching & Admin",
                   phone: m.phone || "+91 98200 12345",
                   email: m.email || `${String(key).toLowerCase()}@institution.edu`,
@@ -153,12 +176,20 @@ export default function InstitutionalDirectory() {
               Active Node: <span className="text-emerald-400 font-mono font-bold">{activeSchoolId}</span> &bull; Faculty, Administrative & Non-Teaching Extensions
             </p>
           </div>
-          <button
-            onClick={() => showToast("Opening broadcast message composer...", "info")}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg shadow-blue-600/30 transition-all cursor-pointer"
-          >
-            Send Broadcast Notice 📢
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowOnboardModal(true)}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-2 border border-emerald-400/40"
+            >
+              <span>➕</span> Onboard New Member
+            </button>
+            <button
+              onClick={() => showToast("Opening broadcast message composer...", "info")}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-blue-600/30 transition-all cursor-pointer"
+            >
+              Send Broadcast Notice 📢
+            </button>
+          </div>
         </div>
 
         {/* DIRECTORY TABLE */}
@@ -204,7 +235,7 @@ export default function InstitutionalDirectory() {
           ) : filteredDirectory.length === 0 ? (
             <div className="p-12 text-center text-slate-400 font-medium">
               <p className="text-base font-bold text-slate-300 mb-1">No staff members found matching this filter (Clean Slate).</p>
-              <p className="text-xs">Use Bulk CSV Import or Quick Add in Trustee/Principal Dashboard to onboard personnel.</p>
+              <p className="text-xs">Use the &quot;+ Onboard New Member&quot; button above to add personnel across any role.</p>
             </div>
           ) : (
             <div className="overflow-x-auto w-full">
@@ -226,6 +257,8 @@ export default function InstitutionalDirectory() {
                           className={`inline-block px-2 py-0.5 mt-0.5 text-[11px] font-bold rounded-md ${
                             d.category === "Non-Teaching"
                               ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                              : d.role.includes("Trustee") || d.role.includes("Principal")
+                              ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
                               : "text-blue-400"
                           }`}
                         >
@@ -259,6 +292,15 @@ export default function InstitutionalDirectory() {
           )}
         </div>
       </div>
+
+      {showOnboardModal && (
+        <ComprehensiveMemberModal
+          isOpen={showOnboardModal}
+          onClose={() => setShowOnboardModal(false)}
+          schoolId={activeSchoolId}
+          onSuccess={() => fetchDirectory()}
+        />
+      )}
     </div>
   );
 }

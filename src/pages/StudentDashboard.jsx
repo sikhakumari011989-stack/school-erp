@@ -49,7 +49,7 @@ export default function StudentDashboard() {
         const [attRes, hwRes, feeRes] = await Promise.all([
           supabase.from("attendance").select("records").eq("school_id", schoolId).limit(15),
           supabase.from("homework").select("id, title, due_date, subject").eq("school_id", schoolId),
-          supabase.from("fee_ledger").select("status, amount, student_name").eq("school_id", schoolId),
+          supabase.from("fee_ledger").select("status, amount, student_name, roll_number, student_id, student_email").eq("school_id", schoolId),
         ]);
 
         if (!isMounted) return;
@@ -71,13 +71,32 @@ export default function StudentDashboard() {
         const calculatedPercent = totalClasses > 0 ? Math.round((attended / totalClasses) * 100) : 95;
         const hwCount = hwRes.data?.length ?? 0;
 
-        // Fee dues check
+        // Strict Data Isolation: Current Authenticated Student Identity Matcher
+        const currentRoll = String(user?.personal_code || user?.roll_number || user?.id || "").trim().toUpperCase();
+        const currentEmail = String(user?.email || "").trim().toLowerCase();
+        const currentName = String(user?.name || user?.full_name || "").trim().toLowerCase();
+
+        const matchStudent = (rec) => {
+          if (!rec) return false;
+          const rRoll = String(rec.roll_number || rec.student_id || rec.personal_code || rec.role_code || "").trim().toUpperCase();
+          const rEmail = String(rec.student_email || rec.email || "").trim().toLowerCase();
+          const rName = String(rec.student_name || rec.name || "").trim().toLowerCase();
+
+          // Strict identity match (never matches another student)
+          if (currentRoll && rRoll && currentRoll === rRoll) return true;
+          if (currentEmail && rEmail && currentEmail === rEmail) return true;
+          if (currentName && rName && currentName === rName) return true;
+          return false;
+        };
+
+        // Fee dues check (Strictly scoped to current authenticated student)
         let hasPendingDues = false;
         let pendingAmount = 0;
 
         if (feeRes.data && feeRes.data.length > 0) {
-          feeRes.data.forEach((f) => {
-            if ((f.status || "").toLowerCase() === "pending") {
+          feeRes.data.filter(matchStudent).forEach((f) => {
+            const rawStatus = (f.status || "").toLowerCase();
+            if (rawStatus === "pending" || rawStatus === "unpaid" || rawStatus === "due") {
               hasPendingDues = true;
               pendingAmount += Number(f.amount) || 0;
             }
@@ -88,12 +107,33 @@ export default function StudentDashboard() {
           const tenantFeeRaw = localStorage.getItem(`erp_fee_ledger_${schoolId}`);
           if (tenantFeeRaw) {
             const tenantFees = JSON.parse(tenantFeeRaw);
-            tenantFees.forEach((f) => {
-              if ((f.status || "").toLowerCase() === "pending") {
-                hasPendingDues = true;
-                pendingAmount += Number(f.amount) || 0;
+            if (Array.isArray(tenantFees)) {
+              tenantFees.filter(matchStudent).forEach((f) => {
+                const rawStatus = (f.status || "").toLowerCase();
+                if (rawStatus === "pending" || rawStatus === "unpaid" || rawStatus === "due") {
+                  hasPendingDues = true;
+                  pendingAmount += Number(f.amount) || 0;
+                }
+              });
+            }
+          }
+        } catch {}
+
+        // Also check if student's profile directly has recorded remaining balance
+        try {
+          const rawDir = localStorage.getItem(`erp_directory_${schoolId}`);
+          if (rawDir) {
+            const members = JSON.parse(rawDir);
+            if (Array.isArray(members)) {
+              const myProfile = members.find(matchStudent);
+              if (myProfile) {
+                const bal = parseFloat(myProfile.remaining_balance ?? myProfile.pending_fees);
+                if (!isNaN(bal) && bal > 0 && pendingAmount === 0) {
+                  hasPendingDues = true;
+                  pendingAmount = bal;
+                }
               }
-            });
+            }
           }
         } catch {}
 

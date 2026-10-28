@@ -19,20 +19,56 @@ export default function StudentFees() {
     setLoading(true);
     const schoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
 
-    // Read local offline/demo fee records first
+    // Strict Data Isolation: Current Authenticated Student Identity Matcher
+    const currentRoll = String(user?.personal_code || user?.roll_number || user?.id || "").trim().toUpperCase();
+    const currentEmail = String(user?.email || "").trim().toLowerCase();
+    const currentName = String(user?.name || user?.full_name || "").trim().toLowerCase();
+
+    const matchStudent = (rec) => {
+      if (!rec) return false;
+      const rRoll = String(rec.roll_number || rec.student_id || rec.personal_code || rec.role_code || "").trim().toUpperCase();
+      const rEmail = String(rec.student_email || rec.email || "").trim().toLowerCase();
+      const rName = String(rec.student_name || rec.name || "").trim().toLowerCase();
+
+      // Strict match to currently authenticated student only
+      if (currentRoll && rRoll && currentRoll === rRoll) return true;
+      if (currentEmail && rEmail && currentEmail === rEmail) return true;
+      if (currentName && rName && currentName === rName) return true;
+      return false;
+    };
+
+    // Read local offline/demo fee records first (strictly scoped)
     let localRecords = [];
     try {
       const tenantKey = `erp_fee_ledger_${schoolId}`;
       const savedTenant = localStorage.getItem(tenantKey);
       if (savedTenant) {
-        localRecords = JSON.parse(savedTenant);
+        const parsed = JSON.parse(savedTenant);
+        if (Array.isArray(parsed)) {
+          localRecords = parsed.filter(matchStudent);
+        }
       } else {
         const savedRaw = localStorage.getItem("erp_fee_ledger");
         if (savedRaw) {
           const all = JSON.parse(savedRaw);
           localRecords = Array.isArray(all)
-            ? all.filter((r) => String(r.school_id || "").toUpperCase() === schoolId)
+            ? all.filter((r) => String(r.school_id || "").toUpperCase() === schoolId).filter(matchStudent)
             : [];
+        }
+      }
+
+      // Also read approved enrollment counter receipts from erp_fees_${schoolId}
+      const feesKey = `erp_fees_${schoolId}`;
+      const savedFees = localStorage.getItem(feesKey);
+      if (savedFees) {
+        const parsedFees = JSON.parse(savedFees);
+        if (Array.isArray(parsedFees)) {
+          const myFees = parsedFees.filter(matchStudent);
+          myFees.forEach((f) => {
+            if (!localRecords.some((lr) => lr.id === f.id || (lr.invoice_no && lr.invoice_no === f.invoice_no))) {
+              localRecords.push(f);
+            }
+          });
         }
       }
     } catch (e) {
@@ -49,7 +85,8 @@ export default function StudentFees() {
           .order("created_at", { ascending: false });
 
         if (!error && data && data.length > 0) {
-          combined = data.map((d, index) => {
+          const myCloudRecords = data.filter(matchStudent);
+          combined = myCloudRecords.map((d, index) => {
             const rawStatus = (d.status || "paid").toLowerCase();
             const displayStatus = rawStatus === "paid" ? "Paid" : rawStatus === "pending_verification" ? "Pending Verification" : "Pending";
             return {
@@ -70,7 +107,7 @@ export default function StudentFees() {
 
       // Prepend local recent records if not already in list
       localRecords.forEach((lr) => {
-        const exists = combined.some((c) => c.utr === lr.utr || c.id === lr.id);
+        const exists = combined.some((c) => (c.utr && c.utr === lr.utr) || c.id === lr.id || (c.invoice_no && c.invoice_no === lr.invoice_no));
         const rawStatus = (lr.status || "paid").toLowerCase();
         const displayStatus = rawStatus === "paid" ? "Paid" : rawStatus === "pending_verification" ? "Pending Verification" : "Pending";
 
@@ -92,19 +129,16 @@ export default function StudentFees() {
 
       setFees(combined);
 
-      // Fetch published report cards from Teacher exam marks
+      // Fetch published report cards from Teacher exam marks (strictly isolated)
       try {
         const rawMarks = localStorage.getItem(`erp_exam_marks_${schoolId}`);
         if (rawMarks) {
           const allMarks = JSON.parse(rawMarks);
           if (Array.isArray(allMarks) && allMarks.length > 0) {
-            const myRoll = String(user?.personal_code || user?.roll_number || user?.id || "").toUpperCase();
-            const myName = String(user?.name || user?.full_name || "").toLowerCase();
             const matched = allMarks.filter(
               (m) =>
-                (m.roll_number && String(m.roll_number).toUpperCase() === myRoll) ||
-                (m.student_name && String(m.student_name).toLowerCase().includes(myName)) ||
-                allMarks.length <= 2
+                (currentRoll && m.roll_number && String(m.roll_number).toUpperCase() === currentRoll) ||
+                (currentName && m.student_name && String(m.student_name).toLowerCase() === currentName)
             );
             if (matched.length > 0) {
               setReportCards(
@@ -132,7 +166,7 @@ export default function StudentFees() {
       }
     } catch (err) {
       console.error("Error fetching fees for student:", err);
-      const fallback = localRecords.map((lr) => {
+      const fallback = localRecords.filter(matchStudent).map((lr) => {
         const rawStatus = (lr.status || "paid").toLowerCase();
         return {
           id: lr.id,

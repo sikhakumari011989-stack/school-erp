@@ -18,7 +18,9 @@ export default function ComprehensiveMemberModal({
   const activeSchoolId = (schoolId || "CAMPUS-01").toUpperCase();
 
   const [activeTab, setActiveTab] = useState(
-    initialRole === "principal"
+    initialRole === "trustee" || initialRole === "hod"
+      ? "trustee"
+      : initialRole === "principal"
       ? "principal"
       : initialRole === "accountant"
       ? "accountant"
@@ -86,6 +88,17 @@ export default function ComprehensiveMemberModal({
     password: "password123",
   });
 
+  // Trustee (HOD) Form State
+  const [trusteeForm, setTrusteeForm] = useState({
+    name: "",
+    customId: "",
+    designation: "Board of Trustees / Institutional Patron",
+    phone: "",
+    email: "",
+    salary: "85000",
+    password: "password123",
+  });
+
   // Mandatory Salary Initialization Helper: Writes directly to Payroll Engine
   const syncSalaryToPayroll = (memberId, baseSalary) => {
     try {
@@ -148,7 +161,11 @@ export default function ComprehensiveMemberModal({
     if (isOpen) {
       setErrorMessage("");
       const targetRole =
-        initialRole === "accountant"
+        initialRole === "trustee" || initialRole === "hod"
+          ? "trustee"
+          : initialRole === "principal"
+          ? "principal"
+          : initialRole === "accountant"
           ? "accountant"
           : initialRole === "teacher"
           ? "teacher"
@@ -192,6 +209,13 @@ export default function ComprehensiveMemberModal({
         ...prev,
         customId: prev.customId ? prev.customId : suggestedPrin,
       }));
+
+      // Pre-populate Trustee ID if empty
+      const suggestedHod = generateSuggestedId("trustee");
+      setTrusteeForm((prev) => ({
+        ...prev,
+        customId: prev.customId ? prev.customId : suggestedHod,
+      }));
     }
   }, [isOpen, initialRole, activeSchoolId]);
 
@@ -210,6 +234,8 @@ export default function ComprehensiveMemberModal({
       setNtsForm((prev) => ({ ...prev, customId: generateSuggestedId("nts") }));
     } else if (tab === "principal" && !principalForm.customId) {
       setPrincipalForm((prev) => ({ ...prev, customId: generateSuggestedId("principal") }));
+    } else if (tab === "trustee" && !trusteeForm.customId) {
+      setTrusteeForm((prev) => ({ ...prev, customId: generateSuggestedId("trustee") }));
     }
   };
 
@@ -748,6 +774,84 @@ export default function ComprehensiveMemberModal({
     }
   };
 
+  // 6. SUBMIT: TRUSTEE (HOD) ONBOARDING
+  const handleTrusteeSubmit = async (e) => {
+    e.preventDefault();
+    if (!trusteeForm.name.trim()) {
+      setErrorMessage("Please enter the Trustee's full name.");
+      return;
+    }
+    const cleanName = trusteeForm.name.trim();
+    let cleanCustomId = (trusteeForm.customId || "").trim().toUpperCase();
+    if (!cleanCustomId) {
+      cleanCustomId = generateSuggestedId("trustee");
+    }
+    setSubmitting(true);
+    setErrorMessage("");
+
+    const defaultPassword = trusteeForm.password.trim() || "password123";
+    const mappedEmail = trusteeForm.email.trim() || buildStandardErpEmail(activeSchoolId, cleanCustomId);
+    const salaryNum = parseFloat(trusteeForm.salary) || 85000;
+
+    try {
+      const newTrusteeRecord = {
+        id: `mem_hod_${Date.now()}`,
+        name: cleanName,
+        full_name: cleanName,
+        role: "trustee",
+        role_code: cleanCustomId,
+        roll_number: cleanCustomId,
+        personal_code: cleanCustomId,
+        class_name: "Board of Trustees",
+        dept: "Executive Governance & Trusteeship",
+        designation: trusteeForm.designation.trim() || "Board of Trustees / Institutional Patron",
+        phone: trusteeForm.phone.trim() || "+91 9518388499",
+        email: mappedEmail,
+        default_password: defaultPassword,
+        base_salary: salaryNum,
+        salary: `₹${salaryNum.toLocaleString("en-IN")}`,
+        school_id: activeSchoolId,
+        status: "active",
+        created_at: new Date().toISOString(),
+      };
+
+      await enrollMemberInCloud({
+        schoolCode: activeSchoolId,
+        member: newTrusteeRecord,
+      });
+
+      syncSalaryToPayroll(cleanCustomId, salaryNum);
+
+      logSecurityAction({
+        action: "TRUSTEE_ONBOARDED",
+        entityType: "TRUSTEE",
+        entityId: cleanCustomId,
+        details: `Onboarded Trustee "${cleanName}" with ID ${cleanCustomId}, Base Salary: ₹${salaryNum}`,
+        schoolId: activeSchoolId,
+      });
+
+      showToast(`Onboarded Trustee ${cleanName} (${cleanCustomId})! Login PIN: ${defaultPassword}`, "success");
+
+      setTrusteeForm({
+        name: "",
+        customId: generateSuggestedId("trustee"),
+        designation: "Board of Trustees / Institutional Patron",
+        phone: "",
+        email: "",
+        salary: "85000",
+        password: "password123",
+      });
+
+      if (onSuccess) onSuccess(newTrusteeRecord);
+      onClose();
+    } catch (err) {
+      console.error("Error onboarding trustee:", err);
+      setErrorMessage(err.message || "Failed to onboard trustee.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in overflow-y-auto">
       <div className="bg-[#1E293B] border border-slate-700/80 rounded-3xl p-5 sm:p-7 max-w-2xl w-full shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto">
@@ -766,6 +870,8 @@ export default function ComprehensiveMemberModal({
                 ? "➕ Onboard New Accountant"
                 : activeTab === "principal"
                 ? "➕ Onboard New Principal"
+                : activeTab === "trustee"
+                ? "➕ Onboard New Trustee (HOD)"
                 : "➕ Onboard Non-Teaching Staff"}
             </h2>
             <p className="text-xs text-slate-400 mt-1">
@@ -781,8 +887,8 @@ export default function ComprehensiveMemberModal({
           </button>
         </div>
 
-        {/* Tab Switcher - 4 Tabs with Responsive Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 mb-6">
+        {/* Tab Switcher - 6 Tabs Responsive Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 mb-6">
           <button
             type="button"
             onClick={() => handleTabSwitch("student")}
@@ -829,7 +935,7 @@ export default function ComprehensiveMemberModal({
             }`}
           >
             <span>🧹</span>
-            <span className="truncate">Non-Teaching (NTS)</span>
+            <span className="truncate">Staff (NTS)</span>
           </button>
           <button
             type="button"
@@ -842,6 +948,18 @@ export default function ComprehensiveMemberModal({
           >
             <span>🏛️</span>
             <span className="truncate">Principal (PRIN)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabSwitch("trustee")}
+            className={`py-2.5 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              activeTab === "trustee"
+                ? "bg-gradient-to-r from-rose-600 via-red-600 to-amber-600 text-white shadow-lg shadow-rose-600/30 border border-rose-400/40"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <span>👑</span>
+            <span className="truncate">Trustee (HOD)</span>
           </button>
         </div>
 
@@ -1564,13 +1682,35 @@ export default function ComprehensiveMemberModal({
                 />
               </div>
 
+              {/* Initial Monthly Base Salary */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-emerald-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Initial Monthly Base Salary (₹) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    placeholder="e.g. 40000"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-emerald-400 font-mono font-bold text-sm focus:outline-none focus:border-amber-500"
+                    value={accountantForm.salary}
+                    onChange={(e) => setAccountantForm({ ...accountantForm, salary: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Security Password */}
               <div>
                 <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
-                  Security Password / PIN
+                  Security Password / PIN *
                 </label>
                 <input
                   type="text"
+                  required
                   placeholder="password123"
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-amber-300 font-mono text-sm focus:outline-none focus:border-amber-500"
                   value={accountantForm.password}
@@ -1760,6 +1900,155 @@ export default function ComprehensiveMemberModal({
                   </>
                 ) : (
                   <span>➕ Onboard Non-Teaching Staff & Issue ID</span>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* TAB 6: ONBOARD NEW TRUSTEE (HOD) */}
+        {activeTab === "trustee" && (
+          <form onSubmit={handleTrusteeSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Full Name */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Trustee Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Dr. Vijay R. Patil"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-rose-500"
+                  value={trusteeForm.name}
+                  onChange={(e) => setTrusteeForm({ ...trusteeForm, name: e.target.value })}
+                />
+              </div>
+
+              {/* Custom Trustee ID */}
+              <div>
+                <div className="flex justify-between items-center mb-1.5 ml-1">
+                  <label className="text-[11px] font-extrabold text-slate-300 uppercase tracking-wider">
+                    Custom Trustee ID (HOD-*) *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setTrusteeForm((prev) => ({
+                        ...prev,
+                        customId: generateSuggestedId("trustee"),
+                      }))
+                    }
+                    className="text-[10px] text-rose-400 hover:text-rose-300 font-bold cursor-pointer"
+                  >
+                    ⚡ Suggest Next
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. HOD-01"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-rose-400 font-mono font-bold text-sm focus:outline-none focus:border-rose-500 uppercase tracking-wider"
+                  value={trusteeForm.customId}
+                  onChange={(e) =>
+                    setTrusteeForm({
+                      ...trusteeForm,
+                      customId: e.target.value.toUpperCase().replace(/\s+/g, "-"),
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Designation */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Designation / Role Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Board of Trustees / Institutional Patron"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-rose-500"
+                  value={trusteeForm.designation}
+                  onChange={(e) => setTrusteeForm({ ...trusteeForm, designation: e.target.value })}
+                />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Contact Phone (WhatsApp) *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="e.g. +91 95183 88499"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-rose-500 font-mono"
+                  value={trusteeForm.phone}
+                  onChange={(e) => setTrusteeForm({ ...trusteeForm, phone: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Initial Monthly Base Salary */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-emerald-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Initial Monthly Base Salary (₹) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    placeholder="e.g. 85000"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-emerald-400 font-mono font-bold text-sm focus:outline-none focus:border-rose-500"
+                    value={trusteeForm.salary}
+                    onChange={(e) => setTrusteeForm({ ...trusteeForm, salary: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Login Password */}
+              <div>
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
+                  Login Password / PIN *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="password123"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-amber-300 font-mono text-sm focus:outline-none focus:border-rose-500"
+                  value={trusteeForm.password}
+                  onChange={(e) => setTrusteeForm({ ...trusteeForm, password: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold text-xs cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="bg-gradient-to-r from-rose-600 via-red-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-black px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-rose-600/30 transition-all cursor-pointer flex items-center gap-2 border border-rose-400/40"
+              >
+                {submitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Onboarding Trustee...</span>
+                  </>
+                ) : (
+                  <span>➕ Onboard Trustee & Issue HOD Credentials</span>
                 )}
               </button>
             </div>
