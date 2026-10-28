@@ -535,7 +535,7 @@ export default function AccountantDashboard() {
         </div>
 
         {/* FINANCIAL METRICS ROW */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-fade-in-up stagger-1">
           {loading ? (
             <>
               <StatSkeleton />
@@ -545,49 +545,73 @@ export default function AccountantDashboard() {
             </>
           ) : (
             <>
-              <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-5 shadow-2xl flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-xl font-bold">
+              <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-5 shadow-2xl flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-xl font-bold shadow-inner shrink-0">
                   ₹
                 </div>
                 <div>
-                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-0.5">
-                    Total Revenue
-                  </p>
-                  <p className="text-xl font-extrabold text-emerald-400">
-                    ₹{stats.totalRevenue.toLocaleString()}
-                  </p>
-                  <span className="text-[10px] text-slate-400 block">Cleared receipts</span>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                      Total Revenue
+                    </p>
+                  </div>
+                  {stats.totalRevenue > 0 ? (
+                    <p className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400 tracking-tight">
+                      ₹{stats.totalRevenue.toLocaleString()}
+                    </p>
+                  ) : (
+                    <p className="text-lg font-bold text-slate-600 font-mono">₹0.00 Cleared</p>
+                  )}
+                  <span className="text-[10px] text-slate-400 block mt-0.5">Cleared receipts</span>
                 </div>
               </div>
 
-              <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-5 shadow-2xl flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xl font-bold">
+              <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] rounded-3xl p-5 shadow-2xl flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xl font-bold shadow-inner shrink-0">
                   ⏳
                 </div>
                 <div>
-                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-0.5">
-                    Pending Defaulters
-                  </p>
-                  <p className="text-xl font-extrabold text-amber-400">
-                    ₹{stats.pendingDues.toLocaleString()}
-                  </p>
-                  <span className="text-[10px] text-slate-400 block">Unsettled fees</span>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                    <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                      Pending Defaulters
+                    </p>
+                  </div>
+                  {stats.pendingDues > 0 ? (
+                    <p className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-rose-400 tracking-tight">
+                      ₹{stats.pendingDues.toLocaleString()}
+                    </p>
+                  ) : (
+                    <p className="text-lg font-bold text-emerald-400 font-mono">₹0.00 Dues</p>
+                  )}
+                  <span className="text-[10px] text-slate-400 block mt-0.5">Unsettled fees</span>
                 </div>
               </div>
 
               <div
                 onClick={() => setFilterStatus("pending_verification")}
-                className={`backdrop-blur-xl border rounded-3xl p-5 shadow-2xl flex items-center gap-4 cursor-pointer transition-all ${
+                className={`backdrop-blur-2xl border rounded-3xl p-5 shadow-2xl flex items-center gap-4 cursor-pointer transition-all duration-500 ${
                   stats.pendingVerificationCount > 0
-                    ? "bg-amber-950/40 border-amber-500/60 hover:border-amber-400"
-                    : "bg-[#1E293B]/70 border-slate-700/60"
+                    ? "bg-amber-950/30 border-amber-500/50 hover:border-amber-400 hover:shadow-[0_0_30px_rgba(245,158,11,0.2)]"
+                    : "bg-slate-900/40 border-slate-800/50 hover:border-cyan-500/30"
                 }`}
               >
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center justify-center text-xl font-bold">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 flex items-center justify-center text-xl font-bold shadow-inner shrink-0">
                   ⚡
                 </div>
                 <div>
                   <p className="text-amber-300 text-[11px] font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                    </span>
                     <span>UPI Queue</span>
                     {stats.pendingVerificationCount > 0 && (
                       <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full animate-pulse">
@@ -595,23 +619,25 @@ export default function AccountantDashboard() {
                       </span>
                     )}
                   </p>
-                  <p className="text-xl font-extrabold text-white">
+                  <p className="text-2xl font-extrabold text-white tracking-tight">
                     {stats.pendingVerificationCount} Awaiting
                   </p>
-                  <span className="text-[10px] text-amber-200/80 block">Click to review receipts</span>
+                  <span className="text-[10px] text-amber-200/80 block mt-0.5">Click to review receipts</span>
                 </div>
               </div>
 
-              <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-5 shadow-2xl flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center text-xl font-bold">
+              <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-5 shadow-2xl flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/30 flex items-center justify-center text-xl font-bold shadow-inner shrink-0">
                   🧾
                 </div>
                 <div>
                   <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-0.5">
-                    Completed
+                    Completed Invoices
                   </p>
-                  <p className="text-xl font-extrabold text-blue-400">{stats.totalPaidCount} Invoices</p>
-                  <span className="text-[10px] text-slate-400 block">Tax cleared</span>
+                  <p className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400 tracking-tight">
+                    {stats.totalPaidCount} Invoices
+                  </p>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">Tax cleared & settled</span>
                 </div>
               </div>
             </>
@@ -647,10 +673,18 @@ export default function AccountantDashboard() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in-up stagger-2">
           {/* LEFT: MANUAL FEE ENTRY FORM */}
-          <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-6 shadow-2xl h-fit">
-            <h2 className="text-xl font-bold text-white mb-6">Log Fee Transaction</h2>
+          <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-emerald-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] rounded-3xl p-6 shadow-2xl h-fit">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider block">Terminal Input</span>
+                <h2 className="text-xl font-black text-white">Log Fee Settlement</h2>
+              </div>
+              <span className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-sm font-bold shadow-inner">
+                ✍️
+              </span>
+            </div>
             <form onSubmit={handleAddTransaction} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
@@ -660,7 +694,7 @@ export default function AccountantDashboard() {
                   type="text"
                   required
                   placeholder="e.g., Rohan Mehta"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm"
+                  className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm transition-all"
                   value={formData.student_name}
                   onChange={(e) => setFormData({ ...formData, student_name: e.target.value })}
                 />
@@ -674,7 +708,7 @@ export default function AccountantDashboard() {
                   type="text"
                   required
                   placeholder="e.g., 10-A, 12-Sci"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm"
+                  className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm transition-all"
                   value={formData.class_name}
                   onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
                 />
@@ -688,7 +722,7 @@ export default function AccountantDashboard() {
                   type="number"
                   required
                   placeholder="e.g., 5000"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm font-mono font-bold"
+                  className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-emerald-400 focus:outline-none focus:border-emerald-500 text-sm font-mono font-bold transition-all"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 />
@@ -699,7 +733,7 @@ export default function AccountantDashboard() {
                   Payment Status
                 </label>
                 <select
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 font-bold text-sm"
+                  className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 font-bold text-sm transition-all"
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 >
@@ -713,7 +747,7 @@ export default function AccountantDashboard() {
                   Payment Mode
                 </label>
                 <select
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 font-bold text-sm"
+                  className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 font-bold text-sm transition-all"
                   value={formData.payment_mode}
                   onChange={(e) => setFormData({ ...formData, payment_mode: e.target.value })}
                 >
@@ -727,59 +761,65 @@ export default function AccountantDashboard() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-4 rounded-xl shadow-lg shadow-emerald-600/30 transition-all mt-4 disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-emerald-600/30 transition-all mt-4 disabled:opacity-50 cursor-pointer"
               >
                 {submitting ? "Logging Transaction..." : "Record Transaction 🚀"}
               </button>
             </form>
           </div>
 
-          {/* RIGHT: LEDGER TABLE */}
-          <div className="lg:col-span-2 bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl shadow-2xl overflow-hidden h-fit">
-            <div className="p-6 border-b border-slate-700/60 bg-slate-800/50 space-y-4">
+          {/* RIGHT: BLOOMBERG-STYLE TREASURY LEDGER */}
+          <div className="lg:col-span-2 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl shadow-2xl overflow-hidden h-fit">
+            <div className="p-6 border-b border-slate-800/80 bg-slate-950/40 space-y-4">
               <div className="flex justify-between items-center flex-wrap gap-4">
                 <div className="flex items-center gap-3">
-                  <h2 className="text-lg font-bold text-white">Live Institutional Fee Ledger</h2>
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[10px] font-mono uppercase font-bold mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                      <span>BLOOMBERG FINTECH TERMINAL</span>
+                    </div>
+                    <h2 className="text-lg font-black text-white">Live Institutional Treasury Ledger</h2>
+                  </div>
                   <button
                     onClick={handleBroadcastWhatsApp}
                     title="Send WhatsApp notice to all pending fee defaulters"
-                    className="bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-bold px-3 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-900/20 cursor-pointer"
+                    className="bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-300 font-bold px-3 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-900/20 cursor-pointer"
                   >
                     <span>📢</span>
-                    <span>Broadcast WhatsApp Reminder</span>
+                    <span>Broadcast WhatsApp</span>
                   </button>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <button
                     onClick={() => setFilterStatus("all")}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      filterStatus === "all" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      filterStatus === "all" ? "bg-cyan-600 text-white shadow-md shadow-cyan-600/30" : "bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-white"
                     }`}
                   >
                     All ({ledger.length})
                   </button>
                   <button
                     onClick={() => setFilterStatus("paid")}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      filterStatus === "paid" ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      filterStatus === "paid" ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30" : "bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-white"
                     }`}
                   >
                     Paid ({stats.totalPaidCount})
                   </button>
                   <button
                     onClick={() => setFilterStatus("pending")}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      filterStatus === "pending" ? "bg-amber-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      filterStatus === "pending" ? "bg-amber-600 text-white shadow-md shadow-amber-600/30" : "bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-white"
                     }`}
                   >
                     Pending ({ledger.filter((r) => (r.status || "").toLowerCase() === "pending").length})
                   </button>
                   <button
                     onClick={() => setFilterStatus("pending_verification")}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                       filterStatus === "pending_verification"
-                        ? "bg-amber-500 text-slate-950 font-black shadow-md"
-                        : "bg-slate-800 text-amber-400 border border-amber-500/30 hover:bg-slate-700"
+                        ? "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/30"
+                        : "bg-slate-950/80 text-amber-400 border border-amber-500/30 hover:bg-slate-900"
                     }`}
                   >
                     <span>⚡ UPI Queue</span>
@@ -796,7 +836,7 @@ export default function AccountantDashboard() {
                 placeholder="Search ledger by student name, class, or UTR number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm"
+                className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 text-sm transition-all"
               />
             </div>
 
@@ -805,41 +845,46 @@ export default function AccountantDashboard() {
                 <TableSkeleton rows={5} cols={4} />
               </div>
             ) : filteredLedger.length === 0 ? (
-              <div className="p-12 text-center text-slate-400">
+              <div className="p-12 text-center text-slate-400 bg-tech-grid">
                 <p className="font-bold text-white text-base">No transactions found.</p>
-                <p className="text-xs mt-1">Transactions recorded here or paid online via Razorpay appear live.</p>
+                <p className="text-xs text-slate-500 mt-1">Transactions recorded here or paid online via Razorpay appear live.</p>
               </div>
             ) : (
               <div className="overflow-x-auto w-full">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-700/60 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/40">
-                      <th className="p-4">Student & Class</th>
+                    <tr className="border-b border-slate-800 text-slate-400 text-xs font-mono uppercase tracking-wider bg-slate-950/60">
+                      <th className="p-4 pl-6">Student & Class</th>
                       <th className="p-4">Amount</th>
                       <th className="p-4">Payment Mode</th>
                       <th className="p-4 text-center">Status</th>
                       <th className="p-4">Date</th>
-                      <th className="p-4 text-right">Actions</th>
+                      <th className="p-4 text-right pr-6">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/50 text-sm">
-                    {filteredLedger.map((item) => {
+                  <tbody className="divide-y divide-slate-800/60 text-sm">
+                    {filteredLedger.map((item, idx) => {
                       const isPaid = (item.status || "").toLowerCase() === "paid";
                       const isPendingVerification = (item.status || "").toLowerCase() === "pending_verification";
 
                       return (
-                        <tr key={item.id} className="hover:bg-slate-800/30 transition-colors">
-                          <td className="p-4">
+                        <tr
+                          key={item.id}
+                          className={`hover:bg-slate-800/40 hover:shadow-inner transition-colors duration-150 border-b border-slate-800/40 ${
+                            idx % 2 === 1 ? "bg-slate-900/20" : "bg-transparent"
+                          }`}
+                        >
+                          <td className="p-4 pl-6">
                             <p className="font-bold text-white">{item.student_name}</p>
                             <p className="text-xs text-slate-400">Class {item.class_name}</p>
                             {item.utr && (
-                              <p className="text-[11px] font-mono text-emerald-400 mt-0.5">
+                              <p className="text-[11px] font-mono text-cyan-400 mt-0.5">
                                 UTR: {item.utr}
                               </p>
                             )}
                           </td>
                           <td className="p-4">
-                            <span className="font-extrabold text-white text-base">
+                            <span className="font-extrabold text-white text-base font-mono">
                               ₹{Number(item.amount).toLocaleString()}
                             </span>
                             {item.is_partial && (
@@ -850,14 +895,14 @@ export default function AccountantDashboard() {
                           </td>
                           <td className="p-4 text-slate-300 text-xs">
                             <div className="flex flex-col items-start gap-1">
-                              <span className="bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-md text-[11px]">
+                              <span className="bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-md text-[11px] font-mono">
                                 {item.payment_mode}
                               </span>
                               {(item.screenshot_data || item.screenshot) && (
                                 <button
                                   type="button"
                                   onClick={() => setPreviewReceipt(item)}
-                                  className="text-[11px] text-blue-400 hover:text-blue-300 underline font-semibold flex items-center gap-1 cursor-pointer"
+                                  className="text-[11px] text-cyan-400 hover:text-cyan-300 underline font-semibold flex items-center gap-1 cursor-pointer"
                                 >
                                   <Eye className="w-3 h-3" />
                                   <span>View Screenshot</span>
@@ -867,19 +912,19 @@ export default function AccountantDashboard() {
                           </td>
                           <td className="p-4 text-center">
                             <span
-                              className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
+                              className={`px-3 py-1 rounded-full text-[11px] font-mono font-bold uppercase ${
                                 isPaid
-                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
                                   : isPendingVerification
-                                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse"
-                                  : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.15)]"
+                                  : "bg-rose-500/10 text-rose-400 border border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.15)]"
                               }`}
                             >
-                              {isPaid ? "Paid" : isPendingVerification ? "Pending Verification" : "Pending Due"}
+                              {isPaid ? "Verified" : isPendingVerification ? "Pending Approval" : "Pending Due"}
                             </span>
                           </td>
                           <td className="p-4 text-slate-400 text-xs font-mono">{item.date}</td>
-                          <td className="p-4 text-right">
+                          <td className="p-4 text-right pr-6">
                             {isPendingVerification ? (
                               <div className="flex items-center justify-end gap-2">
                                 <button

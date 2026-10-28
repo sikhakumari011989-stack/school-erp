@@ -684,43 +684,113 @@ export default function TrusteeDashboard() {
                 return r === "teacher" || r === "faculty";
               }).length;
               return (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
-                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Tuition Revenue</p>
-                    <p className="text-3xl font-extrabold text-emerald-400">₹{financialStats.totalRevenue.toLocaleString()}</p>
-                    <span className="text-xs text-slate-400 mt-2 block">
-                      {financialStats.totalRevenue > 0 ? `${financialStats.paidTransactions} settled transactions` : "0 recorded transactions"}
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fade-in-up stagger-1">
+                  {/* CARD 1: RECONCILED REVENUE (SPAN 2 COLS) */}
+                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 w-44 h-44 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                          </span>
+                          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Reconciled Revenue</p>
+                        </div>
+                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">
+                          Trustee Treasury
+                        </span>
+                      </div>
+
+                      {financialStats.totalRevenue > 0 ? (
+                        <p className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 tracking-tight">
+                          ₹{financialStats.totalRevenue.toLocaleString()}
+                        </p>
+                      ) : (
+                        <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
+                          <p className="text-2xl sm:text-3xl font-extrabold text-slate-600 font-mono tracking-tight">₹0.00</p>
+                          <span className="text-[10px] text-slate-500 block mt-0.5">Clean Ledger • Awaiting Settlements</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-slate-400 mt-4 block border-t border-slate-800/80 pt-3">
+                      {financialStats.totalRevenue > 0 ? `${financialStats.paidTransactions} settled institutional transactions` : "0 recorded transactions"}
                     </span>
                   </div>
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
-                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Active Enrolled Students</p>
-                    <p className="text-3xl font-extrabold text-blue-400">{loading ? "..." : `${enrolledStudentsCount} Enrolled`}</p>
-                    <span className="text-xs text-slate-400 mt-2 block">
-                      {enrolledStudentsCount > 0 ? "Verified in directory" : "Awaiting student enrollment"}
+
+                  {/* CARD 2: ACTIVE STUDENTS */}
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="relative flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+                        </span>
+                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Students</p>
+                      </div>
+
+                      {enrolledStudentsCount > 0 ? (
+                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400 tracking-tight">
+                          {loading ? "..." : enrolledStudentsCount}
+                        </p>
+                      ) : (
+                        <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
+                          <p className="text-xl font-bold text-slate-600 font-mono">{loading ? "..." : "0 Enrolled"}</p>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-slate-400 mt-3 block border-t border-slate-800/80 pt-2">
+                      Verified scholar directory node
                     </span>
                   </div>
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
-                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Faculty Strength</p>
-                    <p className="text-3xl font-extrabold text-purple-400">{facultyCount} Active Tutors</p>
-                    <span className="text-xs text-slate-400 mt-2 block">
-                      {facultyCount > 0 ? "Institutional faculty node" : "0 faculty onboarded"}
+
+                  {/* CARD 3: FACULTY STRENGTH */}
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Faculty Strength</p>
+                      {facultyCount > 0 ? (
+                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-pink-400 tracking-tight">
+                          {facultyCount} Tutors
+                        </p>
+                      ) : (
+                        <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
+                          <p className="text-xl font-bold text-slate-600 font-mono">0 Onboarded</p>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-slate-400 mt-3 block border-t border-slate-800/80 pt-2">
+                      Institutional academic faculty
                     </span>
                   </div>
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
-                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Fee Collection Rate</p>
-                    <p className="text-3xl font-extrabold text-emerald-400">{financialStats.collectionRate}</p>
-                    <span className="text-xs text-slate-400 mt-2 block">
-                      {financialStats.totalTransactions > 0 ? "Live reconciled" : "0% collected"}
-                    </span>
+
+                  {/* CARD 4: FEE COLLECTION RATE (SPAN 4 or regular) */}
+                  <div className="col-span-1 md:col-span-3 lg:col-span-4 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Fee Collection Recovery Rate</p>
+                      <p className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 tracking-tight">
+                        {financialStats.collectionRate}
+                      </p>
+                      <span className="text-xs text-slate-400 mt-1 block">Live calculated across tuition billing cycles</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-center">
+                        <span className="text-[10px] text-slate-400 uppercase font-bold block">Status</span>
+                        <span className="text-xs font-bold text-emerald-400">Reconciled</span>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-center">
+                        <span className="text-[10px] text-slate-400 uppercase font-bold block">Gateway</span>
+                        <span className="text-xs font-bold text-cyan-400">Instant UPI</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
             })()}
 
             {/* TRUSTEE AUDIT CARD */}
-            <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-8 shadow-2xl">
-              <h2 className="text-xl font-bold text-white mb-4">Board & Financial Compliance Vault</h2>
-              <p className="text-slate-300 text-sm mb-6">All institutional tax records, rental agreements, and teacher contracts are encrypted and verified under Supabase RLS security standards.</p>
+            <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-8 shadow-2xl animate-fade-in-up stagger-2">
+              <h2 className="text-xl font-bold text-white mb-2">Board & Financial Compliance Vault</h2>
+              <p className="text-slate-300 text-sm mb-6 max-w-3xl">All institutional tax records, rental agreements, and teacher contracts are encrypted and verified under Supabase RLS security standards.</p>
               <div className="flex flex-wrap gap-3">
                 <button onClick={() => showToast("Certified financial audit PDF compiled and verified under Supabase RLS standards.", "info")} className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg transition-all cursor-pointer">
                   Download Certified Financial Audit (PDF) 📥

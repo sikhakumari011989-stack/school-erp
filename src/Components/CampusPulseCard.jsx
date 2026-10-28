@@ -86,7 +86,7 @@ export default function CampusPulseCard({ schoolCode, compact = false, className
   }
 
   return (
-    <div className={`relative overflow-hidden bg-white/5 backdrop-blur-2xl border ${theme.cardBorder} rounded-2xl p-5 sm:p-6 shadow-2xl transition-all ${className}`}>
+    <div className={`relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-5 sm:p-6 shadow-2xl ${className}`}>
       {/* Ambient background glow */}
       <div className="absolute -right-12 -top-12 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
 

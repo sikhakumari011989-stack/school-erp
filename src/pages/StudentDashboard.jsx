@@ -278,7 +278,7 @@ export default function StudentDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
           {/* BENTO CARD 1: PRESENCE VELOCITY & STREAK RING */}
-          <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+          <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between animate-fade-in-up stagger-1">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
                 <span className="text-xl">🔥</span>
@@ -293,16 +293,21 @@ export default function StudentDashboard() {
             </div>
 
             <div className="flex items-center justify-around py-4">
-              {/* Radial SVG Ring */}
+              {/* Radial SVG Ring with Neon Cyan/Emerald Glow Filter */}
               <div className="relative flex items-center justify-center">
                 <svg className="w-28 h-28 transform -rotate-90">
+                  <defs>
+                    <filter id="neon-cyan-glow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#06b6d4" floodOpacity="0.8" />
+                    </filter>
+                  </defs>
                   <circle
                     cx="56"
                     cy="56"
                     r={radius}
                     stroke="currentColor"
                     strokeWidth="8"
-                    className="text-slate-800"
+                    className="text-slate-800/70"
                     fill="transparent"
                   />
                   <circle
@@ -314,13 +319,16 @@ export default function StudentDashboard() {
                     strokeDasharray={circumference}
                     strokeDashoffset={strokeDashoffset}
                     strokeLinecap="round"
-                    className="text-emerald-400 transition-all duration-1000 ease-out"
+                    filter="url(#neon-cyan-glow)"
+                    className="stroke-cyan-400 text-cyan-400 transition-all duration-1000 ease-out"
                     fill="transparent"
                   />
                 </svg>
                 <div className="absolute flex flex-col items-center justify-center text-center">
-                  <span className="text-2xl font-black text-white">{metrics.attendancePercentage}%</span>
-                  <span className="text-[9px] font-extrabold uppercase text-slate-400">Rate</span>
+                  <span className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400 tracking-tight">
+                    {metrics.attendancePercentage}%
+                  </span>
+                  <span className="text-[9px] font-extrabold uppercase text-slate-400">Attendance</span>
                 </div>
               </div>
 
@@ -332,7 +340,7 @@ export default function StudentDashboard() {
                   </span>
                   <p className="text-[10px] uppercase font-bold text-slate-400">Day Active Streak</p>
                 </div>
-                <div className="pt-1 border-t border-white/10">
+                <div className="pt-1 border-t border-slate-800">
                   <p className="text-xs font-mono font-bold text-slate-200">
                     {metrics.attendedClasses} / {metrics.totalClasses} Lectures
                   </p>
@@ -341,13 +349,13 @@ export default function StudentDashboard() {
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-white/5 text-[11px] text-slate-300">
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-300">
               ⚡ Regular attendance qualifies student for the Chancellor's Merit Shield.
             </div>
           </div>
 
           {/* BENTO CARD 2: DEEP FOCUS POMODORO TIMER */}
-          <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+          <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between animate-fade-in-up stagger-2">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
                 <span className="text-xl">⏱️</span>
@@ -419,7 +427,7 @@ export default function StudentDashboard() {
           </div>
 
           {/* BENTO CARD 3: ACTION QUESTS & CONCEPT MISSIONS */}
-          <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+          <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between animate-fade-in-up stagger-3">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
                 <span className="text-xl">⚔️</span>
@@ -428,34 +436,35 @@ export default function StudentDashboard() {
                   <p className="text-[11px] text-slate-400">Gamified Faculty Quests</p>
                 </div>
               </div>
-              <span className="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase px-2.5 py-1 rounded-full">
+              <span className="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
                 {metrics.pendingHomeworkCount} Active
               </span>
             </div>
 
             <div className="space-y-2.5 py-1">
-              <div className="p-3 rounded-2xl bg-slate-950/60 border border-white/10 flex items-center justify-between gap-2 hover:border-cyan-500/40 transition-colors">
+              <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 hover:border-cyan-400/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:scale-[1.01] transition-all duration-300 flex items-center justify-between gap-2 cursor-pointer">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.3)]">
                       DUE TODAY
                     </span>
                     <span className="text-xs font-bold text-white truncate">Physics: Quantum Mechanics Wave Functions</span>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Faculty: Dr. Sharma • 50 XP Reward</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Faculty: Dr. Sharma • 50 XP Reward</p>
                 </div>
                 <span className="text-xs font-bold text-cyan-400 shrink-0">→</span>
               </div>
 
-              <div className="p-3 rounded-2xl bg-slate-950/60 border border-white/10 flex items-center justify-between gap-2 hover:border-cyan-500/40 transition-colors">
+              <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 hover:border-cyan-400/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:scale-[1.01] transition-all duration-300 flex items-center justify-between gap-2 cursor-pointer">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
                       HIGH PRIORITY
                     </span>
                     <span className="text-xs font-bold text-white truncate">Mathematics: Integral Calculus Module 4</span>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Due in 2 days • 75 XP Reward</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Due in 2 days • 75 XP Reward</p>
                 </div>
                 <span className="text-xs font-bold text-cyan-400 shrink-0">→</span>
               </div>
@@ -463,15 +472,15 @@ export default function StudentDashboard() {
 
             <button
               onClick={() => navigate("/student/homework")}
-              className="w-full mt-3 py-2.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-white/10 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full mt-3 py-2.5 rounded-xl bg-slate-950/90 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/40 text-cyan-300 hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
             >
-              <span>View All Action Missions</span>
+              <span>View All Active Missions</span>
               <span>→</span>
             </button>
           </div>
 
           {/* BENTO CARD 4: TIMED ASSESSMENT ARENA (ESPORTS CBT) */}
-          <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+          <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between animate-fade-in-up stagger-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
                 <span className="text-xl">🎯</span>
@@ -511,7 +520,7 @@ export default function StudentDashboard() {
           </div>
 
           {/* BENTO CARD 5: MASTERY TRANSCRIPT & PERCENTILE VAULT */}
-          <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+          <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between animate-fade-in-up stagger-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
                 <span className="text-xl">📊</span>
@@ -566,48 +575,51 @@ export default function StudentDashboard() {
             </button>
           </div>
 
-          {/* BENTO CARD 6: TUITION TREASURY & INSTANT UTR SYNC */}
-          <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+          {/* BENTO CARD 6: TUITION TREASURY & ACTIVE FINANCIAL MISSION */}
+          <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between animate-fade-in-up stagger-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
                 <span className="text-xl">💳</span>
                 <div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider">Tuition Treasury</h3>
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider">Tuition Mission</h3>
                   <p className="text-[11px] text-slate-400">Encrypted Razorpay Gateway</p>
                 </div>
               </div>
-              <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border ${
+              <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${
                 metrics.feeStatus.includes("Pending")
-                  ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                  ? "bg-rose-500/15 text-rose-300 border-rose-500/40 animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.25)]"
                   : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
               }`}>
+                {metrics.feeStatus.includes("Pending") && <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>}
                 {metrics.feeStatus}
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/10 my-1">
+            <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 my-1 hover:border-emerald-500/40 transition-colors">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-slate-400">Settlement Verification</span>
+                <span className="text-xs text-slate-400">Active Quest Target</span>
                 <span className="text-xs font-mono font-bold text-emerald-400">Instant UTR Sync</span>
               </div>
               <div className="flex items-baseline justify-between">
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Current Ledger Dues</span>
-                  <span className="text-2xl font-black text-white">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Outstanding Balance</span>
+                  <span className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400 tracking-tight">
                     {metrics.pendingFeeAmount > 0 ? `₹${metrics.pendingFeeAmount.toLocaleString()}` : "₹0.00"}
                   </span>
                 </div>
-                <span className="text-[11px] text-cyan-400 font-semibold">Partial Pay Supported</span>
+                <span className="text-[10px] font-mono font-bold text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
+                  +100 XP Settlement
+                </span>
               </div>
 
               {/* Batch-Targeted Fee Heads Preview */}
               {publishedFees.length > 0 && (
-                <div className="mt-3 pt-2.5 border-t border-white/10 space-y-1.5">
+                <div className="mt-3 pt-2.5 border-t border-slate-800/80 space-y-1.5">
                   <span className="text-[10px] font-bold text-cyan-300 uppercase tracking-wider block">
                     Assigned Fees for {studentBatch}:
                   </span>
                   {publishedFees.slice(0, 2).map((fee) => (
-                    <div key={fee.id} className="flex justify-between items-center text-[11px] p-1.5 rounded-lg bg-slate-900/60 border border-white/5">
+                    <div key={fee.id} className="flex justify-between items-center text-[11px] p-1.5 rounded-lg bg-slate-900/60 border border-slate-800/80">
                       <span className="text-slate-200 font-medium truncate max-w-[150px]">{fee.title}</span>
                       <span className="text-emerald-400 font-mono font-bold">₹{Number(fee.amount).toLocaleString()}</span>
                     </div>
@@ -621,11 +633,11 @@ export default function StudentDashboard() {
                 onClick={() => navigate("/student/pay")}
                 className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <span>⚡ Pay Online</span>
+                <span>⚡ Complete Mission (Pay)</span>
               </button>
               <button
                 onClick={() => navigate("/student/fees")}
-                className="py-2.5 px-3 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-white/10 text-slate-300 hover:text-white font-bold text-xs transition-all cursor-pointer"
+                className="py-2.5 px-3 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white font-bold text-xs transition-all cursor-pointer"
                 title="View fee receipt history"
               >
                 Receipts 🧾
@@ -636,43 +648,74 @@ export default function StudentDashboard() {
         </div>
 
         {/* 4. HONOR CREST & MERIT LEDGER + QUICK EXPANDED ACCESS */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up stagger-6">
 
-          {/* Honor Crest & Merit Ledger Card */}
-          <div className="lg:col-span-1 bg-gradient-to-br from-slate-900 via-indigo-950/50 to-slate-900 border border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+          {/* Honor Crest & Merit Ledger Card with Dynamic Behavior SVG Ring */}
+          <div className="lg:col-span-1 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] rounded-3xl p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
                 <span className="text-2xl">🏆</span>
                 <div>
                   <h3 className="text-sm font-black text-white uppercase tracking-wider">Honor Crest & Merits</h3>
-                  <p className="text-[11px] text-slate-400">Institutional Conduct Ledger</p>
+                  <p className="text-[11px] text-slate-400">Behavior & Conduct Telemetry</p>
                 </div>
               </div>
-              <span className="bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-black uppercase px-2.5 py-1 rounded-full">
+              <span className="bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-black uppercase px-2.5 py-1 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.2)]">
                 Gold Crest
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-950/70 border border-amber-500/20 my-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400">Conduct Score</span>
-                  <p className="text-3xl font-black text-amber-400">{metrics.conductScore} / 100</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-slate-400">Disciplinary Status</span>
-                  <p className="text-xs font-bold text-emerald-400">Exemplary Standing</p>
+            <div className="p-4 rounded-2xl bg-slate-950/70 border border-amber-500/20 my-2 flex items-center justify-between gap-4">
+              {/* Dynamic Behavior / Conduct SVG Progress Ring */}
+              <div className="relative flex items-center justify-center shrink-0">
+                <svg className="w-20 h-20 transform -rotate-90">
+                  <defs>
+                    <filter id="neon-amber-glow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#f59e0b" floodOpacity="0.8" />
+                    </filter>
+                  </defs>
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r="32"
+                    stroke="currentColor"
+                    strokeWidth="6"
+                    className="text-slate-800/80"
+                    fill="transparent"
+                  />
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r="32"
+                    stroke="currentColor"
+                    strokeWidth="6"
+                    strokeDasharray={2 * Math.PI * 32}
+                    strokeDashoffset={(2 * Math.PI * 32) - ((metrics.conductScore / 100) * (2 * Math.PI * 32))}
+                    strokeLinecap="round"
+                    filter="url(#neon-amber-glow)"
+                    className="stroke-amber-400 text-amber-400 transition-all duration-1000 ease-out"
+                    fill="transparent"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center justify-center text-center">
+                  <span className="text-base font-black text-amber-400">{metrics.conductScore}</span>
+                  <span className="text-[8px] font-extrabold uppercase text-slate-400">Score</span>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
-                <span className="text-slate-300">Commendations: <strong className="text-amber-400">4</strong></span>
-                <span className="text-slate-300">Infractions: <strong className="text-emerald-400">0</strong></span>
+
+              <div className="flex-1">
+                <span className="text-[10px] uppercase font-bold text-slate-400">Disciplinary Standing</span>
+                <p className="text-xs font-bold text-emerald-400 mt-0.5">Exemplary Rank</p>
+                <div className="mt-2 pt-2 border-t border-slate-800 text-[11px] space-y-0.5">
+                  <p className="text-slate-300">Commendations: <strong className="text-amber-400">4</strong></p>
+                  <p className="text-slate-300">Infractions: <strong className="text-emerald-400">0</strong></p>
+                </div>
               </div>
             </div>
 
             <button
               onClick={() => navigate("/student/conduct")}
-              className="w-full mt-2 py-2.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-white/10 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full mt-2 py-2.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-amber-300 hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
             >
               <span>View Conduct Record & Seals</span>
               <span>→</span>
@@ -680,7 +723,7 @@ export default function StudentDashboard() {
           </div>
 
           {/* Quick Access Matrix (LMS, Certificates, Calendar, Gallery) */}
-          <div className="lg:col-span-2 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl">
+          <div className="lg:col-span-2 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 sm:p-7 shadow-2xl">
             <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
               <span>🚀</span>
               <span>Academic Extensions & Learning Modules</span>

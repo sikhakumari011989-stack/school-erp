@@ -140,7 +140,7 @@ const AppLayout = ({ children }) => {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-900 text-slate-100 font-sans w-full relative">
+    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans w-full relative">
       <OfflineIndicator />
       {!isPublicPage && <Sidebar />}
       <main

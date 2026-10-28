@@ -185,7 +185,7 @@ export default function StaffDashboard() {
               className={`px-6 py-3 rounded-2xl font-black text-sm shadow-xl transition-all cursor-pointer flex items-center gap-2 ${
                 clockedIn
                   ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30"
+                  : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-blue-600/30"
               }`}
             >
               <span>{clockedIn ? "✓" : "🕒"}</span>
@@ -194,27 +194,114 @@ export default function StaffDashboard() {
           </div>
         </div>
 
+        {/* MASSIVE CHUNKY GLASS QUICK ACTIONS FOR OPS & GUARDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 animate-fade-in-up stagger-1">
+          {/* ACTION 1: SCAN QR */}
+          <button
+            onClick={() => setActiveTab("scanner")}
+            className="group bg-slate-900/60 backdrop-blur-2xl border-2 border-cyan-500/40 hover:border-cyan-400 p-6 rounded-3xl shadow-2xl hover:shadow-[0_0_35px_rgba(6,182,212,0.3)] hover:scale-[1.02] active:scale-95 transition-all duration-300 text-left flex flex-col justify-between min-h-[140px] cursor-pointer"
+          >
+            <div className="flex items-center justify-between w-full">
+              <span className="w-14 h-14 rounded-2xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
+                📷
+              </span>
+              <span className="text-[10px] font-mono font-black uppercase px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                1-TAP SCAN
+              </span>
+            </div>
+            <div className="mt-4">
+              <h3 className="text-xl font-black text-white group-hover:text-cyan-300 transition-colors">
+                Scan QR Code
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Camera scan student ID for gate entry & library
+              </p>
+            </div>
+          </button>
+
+          {/* ACTION 2: GATE CHECK-IN */}
+          <button
+            onClick={handleClockIn}
+            disabled={clockedIn}
+            className={`group bg-slate-900/60 backdrop-blur-2xl border-2 p-6 rounded-3xl shadow-2xl transition-all duration-300 text-left flex flex-col justify-between min-h-[140px] cursor-pointer ${
+              clockedIn
+                ? "border-emerald-500/40 bg-emerald-950/20 cursor-default"
+                : "border-emerald-500/40 hover:border-emerald-400 hover:shadow-[0_0_35px_rgba(16,185,129,0.3)] hover:scale-[1.02] active:scale-95"
+            }`}
+          >
+            <div className="flex items-center justify-between w-full">
+              <span className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
+                {clockedIn ? "✓" : "🚪"}
+              </span>
+              <span className={`text-[10px] font-mono font-black uppercase px-2.5 py-1 rounded-full border ${
+                clockedIn
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                  : "bg-emerald-500/20 text-emerald-300 border-emerald-400/30 animate-pulse"
+              }`}>
+                {clockedIn ? "VERIFIED ON-DUTY" : "TAP TO CLOCK IN"}
+              </span>
+            </div>
+            <div className="mt-4">
+              <h3 className="text-xl font-black text-white group-hover:text-emerald-300 transition-colors">
+                Gate Check-in
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {clockedIn ? `Entry logged at ${clockTime}` : "Log shift duty arrival timestamp"}
+              </p>
+            </div>
+          </button>
+
+          {/* ACTION 3: LOG ASSET */}
+          <button
+            onClick={() => {
+              showToast("Asset checkpoint logged for Campus Facilities ✅", "success");
+            }}
+            className="group bg-slate-900/60 backdrop-blur-2xl border-2 border-purple-500/40 hover:border-purple-400 p-6 rounded-3xl shadow-2xl hover:shadow-[0_0_35px_rgba(168,85,247,0.3)] hover:scale-[1.02] active:scale-95 transition-all duration-300 text-left flex flex-col justify-between min-h-[140px] cursor-pointer"
+          >
+            <div className="flex items-center justify-between w-full">
+              <span className="w-14 h-14 rounded-2xl bg-purple-500/20 text-purple-300 border border-purple-400/40 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
+                📦
+              </span>
+              <span className="text-[10px] font-mono font-black uppercase px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/30">
+                OPS LOG
+              </span>
+            </div>
+            <div className="mt-4">
+              <h3 className="text-xl font-black text-white group-hover:text-purple-300 transition-colors">
+                Log Asset Check
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Quick facility equipment & supply audit
+              </p>
+            </div>
+          </button>
+        </div>
+
         {/* PROFILE & QUICK STATS */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-[#1E293B]/80 border border-slate-700/80 rounded-3xl p-5 shadow-xl">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-fade-in-up stagger-2">
+          <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-5 shadow-xl">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Staff Category</p>
-            <p className="text-xl font-black text-white">{myProfile?.category || "Support Staff"}</p>
-            <span className="text-xs text-blue-400 font-semibold mt-1 block">Institutional Operations</span>
+            <p className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-400 tracking-tight">
+              {myProfile?.category || "Support Staff"}
+            </p>
+            <span className="text-xs text-cyan-400/80 font-semibold mt-1 block">Institutional Operations</span>
           </div>
 
-          <div className="bg-[#1E293B]/80 border border-slate-700/80 rounded-3xl p-5 shadow-xl">
+          <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-5 shadow-xl">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Assigned Shift</p>
             <p className="text-base font-bold text-white line-clamp-1">{myProfile?.shiftTiming || "General Day Shift"}</p>
             <span className="text-xs text-emerald-400 font-semibold mt-1 block">● Active Schedule</span>
           </div>
 
-          <div className="bg-[#1E293B]/80 border border-slate-700/80 rounded-3xl p-5 shadow-xl">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Monthly Wage / Salary</p>
-            <p className="text-2xl font-black text-amber-300 font-mono">{myProfile?.salary || "₹18,000"}</p>
-            <span className="text-xs text-slate-400 mt-1 block">Direct Bank Transfer</span>
+          <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] rounded-3xl p-5 shadow-xl">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Monthly Base Wage</p>
+            <p className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-400 tracking-tight font-mono">
+              {myProfile?.salary || "₹18,000"}
+            </p>
+            <span className="text-xs text-slate-400 mt-1 block">Direct Bank Settlement</span>
           </div>
 
-          <div className="bg-[#1E293B]/80 border border-slate-700/80 rounded-3xl p-5 shadow-xl">
+          <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-emerald-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] rounded-3xl p-5 shadow-xl">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Today's Duty Status</p>
             <p className="text-xl font-black text-white">
               {clockedIn ? "On Duty (Verified)" : "Pending Clock-In"}

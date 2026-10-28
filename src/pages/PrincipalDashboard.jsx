@@ -1238,7 +1238,7 @@ export default function PrincipalDashboard() {
                   );
 
                   return (
-                    <div className="bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl shadow-cyan-500/10 space-y-6">
+                    <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 sm:p-7 space-y-6 animate-fade-in-up stagger-1">
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-white/10 pb-6">
                         {/* HEALTH SCORE GAUGE PILL */}
                         <div className="flex items-center gap-4">
@@ -1248,8 +1248,12 @@ export default function PrincipalDashboard() {
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
+                              <span className="relative flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                              </span>
                               <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                Institutional Health Score
+                                Today's Campus Pulse
                               </span>
                               <span className="text-xs text-slate-400 font-mono">Real-Time Composite</span>
                             </div>
@@ -1264,25 +1268,25 @@ export default function PrincipalDashboard() {
 
                         {/* TELEMETRY BREAKDOWN MINI-PILLS */}
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
-                          <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/30 transition-all">
                             <span className="text-[10px] text-slate-400 block">Fee Inflow</span>
-                            <span className="font-bold text-emerald-400">{stats.feeCollectionRate}</span>
+                            <span className="font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">{stats.feeCollectionRate}</span>
                           </div>
-                          <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/30 transition-all">
                             <span className="text-[10px] text-slate-400 block">Attendance</span>
-                            <span className="font-bold text-cyan-400">94%</span>
+                            <span className="font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-sky-400">94%</span>
                           </div>
-                          <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-purple-500/30 transition-all">
                             <span className="text-[10px] text-slate-400 block">Mastery</span>
-                            <span className="font-bold text-purple-400">{stats.avgScore || "78%"}</span>
+                            <span className="font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">{stats.avgScore || "78%"}</span>
                           </div>
-                          <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/30 transition-all">
                             <span className="text-[10px] text-slate-400 block">Punctuality</span>
-                            <span className="font-bold text-indigo-400">96%</span>
+                            <span className="font-extrabold text-indigo-400">96%</span>
                           </div>
-                          <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 col-span-2 sm:col-span-1">
+                          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-teal-500/30 transition-all col-span-2 sm:col-span-1">
                             <span className="text-[10px] text-slate-400 block">Redressal</span>
-                            <span className="font-bold text-teal-400">91%</span>
+                            <span className="font-extrabold text-teal-400">91%</span>
                           </div>
                         </div>
                       </div>
@@ -1290,7 +1294,10 @@ export default function PrincipalDashboard() {
                       {/* TOP 3 URGENT ACTIONS TODAY */}
                       <div>
                         <div className="flex items-center gap-2 mb-3">
-                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                          <span className="relative flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                          </span>
                           <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300">
                             Top 3 Urgent Operational Actions Today
                           </h3>
@@ -1298,7 +1305,7 @@ export default function PrincipalDashboard() {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           {/* ACTION 1: FEE OVERDUES */}
-                          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-amber-500/40 transition-all flex flex-col justify-between space-y-2">
+                          <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-amber-500/40 transition-all duration-300 flex flex-col justify-between space-y-2">
                             <div>
                               <span className="text-[10px] uppercase font-bold text-rose-400">Action 1 &bull; Treasury</span>
                               <p className="text-xs font-bold text-white mt-1">
@@ -1323,7 +1330,7 @@ export default function PrincipalDashboard() {
                           </div>
 
                           {/* ACTION 2: STAFF & WORKFLOW APPROVALS */}
-                          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-cyan-500/40 transition-all flex flex-col justify-between space-y-2">
+                          <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-cyan-500/40 transition-all duration-300 flex flex-col justify-between space-y-2">
                             <div>
                               <span className="text-[10px] uppercase font-bold text-cyan-400">Action 2 &bull; Governance</span>
                               <p className="text-xs font-bold text-white mt-1">
@@ -1342,7 +1349,7 @@ export default function PrincipalDashboard() {
                           </div>
 
                           {/* ACTION 3: ACADEMIC WATCHLIST */}
-                          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-purple-500/40 transition-all flex flex-col justify-between space-y-2">
+                          <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-purple-500/40 transition-all duration-300 flex flex-col justify-between space-y-2">
                             <div>
                               <span className="text-[10px] uppercase font-bold text-purple-400">Action 3 &bull; Academics</span>
                               <p className="text-xs font-bold text-white mt-1">
@@ -1368,48 +1375,154 @@ export default function PrincipalDashboard() {
                 })()}
 
                 {/* OPERATIONAL APPROVAL INBOX & SCOPED NATURAL LANGUAGE ASSISTANT */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up stagger-2">
                   <OperationalApprovalInbox schoolCode={institutionCode} />
                   <PrincipalNLAssistant schoolCode={institutionCode} />
                 </div>
 
-                {/* 1. REAL-TIME EXECUTIVE REVENUE & FEE ANALYTICS ROW */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl shadow-cyan-500/10 transition-all duration-300 ease-in-out hover:scale-[1.02]">
-                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Settled Revenue</p>
-                    <p className="text-3xl font-extrabold text-emerald-400">₹{stats.totalRevenue.toLocaleString()}</p>
-                    <span className="text-xs text-slate-400 mt-2 block">{stats.totalRevenue > 0 ? `${stats.paidCount} verified receipts` : "0 recorded transactions"}</span>
-                  </div>
+                {/* 1. CEO SPATIAL BENTO GRID: REAL-TIME EXECUTIVE TELEMETRY DECK */}
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fade-in-up stagger-3">
+                  {/* BENTO CARD 1: RECONCILED REVENUE (SPAN 2 COLS) */}
+                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 w-44 h-44 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                          </span>
+                          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Reconciled Revenue</p>
+                        </div>
+                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">
+                          Live Treasury
+                        </span>
+                      </div>
 
-                  <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl shadow-cyan-500/10 transition-all duration-300 ease-in-out hover:scale-[1.02]">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Fees Pending</p>
-                      <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span>
+                      {stats.totalRevenue > 0 ? (
+                        <p className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 tracking-tight">
+                          ₹{stats.totalRevenue.toLocaleString()}
+                        </p>
+                      ) : (
+                        <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
+                          <p className="text-2xl sm:text-3xl font-extrabold text-slate-600 font-mono tracking-tight">₹0.00</p>
+                          <span className="text-[10px] text-slate-500 block mt-0.5">Clean Ledger • Ready for Settlement Inflow</span>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-3xl font-extrabold text-rose-400">₹{totalPendingFees.toLocaleString()}</p>
-                    <span className="text-xs text-slate-400 mt-2 block">{defaulters.length} scholars with overdue dues</span>
+                    <span className="text-xs text-slate-400 mt-4 block border-t border-slate-800/80 pt-3">
+                      {stats.totalRevenue > 0 ? `${stats.paidCount} verified institutional receipts` : "0 recorded transactions"}
+                    </span>
                   </div>
 
-                  <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl shadow-cyan-500/10 transition-all duration-300 ease-in-out hover:scale-[1.02]">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Fees Paid This Month</p>
-                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                  {/* BENTO CARD 2: ACTIVE STUDENTS */}
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="relative flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+                        </span>
+                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Students</p>
+                      </div>
+
+                      {stats.enrolledStudents > 0 ? (
+                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400 tracking-tight">
+                          {stats.enrolledStudents}
+                        </p>
+                      ) : (
+                        <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
+                          <p className="text-xl font-bold text-slate-600 font-mono">0 Enrolled</p>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-3xl font-extrabold text-cyan-300">₹{totalPaidThisMonth.toLocaleString()}</p>
-                    <span className="text-xs text-slate-400 mt-2 block">Monthly run-rate velocity</span>
+                    <span className="text-xs text-slate-400 mt-3 block border-t border-slate-800/80 pt-2">
+                      Verified scholar directory node
+                    </span>
                   </div>
 
-                  <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl shadow-cyan-500/10 transition-all duration-300 ease-in-out hover:scale-[1.02]">
-                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Fee Collection Rate</p>
-                    <p className="text-3xl font-extrabold text-purple-400">{stats.feeCollectionRate}</p>
-                    <span className="text-xs text-slate-400 mt-2 block">{stats.enrolledStudents} active enrolled scholars</span>
+                  {/* BENTO CARD 3: COLLECTION EFFICIENCY */}
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Collection Rate</p>
+                      <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-rose-400 tracking-tight">
+                        {stats.feeCollectionRate}
+                      </p>
+                    </div>
+                    <span className="text-xs text-slate-400 mt-3 block border-t border-slate-800/80 pt-2">
+                      Institutional recovery velocity
+                    </span>
+                  </div>
+
+                  {/* BENTO CARD 4: FEES PAID THIS MONTH (SPAN 2 COLS) */}
+                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="relative flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
+                          </span>
+                          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Fees Paid This Month</p>
+                        </div>
+                        <span className="text-[10px] font-mono text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full">
+                          Run-Rate Velocity
+                        </span>
+                      </div>
+
+                      {totalPaidThisMonth > 0 ? (
+                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 tracking-tight">
+                          ₹{totalPaidThisMonth.toLocaleString()}
+                        </p>
+                      ) : (
+                        <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
+                          <p className="text-xl font-bold text-slate-600 font-mono">₹0.00 Inflow</p>
+                          <span className="text-[10px] text-slate-500 block">Pending monthly cycle collections</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-slate-400 mt-3 block border-t border-slate-800/80 pt-2">
+                      Active calendar month turnover
+                    </span>
+                  </div>
+
+                  {/* BENTO CARD 5: DEFAULTER ARREARS (SPAN 2 COLS) */}
+                  <div className="col-span-1 md:col-span-1 lg:col-span-2 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-rose-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(244,63,94,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="relative flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                          </span>
+                          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Fees Pending</p>
+                        </div>
+                        <span className="text-[10px] font-mono text-rose-300 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-full">
+                          {defaulters.length} Accounts
+                        </span>
+                      </div>
+
+                      {totalPendingFees > 0 ? (
+                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-rose-400 via-amber-300 to-orange-400 tracking-tight">
+                          ₹{totalPendingFees.toLocaleString()}
+                        </p>
+                      ) : (
+                        <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
+                          <p className="text-xl font-bold text-emerald-400 font-mono">₹0.00 Overdue</p>
+                          <span className="text-[10px] text-slate-400 block">100% Institutional compliance achieved</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-slate-400 mt-3 block border-t border-slate-800/80 pt-2">
+                      Overdue balances prioritized for recovery
+                    </span>
                   </div>
                 </div>
 
                 {/* 2. REVENUE FORECASTING & TEACHER PERFORMANCE GRAPHS */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up stagger-4">
                   {/* CHART A: REVENUE FORECASTING CASH FLOW */}
-                  <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl shadow-cyan-500/10 transition-all duration-300 ease-in-out">
+                  <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 shadow-2xl">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">
@@ -1473,7 +1586,7 @@ export default function PrincipalDashboard() {
                   </div>
 
                   {/* CHART B: TEACHER PERFORMANCE ANALYTICS */}
-                  <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl shadow-cyan-500/10 transition-all duration-300 ease-in-out">
+                  <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 shadow-2xl">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold uppercase tracking-wider mb-1">
@@ -1485,7 +1598,7 @@ export default function PrincipalDashboard() {
                     </div>
 
                     {teacherAnalytics.length === 0 ? (
-                      <div className="h-64 flex flex-col items-center justify-center text-center text-slate-400 p-6 space-y-2">
+                      <div className="h-64 flex flex-col items-center justify-center text-center text-slate-400 p-6 space-y-2 bg-tech-grid rounded-2xl">
                         <span className="text-3xl opacity-60">📊</span>
                         <p className="text-sm font-bold text-white">No Faculty Marks Available (Clean Slate)</p>
                         <p className="text-xs text-slate-400 max-w-xs">Onboard teachers and conduct examinations to populate academic comparisons.</p>
@@ -1524,7 +1637,7 @@ export default function PrincipalDashboard() {
                 </div>
 
                 {/* 3. HIGHEST OVERDUE DEFAULTERS LIST */}
-                <div id="defaulters-section" className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-2xl shadow-cyan-500/10 overflow-hidden transition-all duration-300 ease-in-out">
+                <div id="defaulters-section" className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up stagger-5">
                   <div className="p-6 border-b border-white/10 bg-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                       <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold uppercase tracking-wider mb-1">

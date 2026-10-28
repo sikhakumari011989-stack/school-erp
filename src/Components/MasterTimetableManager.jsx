@@ -251,12 +251,38 @@ export default function MasterTimetableManager({ schoolId: propSchoolId }) {
     setImportErrors([]);
   };
 
+  const getSubjectAccent = (subject = "") => {
+    const s = String(subject).toLowerCase();
+    if (s.includes("math") || s.includes("calculus") || s.includes("algebra") || s.includes("geom")) {
+      return "bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.2)]";
+    }
+    if (s.includes("physic") || s.includes("mechanic") || s.includes("quantum")) {
+      return "bg-cyan-500/15 text-cyan-300 border-cyan-500/40 shadow-[0_0_12px_rgba(6,182,212,0.2)]";
+    }
+    if (s.includes("chem") || s.includes("organic") || s.includes("inorganic")) {
+      return "bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.2)]";
+    }
+    if (s.includes("bio") || s.includes("botany") || s.includes("zoology") || s.includes("life")) {
+      return "bg-rose-500/15 text-rose-300 border-rose-500/40 shadow-[0_0_12px_rgba(244,63,94,0.2)]";
+    }
+    if (s.includes("comp") || s.includes("code") || s.includes("ai") || s.includes("python") || s.includes("cs")) {
+      return "bg-purple-500/15 text-purple-300 border-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.2)]";
+    }
+    if (s.includes("eng") || s.includes("lit") || s.includes("grammar") || s.includes("lang")) {
+      return "bg-sky-500/15 text-sky-300 border-sky-500/40 shadow-[0_0_12px_rgba(14,165,233,0.2)]";
+    }
+    if (s.includes("hist") || s.includes("geo") || s.includes("social") || s.includes("civics")) {
+      return "bg-orange-500/15 text-orange-300 border-orange-500/40 shadow-[0_0_12px_rgba(249,115,22,0.2)]";
+    }
+    return "bg-slate-900 border-slate-700 text-cyan-300";
+  };
+
   const filteredPeriods = schedule.filter((p) => p.day === selectedDay);
 
   return (
     <div className="space-y-6">
       {/* HEADER BANNER */}
-      <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-slate-700/70 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-wider mb-2">
             <span>⏰</span> Master Curriculum Scheduling
@@ -289,8 +315,8 @@ export default function MasterTimetableManager({ schoolId: propSchoolId }) {
       </div>
 
       {/* DAY SELECTOR TABS & SCHEDULE TABLE */}
-      <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-slate-700/70 rounded-3xl shadow-2xl overflow-hidden">
-        <div className="p-6 border-b border-slate-700/60 bg-slate-800/40 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl shadow-2xl overflow-hidden">
+        <div className="p-6 border-b border-slate-800/80 bg-slate-950/40 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h3 className="text-lg font-bold text-white">{selectedDay} Academic Timetable</h3>
             <p className="text-xs text-slate-400 mt-0.5">Campus: {schoolId} • {schedule.length} Total Master Periods</p>
@@ -314,7 +340,7 @@ export default function MasterTimetableManager({ schoolId: propSchoolId }) {
         </div>
 
         {filteredPeriods.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 space-y-3">
+          <div className="p-12 text-center text-slate-400 space-y-3 bg-tech-grid">
             <span className="text-5xl block opacity-60">⏰</span>
             <h4 className="text-lg font-bold text-white">No Periods Scheduled for {selectedDay}</h4>
             <p className="text-xs text-slate-400 max-w-md mx-auto">
@@ -342,7 +368,7 @@ export default function MasterTimetableManager({ schoolId: propSchoolId }) {
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-700/70 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/40">
+                <tr className="border-b border-slate-800 text-slate-400 text-xs font-mono uppercase tracking-wider bg-slate-950/60">
                   <th className="p-4 pl-6">Period & Bell Timing</th>
                   <th className="p-4">Target Batch</th>
                   <th className="p-4">Subject</th>
@@ -352,15 +378,20 @@ export default function MasterTimetableManager({ schoolId: propSchoolId }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-sm">
-                {filteredPeriods.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
+                {filteredPeriods.map((p, idx) => (
+                  <tr
+                    key={p.id}
+                    className={`hover:bg-slate-800/40 hover:shadow-inner transition-colors duration-150 border-b border-slate-800/40 ${
+                      idx % 2 === 1 ? "bg-slate-900/20" : "bg-transparent"
+                    }`}
+                  >
                     <td className="p-4 pl-6">
                       <p className="font-bold text-white">{p.periodNo}</p>
                       <span className="text-xs font-mono text-cyan-400">{p.timeWindow}</span>
                     </td>
                     <td className="p-4 font-bold text-slate-200">{p.className}</td>
                     <td className="p-4">
-                      <span className="bg-slate-900 border border-slate-700 text-cyan-300 px-2.5 py-1 rounded text-xs font-bold">
+                      <span className={`inline-block border px-2.5 py-1 rounded-lg text-xs font-bold ${getSubjectAccent(p.subject)}`}>
                         {p.subject}
                       </span>
                     </td>

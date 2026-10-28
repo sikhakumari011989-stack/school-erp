@@ -173,7 +173,7 @@ export default function TeacherDashboard() {
         <NoticeBanner role="Teacher" schoolId={user?.school_id || user?.institution_code} />
 
         {/* HEADER */}
-        <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-8 shadow-2xl mb-8 flex justify-between items-center flex-wrap gap-4">
+        <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-8 shadow-2xl mb-8 flex justify-between items-center flex-wrap gap-4 animate-fade-in-up stagger-1">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
@@ -224,7 +224,7 @@ export default function TeacherDashboard() {
         </div>
 
         {/* STATS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 animate-fade-in-up stagger-2">
           {loading ? (
             <>
               <StatSkeleton />
@@ -233,42 +233,66 @@ export default function TeacherDashboard() {
             </>
           ) : (
             <>
-              <div className="bg-[#1E293B]/70 backdrop-blur-md border border-slate-700/60 rounded-2xl p-6 shadow-xl flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center text-2xl">
+              <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 shadow-xl flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/30 flex items-center justify-center text-2xl shadow-inner shrink-0">
                   🏫
                 </div>
                 <div>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">
-                    Active Classroom Batches
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    </span>
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+                      Active Batches
+                    </p>
+                  </div>
+                  <p className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400 tracking-tight">
+                    {stats.classesCount} Batches
                   </p>
-                  <p className="text-2xl font-black text-blue-400">{stats.classesCount} Batches</p>
-                  <span className="text-[11px] text-slate-400">Assigned curriculum</span>
+                  <span className="text-[11px] text-slate-400 block mt-0.5">Assigned curriculum</span>
                 </div>
               </div>
 
-              <div className="bg-[#1E293B]/70 backdrop-blur-md border border-slate-700/60 rounded-2xl p-6 shadow-xl flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center text-2xl">
+              <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-purple-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(168,85,247,0.15)] rounded-3xl p-6 shadow-xl flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/30 flex items-center justify-center text-2xl shadow-inner shrink-0">
                   👥
                 </div>
                 <div>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">
-                    Enrolled Students
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                    </span>
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+                      Enrolled Students
+                    </p>
+                  </div>
+                  <p className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400 tracking-tight">
+                    {stats.studentsCount} Students
                   </p>
-                  <p className="text-2xl font-black text-purple-400">{stats.studentsCount} Students</p>
-                  <span className="text-[11px] text-slate-400">Total batch strength</span>
+                  <span className="text-[11px] text-slate-400 block mt-0.5">Total batch strength</span>
                 </div>
               </div>
 
-              <div className="bg-[#1E293B]/70 backdrop-blur-md border border-slate-700/60 rounded-2xl p-6 shadow-xl flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl">
+              <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] rounded-3xl p-6 shadow-xl flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl shadow-inner shrink-0">
                   ⏳
                 </div>
                 <div>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">
-                    Published Assignments
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+                      Assignments
+                    </p>
+                  </div>
+                  <p className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-400 tracking-tight">
+                    {stats.homeworkCount} Tasks
                   </p>
-                  <p className="text-2xl font-black text-amber-400">{stats.homeworkCount} Tasks</p>
-                  <span className="text-[11px] text-slate-400">Active homework entries</span>
+                  <span className="text-[11px] text-slate-400 block mt-0.5">Active homework entries</span>
                 </div>
               </div>
             </>
@@ -277,7 +301,7 @@ export default function TeacherDashboard() {
 
         {/* QUICK ACTIONS */}
         <h2 className="text-xl font-bold text-white tracking-tight mb-6">Classroom & Academic Controls</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10 animate-fade-in-up stagger-3">
           {teacherActions.map((action, idx) => (
             <button
               key={idx}
@@ -288,7 +312,7 @@ export default function TeacherDashboard() {
                   navigate(action.path);
                 }
               }}
-              className="group relative flex flex-col justify-between p-6 rounded-2xl bg-[#1E293B]/70 backdrop-blur-md border border-slate-700/60 hover:border-slate-500 hover:-translate-y-1.5 transition-all w-full text-left shadow-lg"
+              className="group relative flex flex-col justify-between p-6 rounded-3xl bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/40 hover:shadow-[0_0_25px_rgba(6,182,212,0.2)] hover:scale-[1.02] transition-all duration-300 w-full text-left cursor-pointer"
             >
               <div>
                 <div
@@ -296,13 +320,13 @@ export default function TeacherDashboard() {
                 >
                   {action.icon}
                 </div>
-                <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors">
+                <h3 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">
                   {action.name}
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">{action.desc}</p>
               </div>
 
-              <div className="mt-6 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs font-bold text-slate-400 group-hover:text-white transition-colors">
+              <div className="mt-6 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs font-bold text-slate-400 group-hover:text-cyan-400 transition-colors">
                 <span>Launch Tool</span>
                 <span>→</span>
               </div>

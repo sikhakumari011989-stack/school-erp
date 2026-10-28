@@ -271,10 +271,10 @@ export default function OnlineExams() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/80 p-6 rounded-2xl border border-slate-800 shadow-xl backdrop-blur-xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] p-6 rounded-3xl shadow-2xl animate-fade-in-up stagger-1">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20 text-white font-bold">
-            <Award className="w-5 h-5" />
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20 text-white font-bold shrink-0">
+            <Award className="w-6 h-6" />
           </div>
           <div>
             <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
@@ -299,31 +299,53 @@ export default function OnlineExams() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-in-up stagger-2">
+        <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-purple-500/30 transition-all duration-500 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] p-5 rounded-3xl shadow-xl">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400 font-medium">Active Online Tests</span>
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+              </span>
+              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Active Tests</span>
+            </div>
             <BookOpen className="w-4 h-4 text-purple-400" />
           </div>
-          <p className="text-2xl font-black text-white mt-2">{exams.length}</p>
-          <span className="text-[10px] text-slate-500">Live for student access</span>
+          <p className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400 mt-2 tracking-tight">
+            {exams.length}
+          </p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">Live for student access</span>
         </div>
 
-        <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
+        <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_25px_rgba(6,182,212,0.15)] p-5 rounded-3xl shadow-xl">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400 font-medium">Total Submissions</span>
-            <Users className="w-4 h-4 text-blue-400" />
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+              </span>
+              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Submissions</span>
+            </div>
+            <Users className="w-4 h-4 text-cyan-400" />
           </div>
-          <p className="text-2xl font-black text-blue-400 mt-2">{submissions.length}</p>
-          <span className="text-[10px] text-slate-500">Graded automatically</span>
+          <p className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-400 mt-2 tracking-tight">
+            {submissions.length}
+          </p>
+          <span className="text-[10px] text-slate-500 block mt-0.5">Graded automatically</span>
         </div>
 
-        <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
+        <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-emerald-500/30 transition-all duration-500 hover:shadow-[0_0_25px_rgba(16,185,129,0.15)] p-5 rounded-3xl shadow-xl">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400 font-medium">Average Auto-Score</span>
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Average Auto-Score</span>
+            </div>
             <BarChart2 className="w-4 h-4 text-emerald-400" />
           </div>
-          <p className="text-2xl font-black text-emerald-400 mt-2">
+          <p className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400 mt-2 tracking-tight">
             {submissions.length > 0
               ? `${Math.round(
                   submissions.reduce((acc, s) => acc + (s.percentage || 0), 0) /
@@ -331,7 +353,7 @@ export default function OnlineExams() {
                 )}%`
               : "—"}
           </p>
-          <span className="text-[10px] text-slate-500">Across all batches</span>
+          <span className="text-[10px] text-slate-500 block mt-0.5">Across all batches</span>
         </div>
       </div>
 
@@ -359,7 +381,7 @@ export default function OnlineExams() {
               return (
                 <div
                   key={exam.id}
-                  className="bg-slate-900/70 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4 transition-all"
+                  className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_25px_rgba(6,182,212,0.15)] rounded-3xl p-6 shadow-xl flex flex-col justify-between space-y-4"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
