@@ -45,7 +45,7 @@ export function detectRoleFromId(personalId = "", existingRole = "") {
 
 /**
  * 1. CLOUD-FIRST SCHOOL PROVISIONING
- * Saves school to Supabase (institutions & schools tables) and master HOD admin to profiles.
+ * Saves school to Supabase (schools table) and master HOD admin to profiles.
  */
 export async function provisionSchoolInCloud({
   institutionName,
@@ -88,27 +88,6 @@ export async function provisionSchoolInCloud({
   let cloudSchoolId = null;
 
   if (supabase) {
-    // A. Attempt insert into institutions table if exists
-    try {
-      await supabase.from("institutions").upsert(
-        [
-          {
-            name: cleanName,
-            code: cleanCode,
-            admin_name: adminName.trim(),
-            admin_id: cleanAdminId,
-            password: cleanPass,
-            phone: phone.trim(),
-            email: mappedEmail,
-            address: address.trim(),
-          },
-        ],
-        { onConflict: "code" }
-      );
-    } catch (e) {
-      console.warn("[CloudSync] institutions table notice:", e);
-    }
-
     // B. Insert/Upsert into schools table with cloud-synchronized directory package
     try {
       const addressPayload = JSON.stringify({
@@ -338,7 +317,7 @@ export async function enrollMemberInCloud({ schoolCode, member }) {
 
 /**
  * 3. CLOUD-FIRST LOGIN VERIFICATION
- * Queries Supabase first (schools, institutions, profiles, students, teachers, cloud directory)
+ * Queries Supabase first (schools, profiles, students, teachers, cloud directory)
  * to authenticate users from ANY mobile or desktop browser globally.
  * Falls back to localStorage ONLY if offline or network unreachable.
  */
@@ -366,20 +345,6 @@ export async function verifyCloudLogin({ institutionCode, personalCode, password
         console.warn("[CloudSync] Supabase schools lookup error:", e);
       }
 
-      // Also check institutions table if schools returned null
-      if (!cloudSchool) {
-        try {
-          const { data: instRes } = await supabase
-            .from("institutions")
-            .select("*")
-            .ilike("code", cleanInst)
-            .maybeSingle();
-
-          if (instRes) {
-            cloudSchool = instRes;
-          }
-        } catch (e) {}
-      }
 
       if (cloudSchool) {
         const schoolUuid = cloudSchool.id;
@@ -941,4 +906,3 @@ export async function getAllRegisteredSchools() {
 
   return result;
 }
-

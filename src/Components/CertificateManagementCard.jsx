@@ -2,7 +2,11 @@ import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
-import { generateOfficialCertificatePDF } from "../utils/pdfGenerator";
+import {
+  generateOfficialCertificatePDF,
+  enqueuePDFBatchJob,
+  listenToPDFBatchJob,
+} from "../utils/pdfGenerator";
 import { getDefaultCertificateRequests } from "../pages/CertificateGenerator";
 
 export default function CertificateManagementCard({ mode = "teacher", title }) {
@@ -133,6 +137,76 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
     return r.status === filter;
   });
 
+  // Async PDF Batch Queue state
+  const [batchJob, setBatchJob] = useState(null);
+  const [batchProgress, setBatchProgress] = useState(0);
+
+  const handleBatchIssueQueue = async () => {
+    const targets = filteredRequests.length > 0 ? filteredRequests : requests;
+    if (targets.length === 0) {
+      showToast("No certificates available to batch compile.", "info");
+      return;
+    }
+
+    try {
+      setBatchJob({ status: "Queued" });
+      setBatchProgress(15);
+
+      const job = await enqueuePDFBatchJob({
+        schoolId: activeSchoolId,
+        jobType: "BATCH_CERTIFICATES",
+        totalRecords: targets.length,
+        payload: {
+          certificateCount: targets.length,
+          type: "Official Student Certificates Batch",
+        },
+        onProgress: (pct) => setBatchProgress(pct),
+      });
+
+      setBatchJob(job);
+      showToast("Batch certificate job offloaded to Supabase pdf_jobs queue (Status: Queued)!", "info");
+
+      listenToPDFBatchJob(job.id, activeSchoolId, (updated) => {
+        setBatchJob(updated);
+        if (updated.status === "Processing") {
+          setBatchProgress(50);
+        } else if (updated.status === "Completed") {
+          setBatchProgress(100);
+          showToast("Batch certificate compilation complete!", "success");
+        }
+      });
+    } catch (e) {
+      console.error("Batch issue error:", e);
+      setBatchJob(null);
+    }
+  };
+
+  const handleDownloadCompletedBatch = () => {
+    const targets = filteredRequests.length > 0 ? filteredRequests : requests;
+    targets.forEach((cert) => {
+      generateOfficialCertificatePDF({
+        tenant: {
+          name: tenant?.name || user?.institution_name || user?.school_name || "Institutional Campus",
+          code: activeSchoolId,
+          address: tenant?.address || "Palghar 401404",
+        },
+        student: {
+          name: cert.student_name,
+          roll_number: cert.roll_number,
+          class_name: cert.class_name,
+        },
+        certificate: {
+          id: cert.id,
+          certificate_type: cert.certificate_type,
+          reason: cert.reason,
+          request_date: cert.request_date,
+          issue_date: new Date().toISOString().split("T")[0],
+        },
+      });
+    });
+    showToast(`Downloaded batch of ${targets.length} official certificates!`, "success");
+  };
+
   const cardTitle = title || "📜 Pending Student Certificates";
 
   return (
@@ -194,6 +268,33 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
           >
             Approved ({requests.filter((r) => r.status === "APPROVED").length})
           </button>
+
+          {/* ASYNC BATCH QUEUE BUTTON */}
+          {requests.length > 0 && (
+            <button
+              onClick={
+                batchJob?.status === "Completed"
+                  ? handleDownloadCompletedBatch
+                  : handleBatchIssueQueue
+              }
+              disabled={batchJob?.status === "Queued" || batchJob?.status === "Processing"}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ml-2 ${
+                batchJob?.status === "Completed"
+                  ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black shadow-lg"
+                  : "bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40"
+              }`}
+              title="Offload bulk certificate generation to Supabase pdf_jobs queue"
+            >
+              <span>⚡</span>
+              <span>
+                {batchJob?.status === "Queued" || batchJob?.status === "Processing"
+                  ? `Compiling Batch (${batchProgress}%)...`
+                  : batchJob?.status === "Completed"
+                  ? "Download Batch PDF"
+                  : "Async Batch Queue"}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 

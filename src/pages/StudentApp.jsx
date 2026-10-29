@@ -29,7 +29,7 @@ export default function StudentApp() {
 
   return (
     // Outer wrapper centers the "phone" screen on desktop, full width on mobile
-    <div className="min-h-screen bg-slate-900 flex justify-center items-center">
+    <div className="min-h-[100dvh] bg-slate-900 flex justify-center items-center">
       
       {/* Mobile App Container */}
       <div className="w-full max-w-[400px] h-[100dvh] bg-slate-50 relative overflow-hidden flex flex-col shadow-[0_0_50px_rgba(108,46,185,0.2)] sm:rounded-[40px] sm:h-[850px] sm:border-[8px] sm:border-slate-800">

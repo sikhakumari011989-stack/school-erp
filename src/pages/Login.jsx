@@ -253,7 +253,7 @@ export default function Login({ isDirectPortal = false }) {
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-slate-900 relative overflow-hidden font-sans p-4">
+    <div className="flex min-h-[100dvh] w-full items-center justify-center bg-slate-900 relative overflow-hidden font-sans p-4">
       {/* Ambient Radial Lighting */}
       <div className="absolute top-[-15%] left-[-10%] w-[600px] h-[600px] bg-cyan-600/15 rounded-full blur-[180px] pointer-events-none"></div>
       <div className="absolute bottom-[-15%] right-[-10%] w-[600px] h-[600px] bg-purple-600/15 rounded-full blur-[180px] pointer-events-none"></div>

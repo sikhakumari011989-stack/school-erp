@@ -34,7 +34,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
 
   if (loading && !resolvedUser && !forceReady) {
     return (
-      <div className="min-h-screen bg-[#0F172A] w-full flex flex-col items-center justify-center text-center px-6 font-sans">
+      <div className="min-h-[100dvh] bg-[#0F172A] w-full flex flex-col items-center justify-center text-center px-6 font-sans">
         <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
         <p className="text-sm font-bold uppercase tracking-widest text-slate-400">
           Verifying Institutional Session & RLS Permissions...

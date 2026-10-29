@@ -4,7 +4,7 @@ import { RotateCcw, ArrowLeft, ShieldCheck, CheckCircle2, Clock, AlertCircle } f
 
 export default function RefundPolicy() {
   return (
-    <div className="min-h-screen bg-[#0F172A] text-slate-200 font-sans relative selection:bg-blue-500 selection:text-white pb-20">
+    <div className="min-h-[100dvh] bg-[#0F172A] text-slate-200 font-sans relative selection:bg-blue-500 selection:text-white pb-20">
       {/* Background glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-rose-600/10 rounded-full blur-[160px] pointer-events-none" />
 

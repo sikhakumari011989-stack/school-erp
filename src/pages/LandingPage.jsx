@@ -79,7 +79,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="relative text-slate-200 min-h-screen bg-[#0F172A] font-sans selection:bg-blue-500 selection:text-white pb-24 overflow-x-hidden">
+    <div className="relative text-slate-200 min-h-[100dvh] bg-[#0F172A] font-sans selection:bg-blue-500 selection:text-white pb-24 overflow-x-hidden">
       {/* Ambient Lighting Orbs */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-blue-600/15 rounded-full blur-[180px] pointer-events-none"></div>
       <div className="absolute top-[40%] right-[-10%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[200px] pointer-events-none"></div>

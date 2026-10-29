@@ -44,7 +44,7 @@ import PayrollManager from "./pages/PayrollManager";
 import BroadcastManager from "./pages/BroadcastManager";
 import StaffMessenger from "./pages/StaffMessenger";
 import ExpenseManagerPage from "./pages/ExpenseManager";
-import OfflineIndicator from "./Components/OfflineIndicator";
+import OfflineBanner from "./Components/OfflineBanner";
 import ErrorBoundary from "./Components/ErrorBoundary";
 
 const PUBLIC_ROUTES = [
@@ -141,7 +141,7 @@ const AppLayout = ({ children }) => {
 
   return (
     <div className="h-[100dvh] w-screen overflow-hidden flex bg-slate-950 text-slate-100 font-sans relative">
-      <OfflineIndicator />
+      <OfflineBanner />
       {!isPublicPage && <Sidebar />}
       <main
         className={`flex-1 h-full overflow-y-auto ${

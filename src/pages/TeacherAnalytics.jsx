@@ -2,7 +2,11 @@ import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { publishStudyMaterial } from "../utils/studyMaterialService";
-import { generateReportCardPDF } from "../utils/pdfGenerator";
+import {
+  generateReportCardPDF,
+  enqueuePDFBatchJob,
+  listenToPDFBatchJob,
+} from "../utils/pdfGenerator";
 import QuestionBankAnalytics from "../Components/QuestionBankAnalytics";
 
 export default function TeacherAnalytics() {
@@ -209,6 +213,54 @@ export default function TeacherAnalytics() {
       console.error("Report card PDF compilation error:", err);
       showToast("Failed to compile PDF Report Card", "error");
     }
+  };
+
+  // Async PDF Batch Queue State for Teacher Assessment Matrix
+  const [batchJob, setBatchJob] = useState(null);
+  const [batchProgress, setBatchProgress] = useState(0);
+
+  const handleBatchReportCardQueue = async () => {
+    if (examMarks.length === 0) {
+      showToast("No exam mark records available for batch compile.", "info");
+      return;
+    }
+
+    try {
+      setBatchJob({ status: "Queued" });
+      setBatchProgress(15);
+
+      const job = await enqueuePDFBatchJob({
+        schoolId: schoolId,
+        jobType: "BATCH_REPORT_CARDS",
+        totalRecords: examMarks.length,
+        payload: {
+          class_name: "Class 10-A",
+          studentCount: examMarks.length,
+        },
+        onProgress: (pct) => setBatchProgress(pct),
+      });
+
+      setBatchJob(job);
+      showToast("Batch report card job offloaded to Supabase pdf_jobs queue (Status: Queued)!", "info");
+
+      listenToPDFBatchJob(job.id, schoolId, (updated) => {
+        setBatchJob(updated);
+        if (updated.status === "Processing") {
+          setBatchProgress(50);
+        } else if (updated.status === "Completed") {
+          setBatchProgress(100);
+          showToast("Batch report cards compiled successfully!", "success");
+        }
+      });
+    } catch (e) {
+      console.error("Batch report card queue error:", e);
+      setBatchJob(null);
+    }
+  };
+
+  const handleDownloadBatchReportCards = () => {
+    examMarks.forEach((row) => handleCompilePDFReportCard(row));
+    showToast(`Downloaded batch of ${examMarks.length} student report cards!`, "success");
   };
 
   const handleAutoGenerateRemark = (row) => {
@@ -419,9 +471,36 @@ export default function TeacherAnalytics() {
                   <h3 className="text-lg font-bold text-white">Term Assessment Marks Matrix</h3>
                   <p className="text-xs text-slate-400 mt-0.5">Continuous evaluation & instant official PDF report generation</p>
                 </div>
-                <span className="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1 rounded-full font-bold">
-                  {examMarks.length} Students Evaluated
-                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1 rounded-full font-bold">
+                    {examMarks.length} Students Evaluated
+                  </span>
+                  {examMarks.length > 0 && (
+                    <button
+                      onClick={
+                        batchJob?.status === "Completed"
+                          ? handleDownloadBatchReportCards
+                          : handleBatchReportCardQueue
+                      }
+                      disabled={batchJob?.status === "Queued" || batchJob?.status === "Processing"}
+                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-md ${
+                        batchJob?.status === "Completed"
+                          ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black"
+                          : "bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40"
+                      }`}
+                      title="Offload bulk report card compilation to Supabase pdf_jobs queue"
+                    >
+                      <span>⚡</span>
+                      <span>
+                        {batchJob?.status === "Queued" || batchJob?.status === "Processing"
+                          ? `Compiling Batch (${batchProgress}%)...`
+                          : batchJob?.status === "Completed"
+                          ? "Download Batch Report Cards"
+                          : "Async Batch Queue"}
+                      </span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {examMarks.length === 0 ? (

@@ -70,7 +70,7 @@ export default function CustomLogoUploader({ schoolCode, onLogoUpdated }) {
         try {
           if (supabase) {
             await supabase
-              .from("institutions")
+              .from("schools")
               .update({ logo_url: base64 })
               .eq("code", activeCode);
           }
@@ -112,7 +112,7 @@ export default function CustomLogoUploader({ schoolCode, onLogoUpdated }) {
       try {
         if (supabase) {
           await supabase
-            .from("institutions")
+            .from("schools")
             .update({ logo_url: null })
             .eq("code", activeCode);
         }

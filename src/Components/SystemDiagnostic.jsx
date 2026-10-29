@@ -395,7 +395,7 @@ Checks:
 
   if (standalone) {
     return (
-      <div className="min-h-screen bg-[#0F172A] text-slate-200 p-6 md:p-12 relative overflow-hidden flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-[#0F172A] text-slate-200 p-6 md:p-12 relative overflow-hidden flex items-center justify-center">
         <div className="max-w-3xl w-full bg-[#1E293B]/80 backdrop-blur-2xl border border-slate-700/80 rounded-3xl p-6 sm:p-10 shadow-2xl relative z-10">
           {content}
         </div>

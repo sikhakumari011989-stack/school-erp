@@ -28,7 +28,7 @@ export default function Homework() {
   const classHomework = formData.class_id ? getClassHomework(formData.class_id) : homework;
 
   return (
-    <div className="p-8 bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen">
+    <div className="p-8 bg-gradient-to-br from-slate-900 to-slate-800 min-h-[100dvh]">
       <h1 className="text-4xl font-bold text-white mb-8">📚 Homework</h1>
 
       {/* Upload Form - Teacher Only */}
