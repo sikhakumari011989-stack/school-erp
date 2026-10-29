@@ -245,14 +245,39 @@ export const AppProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    // 1. Explicitly purge localStorage & sessionStorage to guarantee zero cross-user data leakage on shared devices
     try {
-      localStorage.removeItem("erp_session_user");
-      localStorage.removeItem("erp_demo_session");
+      localStorage.clear();
       sessionStorage.clear();
     } catch (e) {
       console.warn("Storage clear error:", e);
     }
 
+    // 2. Clear browser CacheStorage (PWA caches, offline SW caches)
+    try {
+      if (typeof window !== "undefined" && "caches" in window) {
+        const cacheNames = await window.caches.keys();
+        await Promise.all(cacheNames.map((cacheName) => window.caches.delete(cacheName)));
+      }
+    } catch (cacheErr) {
+      console.warn("CacheStorage purge notice:", cacheErr);
+    }
+
+    // 3. Clear React Query / SWR / memory query caches if present
+    try {
+      if (typeof window !== "undefined") {
+        if (window.__REACT_QUERY_CLIENT__?.clear) {
+          window.__REACT_QUERY_CLIENT__.clear();
+        }
+        if (window.__SWR_CACHE__?.clear) {
+          window.__SWR_CACHE__.clear();
+        }
+      }
+    } catch (qErr) {
+      console.warn("Query cache clear notice:", qErr);
+    }
+
+    // 4. Invalidate Supabase session token
     if (supabase?.auth?.signOut) {
       try {
         await supabase.auth.signOut().catch(() => {});
@@ -261,8 +286,12 @@ export const AppProvider = ({ children }) => {
       }
     }
 
+    // 5. Explicitly wipe all React state
     setSession(null);
     setUser(null);
+    setTenant(null);
+
+    // 6. Hard route to login with signedOut flag
     window.location.href = "/login?signedOut=true";
   };
 

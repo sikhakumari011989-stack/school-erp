@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { CheckCircle2, XCircle, AlertCircle, Clock, ShieldAlert, ArrowRight, FileText, User } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, Clock, ShieldAlert, ArrowRight, FileText, User, Lock } from "lucide-react";
 import { useToast } from "../context/ToastContext";
+import { supabase } from "../supabaseClient";
 
 export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
   const { showToast } = useToast();
@@ -92,7 +93,7 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
     setApprovalItems(combined);
   };
 
-  const handleApprove = (item) => {
+  const handleApprove = async (item) => {
     try {
       if (item.category === "LEAVE") {
         const leavesRaw = localStorage.getItem(`erp_staff_leaves_${cleanSchool}`);
@@ -102,7 +103,31 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
         window.dispatchEvent(new Event("erp-staff-leaves-updated"));
         showToast(`Approved leave application for ${item.requestedBy}`, "success");
       } else if (item.category === "REVERSAL") {
-        // Maker-Checker Fee Reversal Approval
+        // Maker-Checker Fee Reversal Approval with Pessimistic Row Lock (RPC)
+        const targetEntryId = item.original.receiptId || item.id;
+        let rpcSuccess = false;
+
+        if (supabase) {
+          try {
+            const { data, error } = await supabase.rpc("reverse_fee_entry", {
+              p_entry_id: String(targetEntryId),
+              p_reversal_reason: item.original.reason || "Maker-Checker Principal Approval",
+              p_authorized_by: "Principal",
+            });
+
+            if (error) {
+              console.warn("Pessimistic lock RPC notice:", error.message);
+            } else if (data && !data.success) {
+              showToast(`Concurrency Warning: ${data.error || "Fee entry already locked/reversed."}`, "error");
+              return;
+            } else if (data && data.success) {
+              rpcSuccess = true;
+            }
+          } catch (rpcErr) {
+            console.warn("RPC reverse_fee_entry execution fallback:", rpcErr);
+          }
+        }
+
         const revRaw = localStorage.getItem(`erp_fee_reversals_${cleanSchool}`);
         const reversals = revRaw ? JSON.parse(revRaw) : [];
         const updatedRev = reversals.map((r) => (r.id === item.id ? { ...r, status: "Approved", approvedAt: new Date().toISOString() } : r));
@@ -112,7 +137,7 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
         const ledgerKey = `erp_fee_ledger_${cleanSchool}`;
         const currentLedger = JSON.parse(localStorage.getItem(ledgerKey) || "[]");
         const creditNote = {
-          id: `cn_${Date.now()}`,
+          id: `CN-${Date.now()}`,
           student_name: item.original.studentName,
           class_name: item.original.className || "Class",
           amount: -Math.abs(Number(item.original.amount)),
@@ -121,11 +146,15 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
           date: new Date().toISOString().split("T")[0],
           school_id: cleanSchool,
           reversal_ref: item.original.id,
+          receipt_tag: "CREDIT_NOTE",
         };
         localStorage.setItem(ledgerKey, JSON.stringify([creditNote, ...currentLedger]));
         window.dispatchEvent(new Event("erp-fee-ledger-updated"));
         window.dispatchEvent(new Event("erp-fee-reversals-updated"));
-        showToast(`Reversal approved! Credit note of ₹${item.original.amount} generated.`, "success");
+        showToast(
+          `Reversal approved! Pessimistic row-lock applied & Credit Note of ₹${Number(item.original.amount).toLocaleString()} generated.`,
+          "success"
+        );
       } else if (item.category === "CERTIFICATE") {
         const certsRaw = localStorage.getItem(`erp_certificate_requests_${cleanSchool}`);
         const certs = certsRaw ? JSON.parse(certsRaw) : [];

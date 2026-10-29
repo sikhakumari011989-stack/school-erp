@@ -140,7 +140,7 @@ const AppLayout = ({ children }) => {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex bg-slate-950 text-slate-100 font-sans relative">
+    <div className="h-[100dvh] w-screen overflow-hidden flex bg-slate-950 text-slate-100 font-sans relative">
       <OfflineIndicator />
       {!isPublicPage && <Sidebar />}
       <main

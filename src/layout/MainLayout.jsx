@@ -22,7 +22,7 @@ export default function MainLayout() {
     }`;
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex bg-[#0B0F1A] text-white">
+    <div className="h-[100dvh] w-screen overflow-hidden flex bg-[#0B0F1A] text-white">
 
       {/* MOBILE TOP BAR */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#0F1424] border-b border-white/10 flex items-center justify-between px-4 z-50">
