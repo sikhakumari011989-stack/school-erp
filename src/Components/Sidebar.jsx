@@ -326,12 +326,12 @@ export default function Sidebar() {
       {/* 4. DESKTOP HOLOGRAPHIC SIDEBAR (Viewports >= 768px)          */}
       {/* ============================================================ */}
       <aside
-        className={`hidden md:flex flex-col h-screen sticky top-0 z-40 bg-slate-900/95 backdrop-blur-2xl border-r border-white/10 shadow-2xl shadow-cyan-500/10 transition-all duration-300 ease-in-out flex-shrink-0 ${
+        className={`hidden md:flex flex-col h-full flex-shrink-0 sticky top-0 z-40 border-r border-slate-800/80 bg-slate-950/80 backdrop-blur-xl shadow-2xl shadow-cyan-500/10 transition-all duration-300 ease-in-out ${
           isCollapsed ? "w-20" : "w-64"
         }`}
       >
         {/* Holographic Header */}
-        <div className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-800/80 bg-white/5 flex items-center justify-between flex-shrink-0">
           {!isCollapsed && (
             <div className="flex items-center gap-3 min-w-0">
               <BrandLogo size="md" customLogoUrl={tenant?.logoUrl} />
@@ -392,7 +392,7 @@ export default function Sidebar() {
         </nav>
 
         {/* User Profile & Sign Out Footer */}
-        <div className="p-3 border-t border-white/10 bg-white/5">
+        <div className="p-3 border-t border-slate-800/80 bg-white/5 flex-shrink-0 mt-auto">
           {!isCollapsed ? (
             <div className="bg-slate-900/80 border border-white/10 rounded-xl p-3 mb-2 shadow-lg">
               <p className="text-xs font-bold text-white truncate">{user.name || user.full_name}</p>

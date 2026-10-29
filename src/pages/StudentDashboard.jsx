@@ -264,7 +264,7 @@ export default function StudentDashboard() {
   const strokeDashoffset = circumference - (metrics.attendancePercentage / 100) * circumference;
 
   return (
-    <div className="relative text-slate-100 min-h-screen pb-16 font-sans">
+    <div className="relative text-slate-100 min-h-full pb-16 font-sans">
       {/* Ambient Neon Radial Lighting */}
       <div className="fixed top-[-10%] left-[-5%] w-[550px] h-[550px] bg-cyan-600/10 rounded-full blur-[160px] pointer-events-none"></div>
       <div className="fixed top-[40%] right-[-10%] w-[550px] h-[550px] bg-purple-600/10 rounded-full blur-[180px] pointer-events-none"></div>

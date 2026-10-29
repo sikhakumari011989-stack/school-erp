@@ -140,12 +140,12 @@ const AppLayout = ({ children }) => {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans w-full relative">
+    <div className="h-screen w-screen overflow-hidden flex bg-slate-950 text-slate-100 font-sans relative">
       <OfflineIndicator />
       {!isPublicPage && <Sidebar />}
       <main
-        className={`flex-1 w-full overflow-y-auto min-h-screen p-4 sm:p-6 lg:p-8 ${
-          isPublicPage ? "" : "pt-20 md:pt-8 pb-24 md:pb-8"
+        className={`flex-1 h-full overflow-y-auto ${
+          isPublicPage ? "p-4 sm:p-6 lg:p-8" : "p-4 sm:p-6 lg:p-8 pt-20 md:pt-8 pb-24 md:pb-8"
         }`}
       >
         {children}

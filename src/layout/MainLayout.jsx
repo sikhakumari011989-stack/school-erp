@@ -22,7 +22,7 @@ export default function MainLayout() {
     }`;
 
   return (
-    <div className="flex h-screen bg-[#0B0F1A] text-white">
+    <div className="h-screen w-screen overflow-hidden flex bg-[#0B0F1A] text-white">
 
       {/* MOBILE TOP BAR */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#0F1424] border-b border-white/10 flex items-center justify-between px-4 z-50">
@@ -86,7 +86,7 @@ export default function MainLayout() {
       )}
 
       {/* MAIN AREA */}
-      <div className="flex-1 flex flex-col md:ml-64">
+      <div className="flex-1 h-full flex flex-col md:ml-64 overflow-hidden">
 
         {/* TOP BAR (desktop only) */}
         <div className="hidden md:flex h-16 px-6 items-center justify-between border-b border-white/5 bg-[#0B0F1A]/80 backdrop-blur-xl">
