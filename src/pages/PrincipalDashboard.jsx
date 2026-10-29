@@ -41,7 +41,7 @@ import MeetingScheduler from "../Components/MeetingScheduler";
 import AlumniDB from "../Components/AlumniDB";
 import OnboardingWizard from "../Components/OnboardingWizard";
 import AcademicRolloverModal from "../Components/AcademicRolloverModal";
-import PrincipalNLAssistant from "../Components/PrincipalNLAssistant";
+import PrincipalAssistant from "../Components/PrincipalAssistant";
 import OperationalApprovalInbox from "../Components/OperationalApprovalInbox";
 import { getNotices, publishNotice, deleteNotice } from "../utils/noticeService";
 import { logSecurityAction } from "../utils/auditLogger";
@@ -1377,7 +1377,7 @@ export default function PrincipalDashboard() {
                 {/* OPERATIONAL APPROVAL INBOX & SCOPED NATURAL LANGUAGE ASSISTANT */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up stagger-2">
                   <OperationalApprovalInbox schoolCode={institutionCode} />
-                  <PrincipalNLAssistant schoolCode={institutionCode} />
+                  <PrincipalAssistant schoolCode={institutionCode} />
                 </div>
 
                 {/* 1. CEO SPATIAL BENTO GRID: REAL-TIME EXECUTIVE TELEMETRY DECK */}
