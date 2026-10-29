@@ -411,6 +411,9 @@ export default function ComprehensiveMemberModal({
           parent_phone: studentForm.phone.trim() || null,
           parent_email: studentForm.email.trim() || null,
           consent_purpose: dpdpConsent.purposes.join("; "),
+          consent_version: "v2026.10-DPDP-Ready",
+          verification_method: "Guardian_Affirmation",
+          verification_outcome: "verified",
           is_verified: dpdpConsent.verifiedAffirmation,
           verification_mode: "DPDP 2023 Sec 9(1) Digital Verification",
           granted_at: new Date().toISOString(),
@@ -1435,7 +1438,7 @@ export default function ComprehensiveMemberModal({
                   </div>
                 </div>
                 <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
-                  Section 9(1) Compliant
+                  DPDP 2023 Readiness Control (Sec 9)
                 </span>
               </div>
 

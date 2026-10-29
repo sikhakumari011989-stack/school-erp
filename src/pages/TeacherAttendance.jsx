@@ -8,6 +8,7 @@ import { notifyAttendanceAbsent } from "../utils/notifications";
 import { logSecurityAction, AUDIT_ACTIONS } from "../utils/auditLogger";
 import { getDefaultSchoolDirectory } from "../utils/idGenerator";
 import { fetchCloudDirectory } from "../utils/cloudSyncService";
+import { enqueueOfflineMutation } from "../utils/offlineSyncQueue";
 
 const STANDARD_BATCHES = [
   "Class 10-ICSE",
@@ -339,11 +340,14 @@ export default function TeacherAttendance() {
       // Also maintain general date index for cross-dashboard analytics
       localStorage.setItem(`erp_attendance_${activeSchoolId}_${today}`, JSON.stringify(formattedRecords));
 
-      // 2. Sync to Supabase attendance table
-      try {
-        if (supabase) {
+      // 2. Sync to Supabase attendance table with durable offline mutation queue fallback
+      const isOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
+      let syncSucceeded = false;
+
+      if (isOnline && supabase) {
+        try {
           const schoolUuid = await resolveSchoolUuid(activeSchoolId);
-          await supabase.from("attendance").insert([
+          const { error: insertErr } = await supabase.from("attendance").insert([
             {
               school_id: schoolUuid,
               class_id: selectedBatch,
@@ -351,9 +355,28 @@ export default function TeacherAttendance() {
               records: formattedRecords,
             },
           ]);
+          if (!insertErr) {
+            syncSucceeded = true;
+          } else {
+            console.warn("Supabase attendance insert notice, enqueuing offline queue:", insertErr);
+          }
+        } catch (dbErr) {
+          console.warn("Supabase attendance sync notice, enqueuing offline queue:", dbErr);
         }
-      } catch (dbErr) {
-        console.warn("Supabase attendance sync notice:", dbErr);
+      }
+
+      if (!syncSucceeded) {
+        // Enqueue to durable local event queue (erp_offline_mutation_queue)
+        enqueueOfflineMutation({
+          schoolId: activeSchoolId,
+          actionType: "attendance_mark",
+          payload: {
+            class_id: selectedBatch,
+            class_name: selectedBatch,
+            date: today,
+            records: formattedRecords,
+          },
+        });
       }
 
       // 3. Automated Absent Notification Alerts with 60-Second Undo Window

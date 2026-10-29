@@ -103,8 +103,9 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
         window.dispatchEvent(new Event("erp-staff-leaves-updated"));
         showToast(`Approved leave application for ${item.requestedBy}`, "success");
       } else if (item.category === "REVERSAL") {
-        // Maker-Checker Fee Reversal Approval with Pessimistic Row Lock (RPC)
+        // Maker-Checker Fee Reversal Approval with Pessimistic Row Lock & Idempotent RPC
         const targetEntryId = item.original.receiptId || item.id;
+        const idempotencyKey = `REV-${targetEntryId}`;
         let rpcSuccess = false;
 
         if (supabase) {
@@ -113,6 +114,7 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
               p_entry_id: String(targetEntryId),
               p_reversal_reason: item.original.reason || "Maker-Checker Principal Approval",
               p_authorized_by: "Principal",
+              p_idempotency_key: idempotencyKey,
             });
 
             if (error) {

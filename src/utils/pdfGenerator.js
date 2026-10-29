@@ -1062,20 +1062,78 @@ export function sanitizeDevanagariText(str) {
 }
 
 /**
- * PHASE 3: ASYNC PDF BATCH QUEUE OFFLOADER
+ * PHASE 3: ASYNC PDF BATCH QUEUE OFFLOADER WITH IDEMPOTENCY & LEASE CLAIMING
  * Prevents Vercel 10s Serverless Function Timeout.
  * Inserts job into Supabase pdf_jobs (Status: 'Queued'), returns job metadata,
- * and starts chunked background generation.
+ * supports atomical job lease claims via claim_next_pdf_job, and handles retry recovery.
  */
+export async function claimNextPDFJob(schoolId = "CAMPUS-01") {
+  const cleanSchool = (schoolId || "CAMPUS-01").toUpperCase();
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase.rpc("claim_next_pdf_job", {
+      p_school_id: cleanSchool,
+    });
+
+    if (!error && data) {
+      const claimedJob = Array.isArray(data) ? data[0] : data;
+      if (claimedJob && claimedJob.id) {
+        return claimedJob;
+      }
+    }
+
+    // Resilient Fallback: claim via optimistic lease timestamp if RPC is not yet loaded
+    const { data: candidates, error: queryErr } = await supabase
+      .from("pdf_jobs")
+      .select("*")
+      .eq("school_id", cleanSchool)
+      .eq("status", "Queued")
+      .lt("attempts", 3)
+      .order("created_at", { ascending: true })
+      .limit(1);
+
+    if (queryErr || !candidates || candidates.length === 0) return null;
+
+    const candidate = candidates[0];
+    const leaseExpiration = new Date(Date.now() + 120000).toISOString(); // 2-minute lease
+
+    const { data: updated, error: updateErr } = await supabase
+      .from("pdf_jobs")
+      .update({
+        status: "Processing",
+        attempts: (candidate.attempts || 0) + 1,
+        locked_until: leaseExpiration,
+      })
+      .eq("id", candidate.id)
+      .eq("status", "Queued")
+      .select()
+      .maybeSingle();
+
+    if (!updateErr && updated) {
+      return updated;
+    }
+    return null;
+  } catch (claimErr) {
+    console.warn("[PDFQueue] Claim job lease notice:", claimErr);
+    return null;
+  }
+}
+
 export async function enqueuePDFBatchJob({
   schoolId = "CAMPUS-01",
   jobType = "BATCH_REPORT_CARDS",
   totalRecords = 60,
   payload = {},
+  idempotencyKey = null,
   onProgress = null,
 }) {
   const cleanSchool = (schoolId || "CAMPUS-01").toUpperCase();
   const jobId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `job_${Date.now()}`;
+  const finalIdempotencyKey =
+    idempotencyKey ||
+    payload.idempotency_key ||
+    `IDEMP_PDF_${cleanSchool}_${jobType}_${payload.batch || payload.class_name || "ALL"}_${Date.now()}`;
 
   const jobRecord = {
     id: jobId,
@@ -1085,6 +1143,9 @@ export async function enqueuePDFBatchJob({
     file_url: null,
     total_records: totalRecords,
     processed_records: 0,
+    attempts: 0,
+    locked_until: null,
+    idempotency_key: finalIdempotencyKey,
     error_message: null,
     payload,
     created_at: new Date().toISOString(),
@@ -1100,7 +1161,7 @@ export async function enqueuePDFBatchJob({
     console.warn("Local PDF job storage notice:", err);
   }
 
-  // 2. Insert into Supabase pdf_jobs table
+  // 2. Insert into Supabase pdf_jobs table with idempotency_key, attempts, locked_until
   if (supabase) {
     try {
       await supabase.from("pdf_jobs").insert([
@@ -1111,6 +1172,9 @@ export async function enqueuePDFBatchJob({
           status: "Queued",
           total_records: totalRecords,
           processed_records: 0,
+          attempts: 0,
+          locked_until: null,
+          idempotency_key: finalIdempotencyKey,
           payload,
         },
       ]);
@@ -1119,11 +1183,14 @@ export async function enqueuePDFBatchJob({
     }
   }
 
-  // 3. Initiate chunked background compilation worker (prevents Vercel 10s serverless timeout)
+  // 3. Initiate chunked background compilation worker with lease and retry recovery
   setTimeout(async () => {
     try {
-      // Step 2: Processing state
+      // Lease update: lock job during active compilation
+      const lockExpiration = new Date(Date.now() + 120000).toISOString(); // 2 minute lease
       jobRecord.status = "Processing";
+      jobRecord.attempts = (jobRecord.attempts || 0) + 1;
+      jobRecord.locked_until = lockExpiration;
       jobRecord.processed_records = Math.floor(totalRecords * 0.35);
 
       if (onProgress) onProgress(35, "Compiling cryptographic seals & batch tables...");
@@ -1139,6 +1206,8 @@ export async function enqueuePDFBatchJob({
           .from("pdf_jobs")
           .update({
             status: "Processing",
+            attempts: jobRecord.attempts,
+            locked_until: lockExpiration,
             processed_records: jobRecord.processed_records,
           })
           .eq("id", jobId)
@@ -1147,34 +1216,71 @@ export async function enqueuePDFBatchJob({
 
       // Step 3: Complete compilation after simulated worker assembly
       setTimeout(async () => {
-        const fileUrl = `#batch-pdf-download-${jobId}`;
-        jobRecord.status = "Completed";
-        jobRecord.processed_records = totalRecords;
-        jobRecord.file_url = fileUrl;
-        jobRecord.completed_at = new Date().toISOString();
+        try {
+          const fileUrl = `#batch-pdf-download-${jobId}`;
+          jobRecord.status = "Completed";
+          jobRecord.processed_records = totalRecords;
+          jobRecord.file_url = fileUrl;
+          jobRecord.locked_until = null;
+          jobRecord.completed_at = new Date().toISOString();
 
-        if (onProgress) onProgress(100, "Batch complete. Ready for download.");
+          if (onProgress) onProgress(100, "Batch complete. Ready for download.");
 
-        const finalJobs = JSON.parse(localStorage.getItem(key) || "[]");
-        const updatedCompleted = finalJobs.map((j) => (j.id === jobId ? { ...j, ...jobRecord } : j));
-        localStorage.setItem(key, JSON.stringify(updatedCompleted));
-        window.dispatchEvent(new CustomEvent("erp-pdf-job-completed", { detail: jobRecord }));
+          const finalJobs = JSON.parse(localStorage.getItem(key) || "[]");
+          const updatedCompleted = finalJobs.map((j) => (j.id === jobId ? { ...j, ...jobRecord } : j));
+          localStorage.setItem(key, JSON.stringify(updatedCompleted));
+          window.dispatchEvent(new CustomEvent("erp-pdf-job-completed", { detail: jobRecord }));
 
-        if (supabase) {
-          await supabase
-            .from("pdf_jobs")
-            .update({
-              status: "Completed",
-              processed_records: totalRecords,
-              file_url: fileUrl,
-              completed_at: jobRecord.completed_at,
-            })
-            .eq("id", jobId)
-            .catch(() => {});
+          if (supabase) {
+            await supabase
+              .from("pdf_jobs")
+              .update({
+                status: "Completed",
+                processed_records: totalRecords,
+                file_url: fileUrl,
+                locked_until: null,
+                completed_at: jobRecord.completed_at,
+              })
+              .eq("id", jobId)
+              .catch(() => {});
+          }
+        } catch (compErr) {
+          console.error("Batch PDF job completion error, executing retry recovery:", compErr);
+          const willRetry = (jobRecord.attempts || 1) < 3;
+          jobRecord.status = willRetry ? "Queued" : "Failed";
+          jobRecord.locked_until = null;
+          jobRecord.error_message = compErr.message || "Worker execution failure";
+
+          const finalJobs = JSON.parse(localStorage.getItem(key) || "[]");
+          const updatedFailed = finalJobs.map((j) => (j.id === jobId ? { ...j, ...jobRecord } : j));
+          localStorage.setItem(key, JSON.stringify(updatedFailed));
+
+          if (supabase) {
+            await supabase
+              .from("pdf_jobs")
+              .update({
+                status: jobRecord.status,
+                locked_until: null,
+                error_message: jobRecord.error_message,
+              })
+              .eq("id", jobId)
+              .catch(() => {});
+          }
         }
       }, 1800);
     } catch (procErr) {
-      console.error("Batch PDF job error:", procErr);
+      console.error("Batch PDF job error, recovering lease:", procErr);
+      if (supabase) {
+        await supabase
+          .from("pdf_jobs")
+          .update({
+            status: "Queued",
+            locked_until: null,
+            error_message: procErr.message,
+          })
+          .eq("id", jobId)
+          .catch(() => {});
+      }
     }
   }, 700);
 
