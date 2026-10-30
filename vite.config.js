@@ -10,6 +10,7 @@ function biometricDevPlugin() {
         if (req.url && req.url.startsWith('/api/v2/attendance/sync')) {
           res.setHeader('Content-Type', 'application/json')
           res.setHeader('Access-Control-Allow-Origin', '*')
+          res.setHeader('Cache-Control', 'private, no-store, max-age=0')
           if (req.method === 'OPTIONS') {
             res.statusCode = 200
             return res.end()

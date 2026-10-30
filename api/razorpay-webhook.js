@@ -9,6 +9,9 @@ import { createClient } from "@supabase/supabase-js";
  * and updates Supabase fee_ledger table for financial compliance.
  */
 export default async function handler(req, res) {
+  // Prevent Vercel CDN cross-tenant data caching
+  res.setHeader("Cache-Control", "private, no-store, max-age=0");
+
   // 1. Healthcheck / CORS Preflight
   if (req.method === "OPTIONS") {
     res.setHeader("Access-Control-Allow-Origin", "*");

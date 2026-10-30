@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import { purgeOfflineQueue } from "../utils/offlineSyncQueue";
 
 export const AppContext = createContext();
 export const useAppContext = () => useContext(AppContext);
@@ -245,6 +246,13 @@ export const AppProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    // 0. Purge durable IndexedDB offline mutation queue to prevent sensitive offline student telemetry from leaking
+    try {
+      await purgeOfflineQueue();
+    } catch (idbErr) {
+      console.warn("IndexedDB offline queue purge notice:", idbErr);
+    }
+
     // 1. Explicitly purge localStorage & sessionStorage to guarantee zero cross-user data leakage on shared devices
     try {
       localStorage.clear();

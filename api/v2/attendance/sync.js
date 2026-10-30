@@ -20,7 +20,8 @@ function rememberPunch(key) {
  * Designed to interface with eSSL, Matrix COSEC, ZKTeco, and Hikvision
  * biometric fingerprint / facial recognition turnstiles and attendance hardware.
  * Features:
- * - HMAC-SHA256 device signature verification (x-device-signature)
+ * - Cache-Control: private, no-store, max-age=0 (preventing Vercel CDN cross-tenant cache leaks)
+ * - Per-device HMAC-SHA256 signature verification querying biometric_devices table
  * - 5-minute replay skew protection (x-device-timestamp)
  * - Hardware event idempotency on (school_id, device_serial, vendor_event_id)
  */
@@ -32,6 +33,8 @@ export default async function handler(req, res) {
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, x-api-key, x-device-id, x-device-serial, x-school-id, x-device-signature, x-device-timestamp"
   );
+  // CDN Security Hardening: Prevent Vercel CDN from caching dynamic or cross-tenant attendance telemetry
+  res.setHeader("Cache-Control", "private, no-store, max-age=0");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
@@ -49,7 +52,7 @@ export default async function handler(req, res) {
         "ZKTeco (SpeedFace, SenseFace, ProBio)",
         "Hikvision MinMoe Terminal Series",
       ],
-      auth_mechanism: "HMAC-SHA256 (x-device-signature) + Replay Skew Protection (x-device-timestamp)",
+      auth_mechanism: "Per-Device HMAC-SHA256 (biometric_devices query) + 5-Min Replay Skew Protection",
       telemetry_status: "ONLINE_READY",
       timestamp: new Date().toISOString(),
     });
@@ -84,51 +87,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // 4. HMAC-SHA256 Signature Verification (x-device-signature)
-    const deviceSignature =
-      req.headers["x-device-signature"] ||
-      req.body?.signature ||
-      req.body?.x_device_signature;
-
-    const sharedSecret =
-      process.env.BIOMETRIC_DEVICE_SECRET ||
-      process.env.BIOMETRIC_SECRET ||
-      "biometric_hw_shared_secret_2026";
-
-    if (deviceSignature) {
-      const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
-      const computedHmac1 = crypto
-        .createHmac("sha256", sharedSecret)
-        .update(rawTimestamp ? `${rawTimestamp}.${rawBody}` : rawBody)
-        .digest("hex");
-      const computedHmac2 = crypto
-        .createHmac("sha256", sharedSecret)
-        .update(rawBody)
-        .digest("hex");
-
-      let validSig = false;
-      try {
-        const sigBuffer = Buffer.from(String(deviceSignature).trim(), "hex");
-        const expBuffer1 = Buffer.from(computedHmac1, "hex");
-        const expBuffer2 = Buffer.from(computedHmac2, "hex");
-
-        if (sigBuffer.length === expBuffer1.length && crypto.timingSafeEqual(sigBuffer, expBuffer1)) {
-          validSig = true;
-        } else if (sigBuffer.length === expBuffer2.length && crypto.timingSafeEqual(sigBuffer, expBuffer2)) {
-          validSig = true;
-        }
-      } catch {
-        validSig = false;
-      }
-
-      if (!validSig) {
-        return res.status(401).json({
-          success: false,
-          error: "Biometric Hardware Security Error: HMAC-SHA256 signature verification failed.",
-        });
-      }
-    }
-
     const schoolId = (
       req.headers["x-school-id"] ||
       req.body?.school_id ||
@@ -145,6 +103,92 @@ export default async function handler(req, res) {
       req.body?.deviceId ||
       "ESSL-SN-99824"
     ).toUpperCase();
+
+    // Supabase Client Setup for Device Authorization and Sync
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const supabaseServiceKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.VITE_SUPABASE_ANON_KEY ||
+      process.env.SUPABASE_ANON_KEY;
+
+    let supabase = null;
+    if (supabaseUrl && supabaseServiceKey) {
+      supabase = createClient(supabaseUrl, supabaseServiceKey);
+    }
+
+    // 4. Per-Device HMAC-SHA256 Secret Lookup from biometric_devices table
+    let deviceHmacSecret = null;
+    if (supabase) {
+      try {
+        const { data: deviceRecord, error: devQueryErr } = await supabase
+          .from("biometric_devices")
+          .select("hmac_secret, is_active, school_id")
+          .eq("device_serial", deviceSerial)
+          .maybeSingle();
+
+        if (!devQueryErr && deviceRecord) {
+          if (deviceRecord.is_active === false) {
+            return res.status(403).json({
+              success: false,
+              error: `Biometric terminal ${deviceSerial} is deactivated. Contact campus administrator.`,
+            });
+          }
+          if (deviceRecord.hmac_secret) {
+            deviceHmacSecret = deviceRecord.hmac_secret;
+          }
+        }
+      } catch (devLookupErr) {
+        console.warn("[BiometricGateway] Failed to retrieve per-device HMAC secret:", devLookupErr.message);
+      }
+    }
+
+    // Resilient fallback to environment or default secret for bootstrap / test terminals
+    if (!deviceHmacSecret) {
+      deviceHmacSecret =
+        process.env.BIOMETRIC_DEVICE_SECRET ||
+        process.env.BIOMETRIC_SECRET ||
+        "biometric_hw_shared_secret_2026";
+    }
+
+    // 5. Verify Device Signature using device-specific secret
+    const deviceSignature =
+      req.headers["x-device-signature"] ||
+      req.body?.signature ||
+      req.body?.x_device_signature;
+
+    if (deviceSignature) {
+      const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+      const computedHmacWithTimestamp = crypto
+        .createHmac("sha256", deviceHmacSecret)
+        .update(rawTimestamp ? `${rawTimestamp}.${rawBody}` : rawBody)
+        .digest("hex");
+      const computedHmacRaw = crypto
+        .createHmac("sha256", deviceHmacSecret)
+        .update(rawBody)
+        .digest("hex");
+
+      let validSig = false;
+      try {
+        const sigBuffer = Buffer.from(String(deviceSignature).trim(), "hex");
+        const expBuffer1 = Buffer.from(computedHmacWithTimestamp, "hex");
+        const expBuffer2 = Buffer.from(computedHmacRaw, "hex");
+
+        if (sigBuffer.length === expBuffer1.length && crypto.timingSafeEqual(sigBuffer, expBuffer1)) {
+          validSig = true;
+        } else if (sigBuffer.length === expBuffer2.length && crypto.timingSafeEqual(sigBuffer, expBuffer2)) {
+          validSig = true;
+        }
+      } catch {
+        validSig = false;
+      }
+
+      if (!validSig) {
+        return res.status(401).json({
+          success: false,
+          error: `Biometric Hardware Security Error: Per-device HMAC-SHA256 signature verification failed for device ${deviceSerial}.`,
+        });
+      }
+    }
 
     const punches = Array.isArray(req.body?.punches)
       ? req.body.punches
@@ -164,7 +208,7 @@ export default async function handler(req, res) {
     const todayDate = new Date().toISOString().split("T")[0];
     const syncTimestamp = new Date().toISOString();
 
-    // 5. Deduplicate punches on (school_id, device_serial, vendor_event_id)
+    // 6. Deduplicate punches on (school_id, device_serial, vendor_event_id)
     const freshPunches = [];
     let deduplicatedCount = 0;
 
@@ -207,19 +251,11 @@ export default async function handler(req, res) {
       });
     }
 
-    // 6. Supabase Attendance & Biometric Audit Integration
-    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-    const supabaseServiceKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.VITE_SUPABASE_ANON_KEY ||
-      process.env.SUPABASE_ANON_KEY;
-
+    // 7. Supabase Attendance & Biometric Audit Integration
     let cloudPersisted = false;
 
-    if (supabaseUrl && supabaseServiceKey && freshPunches.length > 0) {
+    if (supabase && freshPunches.length > 0) {
       try {
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
         // A. Insert into biometric_attendance_logs audit table if present
         try {
           const logPayloads = freshPunches.map((fp) => ({

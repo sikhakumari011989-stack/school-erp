@@ -8,9 +8,12 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "worker:pdf": "node scripts/pdfWorker.js"
   },
   "dependencies": {
+    "@sentry/node": "^11.10.0",
+    "@sentry/react": "^11.10.0",
     "@supabase/supabase-js": "^2.117.2",
     "@tailwindcss/vite": "^4.3.3",
     "framer-motion": "^13.4.4",

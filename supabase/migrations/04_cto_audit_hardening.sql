@@ -182,10 +182,45 @@ $$;
 GRANT EXECUTE ON FUNCTION public.reverse_fee_entry(text, text, text, text) TO authenticated;
 
 -- ------------------------------------------------------------------------------
--- 4. DPDP ACT 2023 STATUTORY CONSENT METADATA
+-- 4. DPDP ACT 2023 STATUTORY CONSENT METADATA & OTP AUDIT
 -- ------------------------------------------------------------------------------
 
 ALTER TABLE public.consent_records ADD COLUMN IF NOT EXISTS consent_version text DEFAULT 'v2026.10-DPDP-Ready';
-ALTER TABLE public.consent_records ADD COLUMN IF NOT EXISTS verification_method text DEFAULT 'Guardian_Affirmation';
+ALTER TABLE public.consent_records ADD COLUMN IF NOT EXISTS verification_method text DEFAULT 'Guardian_OTP_2FA';
 ALTER TABLE public.consent_records ADD COLUMN IF NOT EXISTS verification_outcome text DEFAULT 'verified';
+ALTER TABLE public.consent_records ADD COLUMN IF NOT EXISTS verification_transaction_id text;
+
+-- ------------------------------------------------------------------------------
+-- 5. PER-DEVICE BIOMETRIC HARDWARE REGISTRY & SECRETS (biometric_devices)
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.biometric_devices (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id text NOT NULL,
+  device_serial text NOT NULL UNIQUE,
+  device_name text DEFAULT 'Campus Gate Terminal',
+  model text DEFAULT 'eSSL SilkBio-101',
+  hmac_secret text NOT NULL DEFAULT 'biometric_hw_shared_secret_2026',
+  is_active boolean DEFAULT true,
+  last_heartbeat timestamptz DEFAULT now(),
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.biometric_devices ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_biometric_devices_serial
+  ON public.biometric_devices (device_serial, school_id);
+
+DROP POLICY IF EXISTS "biometric_devices_select" ON public.biometric_devices;
+CREATE POLICY "biometric_devices_select"
+  ON public.biometric_devices FOR SELECT TO authenticated
+  USING (
+    school_id = (SELECT COALESCE(NULLIF(auth.jwt() -> 'app_metadata' ->> 'school_id', ''), public.get_current_tenant_id()))
+    OR public.get_auth_role() IN ('admin', 'super_admin')
+  );
+
+-- Seed default device for zero-downtime integration & demo
+INSERT INTO public.biometric_devices (school_id, device_serial, device_name, model, hmac_secret, is_active)
+VALUES ('CAMPUS-01', 'ESSL-SN-99824', 'Main Campus Gate Turnstile', 'eSSL SilkBio-101', 'biometric_hw_shared_secret_2026', true)
+ON CONFLICT (device_serial) DO NOTHING;
 

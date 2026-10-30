@@ -46,6 +46,10 @@ import StaffMessenger from "./pages/StaffMessenger";
 import ExpenseManagerPage from "./pages/ExpenseManager";
 import OfflineBanner from "./Components/OfflineBanner";
 import ErrorBoundary from "./Components/ErrorBoundary";
+import { SentryErrorBoundary, initSentry } from "./telemetry/sentry";
+
+// Initialize Sentry Telemetry for production observability
+initSentry();
 
 const PUBLIC_ROUTES = [
   "/",
@@ -177,8 +181,9 @@ const AppLayout = ({ children }) => {
 
 export default function App() {
   return (
-    <AppProvider>
-      <ToastProvider>
+    <SentryErrorBoundary>
+      <AppProvider>
+        <ToastProvider>
         <AppLayout>
           <ErrorBoundary>
             <Routes>
@@ -455,5 +460,6 @@ export default function App() {
         </AppLayout>
       </ToastProvider>
     </AppProvider>
+    </SentryErrorBoundary>
   );
 }
