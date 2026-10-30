@@ -662,7 +662,7 @@ export default function PrincipalDashboard() {
   ];
 
   return (
-    <div className="relative text-slate-200 min-h-full pb-10 font-sans">
+    <div className="relative text-slate-800 dark:text-slate-200 min-h-full pb-10 font-sans transition-colors duration-200">
       <div className="fixed top-0 right-10 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="relative z-10 max-w-6xl mx-auto space-y-8">
@@ -672,13 +672,13 @@ export default function PrincipalDashboard() {
         {/* HEADER BAR */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold uppercase tracking-wider mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/30 dark:text-blue-400 text-xs font-bold uppercase tracking-wider mb-2">
               <span>🏛️</span> Executive Command Center &bull; Node {institutionCode}
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Principal & Trustee Master Suite
             </h1>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
               15 Consolidated Enterprise Modules &bull; Live Institutional Ledger & Student Governance
             </p>
           </div>
@@ -686,7 +686,7 @@ export default function PrincipalDashboard() {
           <div className="flex items-center gap-2.5 flex-wrap">
             <button
               onClick={() => setShowOnboardingWizard(true)}
-              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-600/20 hover:-translate-y-0.5"
               title="Zero-Touch Dry-Run CSV Onboarding"
             >
               <span>📁</span>
@@ -694,7 +694,7 @@ export default function PrincipalDashboard() {
             </button>
             <button
               onClick={() => setShowRolloverModal(true)}
-              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-cyan-600/20"
+              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-md shadow-cyan-600/20 hover:-translate-y-0.5"
               title="Academic Year Rollover & Batch Promotion"
             >
               <span>🎓</span>
@@ -702,7 +702,7 @@ export default function PrincipalDashboard() {
             </button>
             <button
               onClick={() => navigate("/admin/calendar")}
-              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-indigo-600/20"
+              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-md shadow-indigo-600/20 hover:-translate-y-0.5"
               title="Sparse Academic Calendar & Campus Pulse"
             >
               <span>📅</span>
@@ -710,7 +710,7 @@ export default function PrincipalDashboard() {
             </button>
             <button
               onClick={() => navigate("/admin/messages")}
-              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-purple-600/20"
+              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-md shadow-purple-600/20 hover:-translate-y-0.5"
               title="Direct 1-to-1 faculty messaging"
             >
               <span>💬</span>
@@ -718,7 +718,7 @@ export default function PrincipalDashboard() {
             </button>
             <button
               onClick={() => navigate("/admin/admissions")}
-              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-blue-600/20"
+              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-md shadow-blue-600/20 hover:-translate-y-0.5"
               title="Manage admissions pipeline & prospective leads"
             >
               <span>🎯</span>
@@ -726,7 +726,7 @@ export default function PrincipalDashboard() {
             </button>
             <button
               onClick={() => navigate("/admin/id-cards")}
-              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-cyan-600/20"
+              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-md shadow-cyan-600/20 hover:-translate-y-0.5"
               title="Generate batch student & staff ID cards"
             >
               <span>🪪</span>
@@ -734,7 +734,7 @@ export default function PrincipalDashboard() {
             </button>
             <button
               onClick={handleCopyPortalLink}
-              className="px-3.5 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 shadow-md"
+              className="px-3.5 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-600/20 dark:hover:bg-blue-600/30 dark:text-blue-300 dark:border-blue-500/30 font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-sm hover:-translate-y-0.5"
               title="Copy direct member portal link to share on WhatsApp"
             >
               <span>🔗</span>
@@ -743,7 +743,7 @@ export default function PrincipalDashboard() {
             {activeModuleId && (
               <button
                 onClick={() => setActiveModuleId(null)}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm border border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white dark:border-slate-700 font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 hover:-translate-y-0.5 shadow-sm"
               >
                 <span>← Back to 12 Modules</span>
               </button>
@@ -1186,7 +1186,7 @@ export default function PrincipalDashboard() {
         ) : (
           <div className="space-y-8">
             {/* EXECUTIVE TAB NAVIGATION BAR */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-white/10">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-slate-200 dark:border-white/10">
               {[
                 { id: "overview", label: "Executive Command & Forecast", icon: "📊" },
                 { id: "tasks", label: "Task Delegation Engine", icon: "⚡" },
@@ -1201,10 +1201,10 @@ export default function PrincipalDashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+                  className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all duration-200 ease-in-out hover:-translate-y-0.5 cursor-pointer whitespace-nowrap flex items-center gap-2 ${
                     activeTab === tab.id
-                      ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 shadow-xl shadow-cyan-500/20"
-                      : "bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10"
+                      ? "bg-cyan-50 text-cyan-800 border border-cyan-300 shadow-sm dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-400/50 dark:shadow-xl dark:shadow-cyan-500/20"
+                      : "bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 hover:text-slate-900 dark:bg-white/5 dark:border-white/10 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/10"
                   }`}
                 >
                   <span>{tab.icon}</span>
@@ -1238,13 +1238,13 @@ export default function PrincipalDashboard() {
                   );
 
                   return (
-                    <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 sm:p-7 space-y-6 animate-fade-in-up stagger-1">
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-white/10 pb-6">
+                    <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 sm:p-7 space-y-6 shadow-sm dark:shadow-2xl animate-fade-in-up stagger-1">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-200 dark:border-white/10 pb-6">
                         {/* HEALTH SCORE GAUGE PILL */}
                         <div className="flex items-center gap-4">
-                          <div className="relative flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/20 via-blue-500/20 to-purple-500/20 border border-cyan-400/30 shadow-xl shadow-cyan-500/20 shrink-0">
-                            <span className="text-3xl font-black text-white">{compositeHealthScore}</span>
-                            <span className="absolute bottom-1 text-[9px] font-mono text-cyan-300 font-bold uppercase">/ 100</span>
+                          <div className="relative flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10 border border-cyan-400/30 shadow-md shadow-cyan-500/10 shrink-0">
+                            <span className="text-3xl font-black text-slate-900 dark:text-white">{compositeHealthScore}</span>
+                            <span className="absolute bottom-1 text-[9px] font-mono text-cyan-600 dark:text-cyan-300 font-bold uppercase">/ 100</span>
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
@@ -1252,15 +1252,15 @@ export default function PrincipalDashboard() {
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                               </span>
-                              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30">
                                 Today's Campus Pulse
                               </span>
-                              <span className="text-xs text-slate-400 font-mono">Real-Time Composite</span>
+                              <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Real-Time Composite</span>
                             </div>
-                            <h2 className="text-xl sm:text-2xl font-black text-white mt-1">
+                            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">
                               Executive Morning Brief & Pulse
                             </h2>
-                            <p className="text-xs text-slate-400 mt-0.5">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                               Weighted telemetry: Fee Recovery (25%), Attendance (25%), Academics (20%), Staff Punctuality (15%), Grievance Resolution (15%).
                             </p>
                           </div>
@@ -1268,25 +1268,25 @@ export default function PrincipalDashboard() {
 
                         {/* TELEMETRY BREAKDOWN MINI-PILLS */}
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
-                          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/30 transition-all">
-                            <span className="text-[10px] text-slate-400 block">Fee Inflow</span>
-                            <span className="font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">{stats.feeCollectionRate}</span>
+                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 hover:border-emerald-500/30 transition-all shadow-xs">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Fee Inflow</span>
+                            <span className="font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-cyan-600 dark:from-emerald-400 dark:to-cyan-400">{stats.feeCollectionRate}</span>
                           </div>
-                          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/30 transition-all">
-                            <span className="text-[10px] text-slate-400 block">Attendance</span>
-                            <span className="font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-sky-400">94%</span>
+                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 hover:border-cyan-500/30 transition-all shadow-xs">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Attendance</span>
+                            <span className="font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-sky-600 dark:from-cyan-400 dark:to-sky-400">94%</span>
                           </div>
-                          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-purple-500/30 transition-all">
-                            <span className="text-[10px] text-slate-400 block">Mastery</span>
-                            <span className="font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">{stats.avgScore || "78%"}</span>
+                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 hover:border-purple-500/30 transition-all shadow-xs">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Mastery</span>
+                            <span className="font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400">{stats.avgScore || "78%"}</span>
                           </div>
-                          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/30 transition-all">
-                            <span className="text-[10px] text-slate-400 block">Punctuality</span>
-                            <span className="font-extrabold text-indigo-400">96%</span>
+                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 hover:border-indigo-500/30 transition-all shadow-xs">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Punctuality</span>
+                            <span className="font-extrabold text-indigo-600 dark:text-indigo-400">96%</span>
                           </div>
-                          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-teal-500/30 transition-all col-span-2 sm:col-span-1">
-                            <span className="text-[10px] text-slate-400 block">Redressal</span>
-                            <span className="font-extrabold text-teal-400">91%</span>
+                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 hover:border-teal-500/30 transition-all col-span-2 sm:col-span-1 shadow-xs">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Redressal</span>
+                            <span className="font-extrabold text-teal-600 dark:text-teal-400">91%</span>
                           </div>
                         </div>
                       </div>
@@ -1298,22 +1298,22 @@ export default function PrincipalDashboard() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
                           </span>
-                          <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300">
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
                             Top 3 Urgent Operational Actions Today
                           </h3>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           {/* ACTION 1: FEE OVERDUES */}
-                          <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-amber-500/40 transition-all duration-300 flex flex-col justify-between space-y-2">
+                          <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500/40 transition-all duration-300 flex flex-col justify-between space-y-2 shadow-xs">
                             <div>
-                              <span className="text-[10px] uppercase font-bold text-rose-400">Action 1 &bull; Treasury</span>
-                              <p className="text-xs font-bold text-white mt-1">
+                              <span className="text-[10px] uppercase font-bold text-rose-600 dark:text-rose-400">Action 1 &bull; Treasury</span>
+                              <p className="text-xs font-bold text-slate-900 dark:text-white mt-1">
                                 {defaulters.length > 0
                                   ? `Recover ₹${totalPendingFees.toLocaleString()} from ${defaulters.length} overdue scholar accounts`
                                   : "Fee Treasury 100% Reconciled"}
                               </p>
-                              <p className="text-[11px] text-slate-400 mt-0.5">
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                                 Automated WhatsApp notices prepared for highest balance accounts.
                               </p>
                             </div>
@@ -1323,47 +1323,47 @@ export default function PrincipalDashboard() {
                                 if (el) el.scrollIntoView({ behavior: "smooth" });
                                 else showToast("Navigate to Defaulters section below", "info");
                               }}
-                              className="w-full py-1.5 px-3 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 text-rose-300 text-xs font-bold transition-all cursor-pointer text-center"
+                              className="w-full py-1.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 dark:border-rose-500/30 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer text-center hover:-translate-y-0.5"
                             >
                               Review {defaulters.length} Defaulters →
                             </button>
                           </div>
 
                           {/* ACTION 2: STAFF & WORKFLOW APPROVALS */}
-                          <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-cyan-500/40 transition-all duration-300 flex flex-col justify-between space-y-2">
+                          <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-cyan-400 dark:hover:border-cyan-500/40 transition-all duration-300 flex flex-col justify-between space-y-2 shadow-xs">
                             <div>
-                              <span className="text-[10px] uppercase font-bold text-cyan-400">Action 2 &bull; Governance</span>
-                              <p className="text-xs font-bold text-white mt-1">
+                              <span className="text-[10px] uppercase font-bold text-cyan-600 dark:text-cyan-400">Action 2 &bull; Governance</span>
+                              <p className="text-xs font-bold text-slate-900 dark:text-white mt-1">
                                 Review pending staff leave applications & accountant fee credit notes
                               </p>
-                              <p className="text-[11px] text-slate-400 mt-0.5">
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                                 Maker-Checker gate ensures dual authorization before posting balance adjustments.
                               </p>
                             </div>
                             <button
                               onClick={() => setActiveTab("leaves")}
-                              className="w-full py-1.5 px-3 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-300 text-xs font-bold transition-all cursor-pointer text-center"
+                              className="w-full py-1.5 px-3 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/20 dark:hover:bg-cyan-500/30 dark:border-cyan-500/30 dark:text-cyan-300 text-xs font-bold transition-all cursor-pointer text-center hover:-translate-y-0.5"
                             >
                               Open Staff Leaves →
                             </button>
                           </div>
 
                           {/* ACTION 3: ACADEMIC WATCHLIST */}
-                          <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-purple-500/40 transition-all duration-300 flex flex-col justify-between space-y-2">
+                          <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-purple-400 dark:hover:border-purple-500/40 transition-all duration-300 flex flex-col justify-between space-y-2 shadow-xs">
                             <div>
-                              <span className="text-[10px] uppercase font-bold text-purple-400">Action 3 &bull; Academics</span>
-                              <p className="text-xs font-bold text-white mt-1">
+                              <span className="text-[10px] uppercase font-bold text-purple-600 dark:text-purple-400">Action 3 &bull; Academics</span>
+                              <p className="text-xs font-bold text-slate-900 dark:text-white mt-1">
                                 {watchlist.length > 0
                                   ? `${watchlist.length} scholars on remedial support watchlist`
                                   : "Curriculum milestone pacing on track across grades"}
                               </p>
-                              <p className="text-[11px] text-slate-400 mt-0.5">
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                                 Ensure remedial educators have assigned after-class coaching sessions.
                               </p>
                             </div>
                             <button
                               onClick={() => setShowWatchlistModal(true)}
-                              className="w-full py-1.5 px-3 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 text-xs font-bold transition-all cursor-pointer text-center"
+                              className="w-full py-1.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-500/20 dark:hover:bg-purple-500/30 dark:border-purple-500/30 dark:text-purple-300 text-xs font-bold transition-all cursor-pointer text-center hover:-translate-y-0.5"
                             >
                               Add Remedial Scholar →
                             </button>
@@ -1383,7 +1383,7 @@ export default function PrincipalDashboard() {
                 {/* 1. CEO SPATIAL BENTO GRID: REAL-TIME EXECUTIVE TELEMETRY DECK */}
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fade-in-up stagger-3">
                   {/* BENTO CARD 1: RECONCILED REVENUE (SPAN 2 COLS) */}
-                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between">
+                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
                     <div className="absolute top-0 right-0 w-44 h-44 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
                     <div>
                       <div className="flex items-center justify-between mb-2">
@@ -1392,70 +1392,70 @@ export default function PrincipalDashboard() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                           </span>
-                          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Reconciled Revenue</p>
+                          <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Reconciled Revenue</p>
                         </div>
-                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">
+                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">
                           Live Treasury
                         </span>
                       </div>
 
                       {stats.totalRevenue > 0 ? (
-                        <p className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 tracking-tight">
+                        <p className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-400 tracking-tight">
                           ₹{stats.totalRevenue.toLocaleString()}
                         </p>
                       ) : (
-                        <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
-                          <p className="text-2xl sm:text-3xl font-extrabold text-slate-600 font-mono tracking-tight">₹0.00</p>
+                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 bg-tech-grid">
+                          <p className="text-2xl sm:text-3xl font-extrabold text-slate-400 dark:text-slate-600 font-mono tracking-tight">₹0.00</p>
                           <span className="text-[10px] text-slate-500 block mt-0.5">Clean Ledger • Ready for Settlement Inflow</span>
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-400 mt-4 block border-t border-slate-800/80 pt-3">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-4 block border-t border-slate-200 dark:border-slate-800/80 pt-3">
                       {stats.totalRevenue > 0 ? `${stats.paidCount} verified institutional receipts` : "0 recorded transactions"}
                     </span>
                   </div>
 
                   {/* BENTO CARD 2: ACTIVE STUDENTS */}
-                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <span className="relative flex h-3 w-3">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
                         </span>
-                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Students</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Active Students</p>
                       </div>
 
                       {stats.enrolledStudents > 0 ? (
-                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400 tracking-tight">
+                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 via-sky-600 to-blue-600 dark:from-cyan-400 dark:via-sky-300 dark:to-blue-400 tracking-tight">
                           {stats.enrolledStudents}
                         </p>
                       ) : (
-                        <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
-                          <p className="text-xl font-bold text-slate-600 font-mono">0 Enrolled</p>
+                        <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 bg-tech-grid">
+                          <p className="text-xl font-bold text-slate-400 dark:text-slate-600 font-mono">0 Enrolled</p>
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-400 mt-3 block border-t border-slate-800/80 pt-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       Verified scholar directory node
                     </span>
                   </div>
 
                   {/* BENTO CARD 3: COLLECTION EFFICIENCY */}
-                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-purple-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
                     <div>
-                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Collection Rate</p>
-                      <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-rose-400 tracking-tight">
+                      <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Collection Rate</p>
+                      <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 dark:from-purple-400 dark:via-pink-400 dark:to-rose-400 tracking-tight">
                         {stats.feeCollectionRate}
                       </p>
                     </div>
-                    <span className="text-xs text-slate-400 mt-3 block border-t border-slate-800/80 pt-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       Institutional recovery velocity
                     </span>
                   </div>
 
                   {/* BENTO CARD 4: FEES PAID THIS MONTH (SPAN 2 COLS) */}
-                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -1463,31 +1463,31 @@ export default function PrincipalDashboard() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
                           </span>
-                          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Fees Paid This Month</p>
+                          <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Fees Paid This Month</p>
                         </div>
-                        <span className="text-[10px] font-mono text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-mono text-cyan-700 bg-cyan-50 border border-cyan-200 dark:text-cyan-300 dark:bg-cyan-500/10 dark:border-cyan-500/20 px-2 py-0.5 rounded-full">
                           Run-Rate Velocity
                         </span>
                       </div>
 
                       {totalPaidThisMonth > 0 ? (
-                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 tracking-tight">
+                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 dark:from-cyan-400 dark:via-teal-300 dark:to-emerald-400 tracking-tight">
                           ₹{totalPaidThisMonth.toLocaleString()}
                         </p>
                       ) : (
-                        <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
-                          <p className="text-xl font-bold text-slate-600 font-mono">₹0.00 Inflow</p>
+                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 bg-tech-grid">
+                          <p className="text-xl font-bold text-slate-400 dark:text-slate-600 font-mono">₹0.00 Inflow</p>
                           <span className="text-[10px] text-slate-500 block">Pending monthly cycle collections</span>
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-400 mt-3 block border-t border-slate-800/80 pt-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       Active calendar month turnover
                     </span>
                   </div>
 
                   {/* BENTO CARD 5: DEFAULTER ARREARS (SPAN 2 COLS) */}
-                  <div className="col-span-1 md:col-span-1 lg:col-span-2 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-rose-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(244,63,94,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                  <div className="col-span-1 md:col-span-1 lg:col-span-2 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-rose-400 dark:hover:border-rose-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -1495,25 +1495,25 @@ export default function PrincipalDashboard() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
                           </span>
-                          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Fees Pending</p>
+                          <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Total Fees Pending</p>
                         </div>
-                        <span className="text-[10px] font-mono text-rose-300 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-mono text-rose-700 bg-rose-50 border border-rose-200 dark:text-rose-300 dark:bg-rose-500/10 dark:border-rose-500/20 px-2 py-0.5 rounded-full">
                           {defaulters.length} Accounts
                         </span>
                       </div>
 
                       {totalPendingFees > 0 ? (
-                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-rose-400 via-amber-300 to-orange-400 tracking-tight">
+                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-rose-600 via-amber-600 to-orange-600 dark:from-rose-400 dark:via-amber-300 dark:to-orange-400 tracking-tight">
                           ₹{totalPendingFees.toLocaleString()}
                         </p>
                       ) : (
-                        <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
-                          <p className="text-xl font-bold text-emerald-400 font-mono">₹0.00 Overdue</p>
-                          <span className="text-[10px] text-slate-400 block">100% Institutional compliance achieved</span>
+                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 bg-tech-grid">
+                          <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">₹0.00 Overdue</p>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block">100% Institutional compliance achieved</span>
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-400 mt-3 block border-t border-slate-800/80 pt-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       Overdue balances prioritized for recovery
                     </span>
                   </div>
@@ -1522,14 +1522,14 @@ export default function PrincipalDashboard() {
                 {/* 2. REVENUE FORECASTING & TEACHER PERFORMANCE GRAPHS */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up stagger-4">
                   {/* CHART A: REVENUE FORECASTING CASH FLOW */}
-                  <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 shadow-2xl">
+                  <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/10 dark:border-cyan-400/30 dark:text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">
                           <span>📈</span> Predictive Treasury AI
                         </div>
-                        <h3 className="text-lg font-black text-white">5-Month Revenue Cash Flow Forecast</h3>
-                        <p className="text-xs text-slate-400 mt-0.5">Projected inflow velocity based on historical payment pace and pending arrears</p>
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white">5-Month Revenue Cash Flow Forecast</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Projected inflow velocity based on historical payment pace and pending arrears</p>
                       </div>
                     </div>
 
@@ -1546,7 +1546,7 @@ export default function PrincipalDashboard() {
                               <stop offset="95%" stopColor="#A855F7" stopOpacity={0.0} />
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
                           <XAxis dataKey="month" stroke="#94A3B8" fontSize={10} tickLine={false} />
                           <YAxis
                             stroke="#94A3B8"
@@ -1586,28 +1586,28 @@ export default function PrincipalDashboard() {
                   </div>
 
                   {/* CHART B: TEACHER PERFORMANCE ANALYTICS */}
-                  <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 shadow-2xl">
+                  <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider mb-1">
                           <span>👨‍🏫</span> Faculty Merit Standing
                         </div>
-                        <h3 className="text-lg font-black text-white">Teacher Academic Performance Analytics</h3>
-                        <p className="text-xs text-slate-400 mt-0.5">Aggregated student exam marks & pass ratios across faculty rosters</p>
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white">Teacher Academic Performance Analytics</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Aggregated student exam marks & pass ratios across faculty rosters</p>
                       </div>
                     </div>
 
                     {teacherAnalytics.length === 0 ? (
-                      <div className="h-64 flex flex-col items-center justify-center text-center text-slate-400 p-6 space-y-2 bg-tech-grid rounded-2xl">
+                      <div className="h-64 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-6 space-y-2 bg-slate-50/50 dark:bg-tech-grid rounded-2xl">
                         <span className="text-3xl opacity-60">📊</span>
-                        <p className="text-sm font-bold text-white">No Faculty Marks Available (Clean Slate)</p>
-                        <p className="text-xs text-slate-400 max-w-xs">Onboard teachers and conduct examinations to populate academic comparisons.</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">No Faculty Marks Available (Clean Slate)</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">Onboard teachers and conduct examinations to populate academic comparisons.</p>
                       </div>
                     ) : (
                       <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={teacherAnalytics} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
                             <XAxis dataKey="teacherName" stroke="#94A3B8" fontSize={10} tickLine={false} />
                             <YAxis
                               stroke="#94A3B8"
@@ -1637,14 +1637,14 @@ export default function PrincipalDashboard() {
                 </div>
 
                 {/* 3. HIGHEST OVERDUE DEFAULTERS LIST */}
-                <div id="defaulters-section" className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up stagger-5">
-                  <div className="p-6 border-b border-white/10 bg-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div id="defaulters-section" className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl shadow-sm dark:shadow-2xl overflow-hidden animate-fade-in-up stagger-5">
+                  <div className="p-6 border-b border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold uppercase tracking-wider mb-1">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/30 dark:text-rose-300 text-xs font-bold uppercase tracking-wider mb-1">
                         <span>⚠️</span> Fee Recovery & Arrears
                       </div>
-                      <h3 className="text-lg font-black text-white">Highest Overdue Defaulters</h3>
-                      <p className="text-xs text-slate-400 mt-0.5">Prioritized by outstanding unpaid balance. 1-Click WhatsApp reminder notification dispatch.</p>
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white">Highest Overdue Defaulters</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Prioritized by outstanding unpaid balance. 1-Click WhatsApp reminder notification dispatch.</p>
                     </div>
 
                     <div className="w-full md:w-80">
@@ -1653,16 +1653,16 @@ export default function PrincipalDashboard() {
                         placeholder="Search defaulter name, roll ID, or batch..."
                         value={defaulterSearch}
                         onChange={(e) => setDefaulterSearch(e.target.value)}
-                        className="w-full bg-slate-950/70 border border-white/10 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                        className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-300 dark:border-white/10 rounded-xl px-4 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
                       />
                     </div>
                   </div>
 
                   {filteredDefaulters.length === 0 ? (
-                    <div className="p-12 text-center text-slate-400 space-y-2">
+                    <div className="p-12 text-center text-slate-500 dark:text-slate-400 space-y-2">
                       <span className="text-4xl block opacity-60">🎉</span>
-                      <h4 className="text-base font-bold text-white">No Outstanding Defaulters (100% Fee Reconciliation)</h4>
-                      <p className="text-xs text-slate-400 max-w-md mx-auto">
+                      <h4 className="text-base font-bold text-slate-900 dark:text-white">No Outstanding Defaulters (100% Fee Reconciliation)</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
                         All currently enrolled scholars have fully cleared their tuition dues. Overdue balances will dynamically surface here.
                       </p>
                     </div>
@@ -1670,7 +1670,7 @@ export default function PrincipalDashboard() {
                     <div className="overflow-x-auto w-full">
                       <table className="w-full text-left border-collapse min-w-[750px]">
                         <thead>
-                          <tr className="border-b border-white/10 text-slate-400 text-xs uppercase tracking-wider bg-white/5">
+                          <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider bg-slate-100/60 dark:bg-white/5">
                             <th className="p-4 pl-6">Scholar & Roll ID</th>
                             <th className="p-4">Batch / Class</th>
                             <th className="p-4">Contact Phone</th>
@@ -1680,29 +1680,29 @@ export default function PrincipalDashboard() {
                             <th className="p-4 text-right pr-6">Action</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5 text-sm">
+                        <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-sm">
                           {filteredDefaulters.map((d) => (
                             <tr
                               key={d.id}
-                              className="hover:bg-white/5 transition-all duration-300 ease-in-out hover:scale-[1.005]"
+                              className="hover:bg-slate-50/80 dark:hover:bg-white/5 transition-all duration-200"
                             >
-                              <td className="p-4 pl-6 font-bold text-white">
+                              <td className="p-4 pl-6 font-bold text-slate-900 dark:text-white">
                                 {d.name}
-                                <span className="block text-[10px] font-mono text-cyan-400 font-normal">
+                                <span className="block text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-normal">
                                   {d.rollNumber}
                                 </span>
                               </td>
-                              <td className="p-4 text-xs text-slate-200">{d.className}</td>
-                              <td className="p-4 font-mono text-xs text-slate-400">{d.phone}</td>
-                              <td className="p-4 font-mono text-xs text-slate-300">₹{d.totalFees.toLocaleString()}</td>
-                              <td className="p-4 font-mono text-xs text-emerald-400">₹{d.paidAmount.toLocaleString()}</td>
-                              <td className="p-4 font-mono font-black text-sm text-rose-400">
+                              <td className="p-4 text-xs text-slate-600 dark:text-slate-200">{d.className}</td>
+                              <td className="p-4 font-mono text-xs text-slate-500 dark:text-slate-400">{d.phone}</td>
+                              <td className="p-4 font-mono text-xs text-slate-700 dark:text-slate-300">₹{d.totalFees.toLocaleString()}</td>
+                              <td className="p-4 font-mono text-xs text-emerald-600 dark:text-emerald-400">₹{d.paidAmount.toLocaleString()}</td>
+                              <td className="p-4 font-mono font-black text-sm text-rose-600 dark:text-rose-400">
                                 ₹{d.overdueBalance.toLocaleString()}
                               </td>
                               <td className="p-4 text-right pr-6">
                                 <button
                                   onClick={() => handleSendReminder(d)}
-                                  className="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer inline-flex items-center gap-1.5"
+                                  className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 dark:text-rose-300 dark:border-rose-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 cursor-pointer inline-flex items-center gap-1.5 shadow-sm"
                                 >
                                   <span>📲</span>
                                   <span>Send Reminder</span>
@@ -1717,15 +1717,15 @@ export default function PrincipalDashboard() {
                 </div>
 
                 {/* 4. QUICK ACTION SHORTCUTS & CREDENTIALS EXPORT */}
-                <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-wrap items-center justify-between gap-4">
+                <div className="bg-white/80 dark:bg-white/5 backdrop-blur-2xl border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-sm dark:shadow-2xl flex flex-wrap items-center justify-between gap-4">
                   <div>
-                    <h4 className="text-base font-bold text-white">Direct Administrative Actions</h4>
-                    <p className="text-xs text-slate-400">Instant shortcuts for rapid campus operations</p>
+                    <h4 className="text-base font-bold text-slate-900 dark:text-white">Direct Administrative Actions</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Instant shortcuts for rapid campus operations</p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
                       onClick={() => setShowManualPayModal(true)}
-                      className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer flex items-center gap-1.5"
+                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-300 dark:border-emerald-500/40 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 cursor-pointer flex items-center gap-1.5 shadow-sm"
                     >
                       <span>💰</span>
                       <span>Record Fee Receipt</span>
@@ -1735,14 +1735,14 @@ export default function PrincipalDashboard() {
                         setComprehensiveModalRole("student");
                         setShowQuickAddModal(true);
                       }}
-                      className="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer flex items-center gap-1.5"
+                      className="bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200 dark:bg-cyan-600/20 dark:hover:bg-cyan-600/30 dark:text-cyan-300 dark:border-cyan-500/40 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 cursor-pointer flex items-center gap-1.5 shadow-sm"
                     >
                       <span>🎓</span>
                       <span>+ Enroll Student</span>
                     </button>
                     <button
                       onClick={handleExportWhatsAppSheet}
-                      className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer flex items-center gap-1.5"
+                      className="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 dark:text-purple-300 dark:border-purple-500/40 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 cursor-pointer flex items-center gap-1.5 shadow-sm"
                     >
                       <span>📲</span>
                       <span>Export WhatsApp Sheet</span>
@@ -1780,8 +1780,8 @@ export default function PrincipalDashboard() {
             {activeTab === "modules" && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-white">15 Consolidated Institutional Modules</h3>
-                  <span className="text-xs text-slate-400">Click any module to launch live CRUD controls</span>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">15 Consolidated Institutional Modules</h3>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Click any module to launch live CRUD controls</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1789,25 +1789,25 @@ export default function PrincipalDashboard() {
                     <div
                       key={mod.id}
                       onClick={() => setActiveModuleId(mod.id)}
-                      className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl hover:border-cyan-400/50 hover:bg-white/10 transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer group flex flex-col justify-between"
+                      className="bg-white/80 dark:bg-white/5 backdrop-blur-2xl border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-sm dark:shadow-2xl hover:border-cyan-400/50 hover:bg-slate-50/80 dark:hover:bg-white/10 transition-all duration-200 ease-in-out hover:-translate-y-0.5 cursor-pointer group flex flex-col justify-between"
                     >
                       <div>
                         <div className="flex items-center justify-between mb-4">
-                          <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-inner">
+                          <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-inner">
                             {mod.icon}
                           </div>
-                          <span className="text-[10px] font-black uppercase text-cyan-400 tracking-wider bg-cyan-500/10 border border-cyan-400/20 px-2.5 py-1 rounded-full">
+                          <span className="text-[10px] font-black uppercase text-cyan-600 dark:text-cyan-400 tracking-wider bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-400/20 px-2.5 py-1 rounded-full">
                             Module #{mod.id}
                           </span>
                         </div>
-                        <h4 className="text-lg font-bold text-white mb-1.5 group-hover:text-cyan-300 transition-colors">
+                        <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors">
                           {mod.name}
                         </h4>
-                        <p className="text-slate-400 text-xs leading-relaxed line-clamp-2">{mod.desc}</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs leading-relaxed line-clamp-2">{mod.desc}</p>
                       </div>
 
-                      <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-xs font-bold text-slate-400 group-hover:text-white transition-colors">
-                        <span className="text-cyan-400 font-mono text-[11px]">{mod.category}</span>
+                      <div className="mt-6 pt-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                        <span className="text-cyan-600 dark:text-cyan-400 font-mono text-[11px]">{mod.category}</span>
                         <span>Launch Controls →</span>
                       </div>
                     </div>
@@ -1823,52 +1823,52 @@ export default function PrincipalDashboard() {
         {/* MODAL 1: MANUAL FEE RECORD */}
         {showManualPayModal && (
           <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
-            <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
-              <h3 className="text-xl font-extrabold text-white mb-1">Record Cash / Cheque Fee 💰</h3>
-              <p className="text-xs text-slate-400 mb-6">Manually settle tuition installment to generate tax invoice.</p>
+            <div className="bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
+              <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-1">Record Cash / Cheque Fee 💰</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Manually settle tuition installment to generate tax invoice.</p>
 
               <form onSubmit={handleRecordManualFee} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Student Full Name *</label>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Student Full Name *</label>
                   <input
                     type="text"
                     placeholder="e.g. Atharva M. Sawant"
                     value={manualPayForm.studentName}
                     onChange={(e) => setManualPayForm({ ...manualPayForm, studentName: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Classroom Batch</label>
+                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Classroom Batch</label>
                     <input
                       type="text"
                       value={manualPayForm.className}
                       onChange={(e) => setManualPayForm({ ...manualPayForm, className: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Amount (INR) *</label>
+                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Amount (INR) *</label>
                     <input
                       type="number"
                       value={manualPayForm.amount}
                       onChange={(e) => setManualPayForm({ ...manualPayForm, amount: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:border-emerald-500"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Payment Channel</label>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Payment Channel</label>
                   <select
                     value={manualPayForm.paymentMode}
                     onChange={(e) => setManualPayForm({ ...manualPayForm, paymentMode: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                   >
                     <option value="Cash Receipt">Cash Receipt at Counter</option>
                     <option value="Cheque / DD">Cheque / Demand Draft</option>
@@ -1877,17 +1877,17 @@ export default function PrincipalDashboard() {
                   </select>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={() => setShowManualPayModal(false)}
-                    className="px-4 py-2 rounded-xl text-slate-400 hover:text-white font-bold text-xs cursor-pointer"
+                    className="px-4 py-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white font-bold text-xs cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg transition-all cursor-pointer"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md transition-all cursor-pointer"
                   >
                     Settle Fee Transaction
                   </button>
@@ -1922,68 +1922,68 @@ export default function PrincipalDashboard() {
         {/* MODAL 4: WATCHLIST */}
         {showWatchlistModal && (
           <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
-            <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
-              <h3 className="text-xl font-extrabold text-white mb-1">Flag Scholar for Academic Support 📊</h3>
-              <p className="text-xs text-slate-400 mb-6">Assign remedial attention and target coaching milestones.</p>
+            <div className="bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
+              <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-1">Flag Scholar for Academic Support 📊</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Assign remedial attention and target coaching milestones.</p>
 
               <form onSubmit={handleAddWatchlist} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Scholar Full Name *</label>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Scholar Full Name *</label>
                   <input
                     type="text"
                     placeholder="e.g. Tanmay Joshi"
                     value={watchForm.name}
                     onChange={(e) => setWatchForm({ ...watchForm, name: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Class Batch</label>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Class Batch</label>
                   <input
                     type="text"
                     value={watchForm.className}
                     onChange={(e) => setWatchForm({ ...watchForm, className: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Academic Concern *</label>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Academic Concern *</label>
                   <input
                     type="text"
                     placeholder="e.g. Scored 34% in Quadratic Equations test"
                     value={watchForm.concern}
                     onChange={(e) => setWatchForm({ ...watchForm, concern: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Action / Remedial Plan</label>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Action / Remedial Plan</label>
                   <input
                     type="text"
                     placeholder="e.g. Assigned 30-min daily remedial session with Math faculty"
                     value={watchForm.action}
                     onChange={(e) => setWatchForm({ ...watchForm, action: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={() => setShowWatchlistModal(false)}
-                    className="px-4 py-2 rounded-xl text-slate-400 hover:text-white font-bold text-xs cursor-pointer"
+                    className="px-4 py-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white font-bold text-xs cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg transition-all cursor-pointer"
+                    className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md transition-all cursor-pointer"
                   >
                     Save to Watchlist
                   </button>

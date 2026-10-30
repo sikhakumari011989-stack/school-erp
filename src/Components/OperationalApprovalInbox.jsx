@@ -208,22 +208,22 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
   });
 
   return (
-    <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl shadow-cyan-500/10 space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-sm dark:shadow-2xl space-y-4 transition-all duration-300 hover:-translate-y-0.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-white/10 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-400/30">
               Maker-Checker Gate
             </span>
-            <span className="text-xs text-slate-400 font-mono">Tenant: {cleanSchool}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Tenant: {cleanSchool}</span>
           </div>
-          <h2 className="text-lg font-black text-white mt-1 flex items-center gap-2">
+          <h2 className="text-lg font-black text-slate-900 dark:text-white mt-1 flex items-center gap-2">
             <span>Unified Operational Approval Inbox</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30 font-bold">
               {approvalItems.length} Pending Actions
             </span>
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Single queue for Principal sign-off: Staff Leaves, Accountant Credit Notes, and Official Certificates.
           </p>
         </div>
@@ -236,7 +236,7 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
               className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 filterType === cat
                   ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20"
-                  : "bg-white/5 text-slate-400 hover:text-white"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-white/5 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
               {cat === "all" ? "All Queue" : cat}
@@ -246,9 +246,9 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
       </div>
 
       {filteredItems.length === 0 ? (
-        <div className="py-10 text-center text-slate-400">
-          <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-2 opacity-80" />
-          <p className="text-sm font-bold text-white">All Clear! No Operational Approvals Pending</p>
+        <div className="py-10 text-center text-slate-500 dark:text-slate-400">
+          <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-80" />
+          <p className="text-sm font-bold text-slate-900 dark:text-white">All Clear! No Operational Approvals Pending</p>
           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
             Staff leaves, accountant financial adjustments, and scholar document requests will appear here for 1-click executive decision.
           </p>
@@ -258,27 +258,27 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
           {filteredItems.map((item) => (
             <div
               key={`${item.category}_${item.id}`}
-              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              className="p-4 rounded-2xl bg-slate-50/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span
                     className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded-full ${
                       item.category === "REVERSAL"
-                        ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                        ? "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/30"
                         : item.category === "LEAVE"
-                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                        : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                        ? "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30"
+                        : "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30"
                     }`}
                   >
                     {item.category}
                   </span>
-                  <span className="text-xs text-slate-400 font-mono">{item.timestamp}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{item.timestamp}</span>
                 </div>
-                <h4 className="text-sm font-bold text-white">{item.title}</h4>
-                <p className="text-xs text-slate-300">{item.subtitle}</p>
-                <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                  <User className="w-3 h-3 text-cyan-400" />
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">{item.title}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300">{item.subtitle}</p>
+                <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                  <User className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
                   <span>Requester: {item.requestedBy} ({item.role})</span>
                 </div>
               </div>
@@ -286,14 +286,14 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
               <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                 <button
                   onClick={() => handleApprove(item)}
-                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black transition-all cursor-pointer flex items-center gap-1 shadow-md shadow-emerald-900/30"
+                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black transition-all cursor-pointer flex items-center gap-1 shadow-md shadow-emerald-900/30 hover:-translate-y-0.5"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Approve</span>
                 </button>
                 <button
                   onClick={() => handleReject(item)}
-                  className="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-rose-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-600/20 dark:hover:bg-rose-600/30 dark:border-rose-500/40 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 hover:-translate-y-0.5"
                 >
                   <XCircle className="w-3.5 h-3.5" />
                   <span>Reject</span>

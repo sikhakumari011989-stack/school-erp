@@ -576,20 +576,20 @@ export default function TrusteeDashboard() {
   });
 
   return (
-    <div className="relative text-slate-200 min-h-full pb-10 font-sans">
-      <div className="fixed top-0 right-10 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div className="relative text-slate-800 dark:text-slate-200 min-h-full pb-10 font-sans transition-colors duration-200">
+      <div className="fixed top-0 right-10 w-96 h-96 bg-purple-600/10 dark:bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="relative z-10 max-w-6xl mx-auto">
         <div className="mb-8 flex justify-between items-center flex-wrap gap-4">
           <div>
-            <p className="text-purple-300 text-sm font-semibold mb-1 uppercase tracking-widest">Executive Suite</p>
-            <h1 className="text-3xl font-extrabold text-white">HOD / Trustee & Principal Command Center 🏛️</h1>
-            <p className="text-slate-400 text-sm mt-1">Unified institutional audit, financial growth, and academic student management</p>
+            <p className="text-purple-600 dark:text-purple-300 text-sm font-semibold mb-1 uppercase tracking-widest">Executive Suite</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">HOD / Trustee & Principal Command Center 🏛️</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Unified institutional audit, financial growth, and academic student management</p>
           </div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <button
               onClick={handleCopyPortalLink}
-              className="px-3.5 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-bold shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-600/20 dark:hover:bg-blue-600/30 dark:text-blue-300 dark:border-blue-500/30 text-xs font-bold shadow-sm transition-all duration-200 hover:-translate-y-0.5 cursor-pointer flex items-center gap-1.5"
               title="Copy direct member portal link to share on WhatsApp"
             >
               <span>🔗</span>
@@ -597,7 +597,7 @@ export default function TrusteeDashboard() {
             </button>
             <button
               onClick={() => setShowDiagnosticModal(true)}
-              className="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-bold shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 dark:text-purple-300 dark:border-purple-500/30 text-xs font-bold shadow-sm transition-all duration-200 hover:-translate-y-0.5 cursor-pointer flex items-center gap-1.5"
               title="Run 5-point browser automated multi-tenant health & isolation check"
             >
               <span>🩺</span>
@@ -605,40 +605,40 @@ export default function TrusteeDashboard() {
             </button>
             <button
               onClick={() => setIsBulkModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer flex items-center gap-1.5"
             >
               <span>📥</span>
               <span>Bulk CSV Onboarding</span>
             </button>
-            <div className="flex gap-1.5 bg-slate-800/80 p-1.5 rounded-2xl border border-slate-700 flex-wrap">
+            <div className="flex gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 flex-wrap">
               <button
                 onClick={() => setActiveTab("overview")}
-                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
-                  activeTab === "overview" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30" : "text-slate-400 hover:text-white"
+                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
+                  activeTab === "overview" ? "bg-purple-600 text-white shadow-md shadow-purple-600/30" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 }`}
               >
                 Trustee Analytics
               </button>
               <button
                 onClick={() => setActiveTab("academics")}
-                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
-                  activeTab === "academics" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30" : "text-slate-400 hover:text-white"
+                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
+                  activeTab === "academics" ? "bg-purple-600 text-white shadow-md shadow-purple-600/30" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 }`}
               >
                 Directory & Credentials
               </button>
               <button
                 onClick={() => setActiveTab("notices")}
-                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
-                  activeTab === "notices" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30" : "text-slate-400 hover:text-white"
+                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
+                  activeTab === "notices" ? "bg-purple-600 text-white shadow-md shadow-purple-600/30" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 }`}
               >
                 📢 Circulars ({noticesList.length})
               </button>
               <button
                 onClick={() => setActiveTab("certificates")}
-                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === "certificates" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30" : "text-slate-400 hover:text-white"
+                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === "certificates" ? "bg-purple-600 text-white shadow-md shadow-purple-600/30" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 }`}
               >
                 <span>🎨</span>
@@ -646,8 +646,8 @@ export default function TrusteeDashboard() {
               </button>
               <button
                 onClick={() => setActiveTab("non_teaching")}
-                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === "non_teaching" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30" : "text-slate-400 hover:text-white"
+                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === "non_teaching" ? "bg-purple-600 text-white shadow-md shadow-purple-600/30" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 }`}
               >
                 <span>🧹</span>
@@ -655,8 +655,8 @@ export default function TrusteeDashboard() {
               </button>
               <button
                 onClick={() => setActiveTab("upi_qr")}
-                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === "upi_qr" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30" : "text-slate-400 hover:text-white"
+                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === "upi_qr" ? "bg-purple-600 text-white shadow-md shadow-purple-600/30" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 }`}
               >
                 <span>🏦</span>
@@ -686,7 +686,7 @@ export default function TrusteeDashboard() {
               return (
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fade-in-up stagger-1">
                   {/* CARD 1: RECONCILED REVENUE (SPAN 2 COLS) */}
-                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between">
+                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between">
                     <div className="absolute top-0 right-0 w-44 h-44 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
                     <div>
                       <div className="flex items-center justify-between mb-2">
@@ -695,91 +695,91 @@ export default function TrusteeDashboard() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                           </span>
-                          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Reconciled Revenue</p>
+                          <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Reconciled Revenue</p>
                         </div>
-                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">
+                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">
                           Trustee Treasury
                         </span>
                       </div>
 
                       {financialStats.totalRevenue > 0 ? (
-                        <p className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 tracking-tight">
+                        <p className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-400 tracking-tight">
                           ₹{financialStats.totalRevenue.toLocaleString()}
                         </p>
                       ) : (
-                        <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
-                          <p className="text-2xl sm:text-3xl font-extrabold text-slate-600 font-mono tracking-tight">₹0.00</p>
+                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 bg-tech-grid">
+                          <p className="text-2xl sm:text-3xl font-extrabold text-slate-400 dark:text-slate-600 font-mono tracking-tight">₹0.00</p>
                           <span className="text-[10px] text-slate-500 block mt-0.5">Clean Ledger • Awaiting Settlements</span>
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-400 mt-4 block border-t border-slate-800/80 pt-3">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-4 block border-t border-slate-200 dark:border-slate-800/80 pt-3">
                       {financialStats.totalRevenue > 0 ? `${financialStats.paidTransactions} settled institutional transactions` : "0 recorded transactions"}
                     </span>
                   </div>
 
                   {/* CARD 2: ACTIVE STUDENTS */}
-                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <span className="relative flex h-3 w-3">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
                         </span>
-                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Students</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Active Students</p>
                       </div>
 
                       {enrolledStudentsCount > 0 ? (
-                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400 tracking-tight">
+                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 via-sky-600 to-blue-600 dark:from-cyan-400 dark:via-sky-300 dark:to-blue-400 tracking-tight">
                           {loading ? "..." : enrolledStudentsCount}
                         </p>
                       ) : (
-                        <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
-                          <p className="text-xl font-bold text-slate-600 font-mono">{loading ? "..." : "0 Enrolled"}</p>
+                        <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 bg-tech-grid">
+                          <p className="text-xl font-bold text-slate-400 dark:text-slate-600 font-mono">{loading ? "..." : "0 Enrolled"}</p>
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-400 mt-3 block border-t border-slate-800/80 pt-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       Verified scholar directory node
                     </span>
                   </div>
 
                   {/* CARD 3: FACULTY STRENGTH */}
-                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-purple-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
                     <div>
-                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Faculty Strength</p>
+                      <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Faculty Strength</p>
                       {facultyCount > 0 ? (
-                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-pink-400 tracking-tight">
+                        <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 dark:from-purple-400 dark:via-indigo-400 dark:to-pink-400 tracking-tight">
                           {facultyCount} Tutors
                         </p>
                       ) : (
-                        <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80 bg-tech-grid">
-                          <p className="text-xl font-bold text-slate-600 font-mono">0 Onboarded</p>
+                        <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 bg-tech-grid">
+                          <p className="text-xl font-bold text-slate-400 dark:text-slate-600 font-mono">0 Onboarded</p>
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-400 mt-3 block border-t border-slate-800/80 pt-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       Institutional academic faculty
                     </span>
                   </div>
 
-                  {/* CARD 4: FEE COLLECTION RATE (SPAN 4 or regular) */}
-                  <div className="col-span-1 md:col-span-3 lg:col-span-4 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  {/* CARD 4: FEE COLLECTION RATE */}
+                  <div className="col-span-1 md:col-span-3 lg:col-span-4 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Fee Collection Recovery Rate</p>
-                      <p className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 tracking-tight">
+                      <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Fee Collection Recovery Rate</p>
+                      <p className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-400 tracking-tight">
                         {financialStats.collectionRate}
                       </p>
-                      <span className="text-xs text-slate-400 mt-1 block">Live calculated across tuition billing cycles</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block">Live calculated across tuition billing cycles</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-center">
-                        <span className="text-[10px] text-slate-400 uppercase font-bold block">Status</span>
-                        <span className="text-xs font-bold text-emerald-400">Reconciled</span>
+                      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-center">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold block">Status</span>
+                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Reconciled</span>
                       </div>
-                      <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-center">
-                        <span className="text-[10px] text-slate-400 uppercase font-bold block">Gateway</span>
-                        <span className="text-xs font-bold text-cyan-400">Instant UPI</span>
+                      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-center">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold block">Gateway</span>
+                        <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">Instant UPI</span>
                       </div>
                     </div>
                   </div>
@@ -788,16 +788,16 @@ export default function TrusteeDashboard() {
             })()}
 
             {/* TRUSTEE AUDIT CARD */}
-            <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-8 shadow-2xl animate-fade-in-up stagger-2">
-              <h2 className="text-xl font-bold text-white mb-2">Board & Financial Compliance Vault</h2>
-              <p className="text-slate-300 text-sm mb-6 max-w-3xl">All institutional tax records, rental agreements, and teacher contracts are encrypted and verified under Supabase RLS security standards.</p>
+            <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-purple-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-8 shadow-sm dark:shadow-2xl animate-fade-in-up stagger-2">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Board & Financial Compliance Vault</h2>
+              <p className="text-slate-600 dark:text-slate-300 text-sm mb-6 max-w-3xl">All institutional tax records, rental agreements, and teacher contracts are encrypted and verified under Supabase RLS security standards.</p>
               <div className="flex flex-wrap gap-3">
-                <button onClick={() => showToast("Certified financial audit PDF compiled and verified under Supabase RLS standards.", "info")} className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg transition-all cursor-pointer">
+                <button onClick={() => showToast("Certified financial audit PDF compiled and verified under Supabase RLS standards.", "info")} className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer">
                   Download Certified Financial Audit (PDF) 📥
                 </button>
                 <button
                   onClick={() => setIsBulkModalOpen(true)}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold px-6 py-3 rounded-xl shadow-lg transition-all cursor-pointer flex items-center gap-2"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-600 font-bold px-6 py-3 rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 cursor-pointer flex items-center gap-2"
                 >
                   <span>📥</span>
                   <span>+ Bulk Import Students / Faculty (.CSV)</span>
@@ -810,19 +810,19 @@ export default function TrusteeDashboard() {
             {/* COMPREHENSIVE MEMBER ONBOARDING CARDS */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* CARD 1: ENROLL NEW STUDENT */}
-              <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-emerald-500/30 rounded-3xl p-6 sm:p-7 shadow-2xl flex flex-col justify-between relative overflow-hidden group">
+              <div className="bg-white/90 dark:bg-[#1E293B]/80 backdrop-blur-xl border border-emerald-500/30 rounded-3xl p-6 sm:p-7 shadow-sm dark:shadow-2xl flex flex-col justify-between relative overflow-hidden group hover:-translate-y-0.5 transition-all duration-300">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-xl shadow-lg">
+                    <span className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-xl shadow-sm">
                       🎓
                     </span>
-                    <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                       Scholar Enrollment
                     </span>
                   </div>
-                  <h3 className="text-xl font-black text-white">Enroll New Student</h3>
-                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white">Enroll New Student</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
                     Customizable Roll ID / Admission No (STU-*), class batch, guardian contact, date of birth, residential address, and default credentials.
                   </p>
                 </div>
@@ -832,7 +832,7 @@ export default function TrusteeDashboard() {
                       setComprehensiveModalRole("student");
                       setIsComprehensiveModalOpen(true);
                     }}
-                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-600/30 transition-all text-xs border border-emerald-400/40 cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-3.5 px-4 rounded-xl shadow-md shadow-emerald-600/30 transition-all text-xs border border-emerald-400/40 cursor-pointer flex items-center justify-center gap-2 hover:-translate-y-0.5"
                   >
                     <span>➕</span>
                     <span>Enroll New Student with Custom ID</span>
@@ -841,19 +841,19 @@ export default function TrusteeDashboard() {
               </div>
 
               {/* CARD 2: ONBOARD NEW FACULTY */}
-              <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-blue-500/30 rounded-3xl p-6 sm:p-7 shadow-2xl flex flex-col justify-between relative overflow-hidden group">
+              <div className="bg-white/90 dark:bg-[#1E293B]/80 backdrop-blur-xl border border-blue-500/30 rounded-3xl p-6 sm:p-7 shadow-sm dark:shadow-2xl flex flex-col justify-between relative overflow-hidden group hover:-translate-y-0.5 transition-all duration-300">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center text-xl shadow-lg">
+                    <span className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 flex items-center justify-center text-xl shadow-sm">
                       👨‍🏫
                     </span>
-                    <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                       Faculty Onboarding
                     </span>
                   </div>
-                  <h3 className="text-xl font-black text-white">Onboard Teaching Faculty</h3>
-                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white">Onboard Teaching Faculty</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
                     Customizable Employee ID (TCH-*), department specialization, contact telephone, official email, and appointment date.
                   </p>
                 </div>
@@ -863,7 +863,7 @@ export default function TrusteeDashboard() {
                       setComprehensiveModalRole("teacher");
                       setIsComprehensiveModalOpen(true);
                     }}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-3.5 px-4 rounded-xl shadow-lg shadow-blue-600/30 transition-all text-xs border border-blue-400/40 cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-3.5 px-4 rounded-xl shadow-md shadow-blue-600/30 transition-all text-xs border border-blue-400/40 cursor-pointer flex items-center justify-center gap-2 hover:-translate-y-0.5"
                   >
                     <span>➕</span>
                     <span>Onboard Faculty with Custom ID</span>
@@ -873,18 +873,18 @@ export default function TrusteeDashboard() {
             </div>
 
             {/* MEMBER ROSTER & CREDENTIALS TABLE */}
-            <div className="bg-[#1E293B] border border-slate-700 rounded-3xl shadow-2xl overflow-hidden">
-              <div className="p-6 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center flex-wrap gap-3">
+            <div className="bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-3xl shadow-sm dark:shadow-2xl overflow-hidden">
+              <div className="p-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50 flex justify-between items-center flex-wrap gap-3">
                 <div>
-                  <h2 className="text-lg font-bold text-white">Active Campus Directory & Login Credentials</h2>
-                  <p className="text-xs text-slate-400">Institutional members with verified Tier-1 and Tier-2 access codes</p>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Active Campus Directory & Login Credentials</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Institutional members with verified Tier-1 and Tier-2 access codes</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <div className="flex items-center gap-1 bg-slate-900/60 p-1 rounded-xl border border-slate-700 mr-2">
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900/60 p-1 rounded-xl border border-slate-200 dark:border-slate-700 mr-2">
                     <button
                       onClick={() => setMemberFilter("all")}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        memberFilter === "all" ? "bg-purple-600 text-white shadow" : "text-slate-400 hover:text-white"
+                        memberFilter === "all" ? "bg-purple-600 text-white shadow" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                       }`}
                     >
                       All ({students.length})
@@ -892,7 +892,7 @@ export default function TrusteeDashboard() {
                     <button
                       onClick={() => setMemberFilter("student")}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        memberFilter === "student" ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"
+                        memberFilter === "student" ? "bg-emerald-600 text-white shadow" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                       }`}
                     >
                       🎓 Students Only
@@ -900,7 +900,7 @@ export default function TrusteeDashboard() {
                     <button
                       onClick={() => setMemberFilter("teacher")}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        memberFilter === "teacher" ? "bg-blue-600 text-white shadow" : "text-slate-400 hover:text-white"
+                        memberFilter === "teacher" ? "bg-blue-600 text-white shadow" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                       }`}
                     >
                       👨‍🏫 Faculty Only
@@ -908,7 +908,7 @@ export default function TrusteeDashboard() {
                     <button
                       onClick={() => setMemberFilter("staff")}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        memberFilter === "staff" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white"
+                        memberFilter === "staff" ? "bg-indigo-600 text-white shadow" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                       }`}
                     >
                       🧹 Non-Teaching (NTS)
@@ -919,7 +919,7 @@ export default function TrusteeDashboard() {
                       setComprehensiveModalRole("student");
                       setIsComprehensiveModalOpen(true);
                     }}
-                    className="text-xs bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                    className="text-xs bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5 hover:-translate-y-0.5"
                   >
                     <span>🎓</span>
                     <span>+ Enroll Student</span>
@@ -929,7 +929,7 @@ export default function TrusteeDashboard() {
                       setComprehensiveModalRole("teacher");
                       setIsComprehensiveModalOpen(true);
                     }}
-                    className="text-xs bg-blue-600 hover:bg-blue-500 border border-blue-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                    className="text-xs bg-blue-600 hover:bg-blue-500 border border-blue-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5 hover:-translate-y-0.5"
                   >
                     <span>👨‍🏫</span>
                     <span>+ Onboard Faculty</span>
@@ -939,21 +939,21 @@ export default function TrusteeDashboard() {
                       setComprehensiveModalRole("nts");
                       setIsComprehensiveModalOpen(true);
                     }}
-                    className="text-xs bg-purple-600 hover:bg-purple-500 border border-purple-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                    className="text-xs bg-purple-600 hover:bg-purple-500 border border-purple-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5 hover:-translate-y-0.5"
                   >
                     <span>🧹</span>
                     <span>+ Onboard NTS</span>
                   </button>
                   <button
                     onClick={handleDownloadCredentialsSheet}
-                    className="text-xs bg-purple-600 hover:bg-purple-500 border border-purple-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                    className="text-xs bg-purple-600 hover:bg-purple-500 border border-purple-500/40 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5 hover:-translate-y-0.5"
                     title="Export complete member login credentials sheet for easy distribution"
                   >
                     <span>📥 Export WhatsApp Credentials Sheet (CSV)</span>
                   </button>
                   <button
                     onClick={() => setIsBulkModalOpen(true)}
-                    className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3.5 py-1.5 rounded-lg text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                    className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-600 dark:text-white px-3.5 py-1.5 rounded-lg font-bold transition-all shadow-sm cursor-pointer flex items-center gap-1.5 hover:-translate-y-0.5"
                   >
                     <span>📥</span>
                     <span>Import CSV Roster</span>
@@ -961,7 +961,7 @@ export default function TrusteeDashboard() {
                   <button
                     onClick={fetchStudents}
                     disabled={loading}
-                    className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-1.5 rounded-lg text-slate-300 font-bold transition-all disabled:opacity-50 cursor-pointer"
+                    className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg font-bold transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {loading ? "Refreshing..." : "🔄 Refresh"}
                   </button>
@@ -971,15 +971,15 @@ export default function TrusteeDashboard() {
               {loading ? (
                 <div className="p-12 text-center text-slate-400 font-medium">Loading campus members from database...</div>
               ) : error ? (
-                <div className="p-12 text-center text-red-400 font-medium">
+                <div className="p-12 text-center text-red-500 dark:text-red-400 font-medium">
                   <p className="font-bold mb-2">Failed to load members</p>
                   <p className="text-sm">{error}</p>
                 </div>
               ) : students.length === 0 ? (
-                <div className="p-12 text-center text-slate-400 space-y-3">
+                <div className="p-12 text-center text-slate-500 dark:text-slate-400 space-y-3">
                   <span className="text-5xl block opacity-60">👥</span>
-                  <h4 className="text-lg font-bold text-white">Campus Directory is Empty (Clean Slate)</h4>
-                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  <h4 className="text-lg font-bold text-slate-900 dark:text-white">Campus Directory is Empty (Clean Slate)</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
                     No students or faculty enrolled yet. Click "Enroll Student", "Onboard Faculty", or "Import CSV Roster" above to get started.
                   </p>
                   <div className="flex items-center justify-center gap-2 pt-2 flex-wrap">
@@ -988,7 +988,7 @@ export default function TrusteeDashboard() {
                         setComprehensiveModalRole("student");
                         setIsComprehensiveModalOpen(true);
                       }}
-                      className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-300 dark:border-emerald-500/40 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 hover:-translate-y-0.5"
                     >
                       <span>🎓</span>
                       <span>+ Enroll Student</span>
@@ -998,7 +998,7 @@ export default function TrusteeDashboard() {
                         setComprehensiveModalRole("teacher");
                         setIsComprehensiveModalOpen(true);
                       }}
-                      className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-600/20 dark:hover:bg-blue-600/30 dark:text-blue-300 dark:border-blue-500/40 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 hover:-translate-y-0.5"
                     >
                       <span>👨‍🏫</span>
                       <span>+ Onboard Faculty</span>
@@ -1009,7 +1009,7 @@ export default function TrusteeDashboard() {
                 <div className="overflow-x-auto w-full">
                   <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead>
-                      <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                      <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider bg-slate-50/60 dark:bg-slate-900/40">
                         <th className="p-4">Member Name</th>
                         <th className="p-4">Role</th>
                         <th className="p-4">Personal ID (Tier 2)</th>
@@ -1019,7 +1019,7 @@ export default function TrusteeDashboard() {
                         <th className="p-4 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-700/50 text-sm">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50 text-sm">
                       {filteredStudents.map((st, idx) => {
                         const matchedClass = classes.find((c) => c.id === st.class_id);
                         const displayClass = matchedClass
@@ -1031,46 +1031,46 @@ export default function TrusteeDashboard() {
                         const isArchived = (st.status || "").toLowerCase() === "archived";
 
                         return (
-                          <tr key={st.id || idx} className="hover:bg-slate-800/30 transition-colors">
-                            <td className="p-4 font-bold text-white text-base">
-                              <span className={isArchived ? "line-through text-slate-500" : ""}>{st.name || st.full_name}</span>
+                          <tr key={st.id || idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors">
+                            <td className="p-4 font-bold text-slate-900 dark:text-white text-base">
+                              <span className={isArchived ? "line-through text-slate-400 dark:text-slate-500" : ""}>{st.name || st.full_name}</span>
                             </td>
                             <td className="p-4">
                               {effectiveRole === "trustee" || effectiveRole === "principal" || effectiveRole === "admin" ? (
-                                <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-bold uppercase">
+                                <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300 text-[10px] font-bold uppercase">
                                   Trustee / Principal
                                 </span>
                               ) : effectiveRole === "teacher" ? (
-                                <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-bold uppercase">
+                                <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-700 dark:text-sky-300 text-[10px] font-bold uppercase">
                                   Teacher
                                 </span>
                               ) : effectiveRole === "accountant" || personalCode.startsWith("ACC") ? (
-                                <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase">
+                                <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-bold uppercase">
                                   Accountant
                                 </span>
                               ) : effectiveRole === "staff" || effectiveRole === "non_teaching" || personalCode.startsWith("NTS") || personalCode.startsWith("NON") ? (
-                                <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase">
+                                <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold uppercase">
                                   Non-Teaching (NTS)
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase">
+                                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold uppercase">
                                   Student
                                 </span>
                               )}
                             </td>
-                            <td className="p-4 font-mono font-bold text-purple-400 text-xs">
+                            <td className="p-4 font-mono font-bold text-purple-600 dark:text-purple-400 text-xs">
                               {personalCode}
                             </td>
-                            <td className="p-4 text-slate-300 text-xs">{displayClass}</td>
-                            <td className="p-4 font-mono text-slate-400 text-xs truncate max-w-[200px]" title={mappedEmail}>
+                            <td className="p-4 text-slate-600 dark:text-slate-300 text-xs">{displayClass}</td>
+                            <td className="p-4 font-mono text-slate-500 dark:text-slate-400 text-xs truncate max-w-[200px]" title={mappedEmail}>
                               {mappedEmail}
                             </td>
                             <td className="p-4 text-center">
                               <span
                                 className={`px-3 py-0.5 rounded-full text-xs font-extrabold uppercase border ${
                                   isArchived
-                                    ? "bg-slate-800 text-slate-400 border-slate-700"
-                                    : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                    ? "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+                                    : "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
                                 }`}
                               >
                                 {st.status || "Active"}
@@ -1081,10 +1081,10 @@ export default function TrusteeDashboard() {
                                 <button
                                   onClick={() => handleToggleArchiveMember(st)}
                                   disabled={st.status === 'archived'}
-                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${
                                     st.status === 'archived'
-                                      ? "bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed"
-                                      : "bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40 cursor-pointer"
+                                      ? "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 cursor-not-allowed"
+                                      : "bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-500/20 dark:text-rose-300 dark:hover:bg-rose-500/30 dark:border-rose-500/40 cursor-pointer hover:-translate-y-0.5"
                                   }`}
                                   title={
                                     st.status === 'archived'

@@ -189,16 +189,16 @@ export default function Sidebar() {
       {/* ============================================================ */}
       {/* 1. MOBILE TOP NAVIGATION BAR (Viewports < 768px)               */}
       {/* ============================================================ */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900/90 backdrop-blur-2xl border-b border-white/10 z-40 flex items-center justify-between px-4 shadow-2xl shadow-cyan-500/10">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white/95 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200 dark:border-white/10 z-40 flex items-center justify-between px-4 shadow-sm dark:shadow-2xl dark:shadow-cyan-500/10 transition-colors duration-200">
         <div className="flex items-center gap-2.5 min-w-0">
           <BrandLogo size="sm" customLogoUrl={tenant?.logoUrl} />
           <div className="min-w-0">
-            <h2 className="text-xs font-black text-white truncate max-w-[150px]">
+            <h2 className="text-xs font-black text-slate-900 dark:text-white truncate max-w-[150px]">
               {tenant?.name || "EduSaaS ERP"}
             </h2>
             <div className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-              <p className="text-[9px] text-cyan-400 font-extrabold uppercase tracking-wider truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-cyan-400 animate-pulse"></span>
+              <p className="text-[9px] text-indigo-600 dark:text-cyan-400 font-extrabold uppercase tracking-wider truncate">
                 {schoolCode}
               </p>
             </div>
@@ -206,12 +206,12 @@ export default function Sidebar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/5 border border-cyan-400/30 text-cyan-300">
+          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-white/5 border border-indigo-200 dark:border-cyan-400/30 text-indigo-700 dark:text-cyan-300">
             {roleType}
           </span>
           <button
             onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)}
-            className="p-2 text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer"
+            className="p-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl border border-slate-200 dark:border-white/10 transition-all duration-200 ease-in-out cursor-pointer"
             aria-label="Toggle navigation drawer"
           >
             <span className="text-base leading-none">{mobileDrawerOpen ? "✕" : "☰"}</span>
@@ -226,25 +226,25 @@ export default function Sidebar() {
         <div className="fixed inset-0 z-50 md:hidden flex">
           <div
             onClick={() => setMobileDrawerOpen(false)}
-            className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
+            className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md transition-opacity"
           ></div>
 
-          <div className="relative w-72 max-w-[85vw] h-full bg-slate-900/95 backdrop-blur-2xl border-r border-white/10 z-50 flex flex-col shadow-2xl animate-slide-right">
-            <div className="p-5 border-b border-white/10 bg-white/5 flex items-center justify-between">
+          <div className="relative w-72 max-w-[85vw] h-full bg-white dark:bg-slate-900/95 backdrop-blur-2xl border-r border-slate-200 dark:border-white/10 z-50 flex flex-col shadow-2xl animate-slide-right transition-colors duration-200">
+            <div className="p-5 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <BrandLogo size="sm" customLogoUrl={tenant?.logoUrl} />
                 <div>
-                  <h3 className="text-xs font-black text-white truncate max-w-[140px]">
+                  <h3 className="text-xs font-black text-slate-900 dark:text-white truncate max-w-[140px]">
                     {tenant?.name || "EduSaaS ERP"}
                   </h3>
-                  <p className="text-[9px] text-cyan-400 font-bold uppercase tracking-wider">
+                  <p className="text-[9px] text-indigo-600 dark:text-cyan-400 font-bold uppercase tracking-wider">
                     {schoolCode}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setMobileDrawerOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg text-lg font-bold"
+                className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1 rounded-lg text-lg font-bold cursor-pointer"
               >
                 ✕
               </button>
@@ -260,10 +260,10 @@ export default function Sidebar() {
                   <button
                     key={idx}
                     onClick={() => handleLinkClick(link.path)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-xs transition-all duration-300 ease-in-out hover:scale-[1.02] text-left ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-xs transition-all duration-200 ease-in-out hover:-translate-y-0.5 text-left cursor-pointer ${
                       isActive
-                        ? "border-l-4 border-cyan-400 text-cyan-300 bg-cyan-500/10 shadow-[0_0_20px_rgba(34,211,238,0.2)] font-black"
-                        : "text-slate-400 hover:bg-white/5 hover:text-white hover:shadow-cyan-500/10"
+                        ? "border-l-4 border-indigo-600 dark:border-cyan-400 text-indigo-700 dark:text-cyan-300 bg-indigo-50 dark:bg-cyan-500/10 shadow-sm dark:shadow-[0_0_20px_rgba(34,211,238,0.2)] font-black"
+                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white"
                     }`}
                   >
                     <span className="text-base">{link.icon}</span>
@@ -273,19 +273,19 @@ export default function Sidebar() {
               })}
             </div>
 
-            <div className="p-4 border-t border-white/10 bg-white/5">
-              <div className="bg-slate-900/80 border border-white/10 rounded-xl p-3 mb-2">
-                <p className="text-xs font-bold text-white truncate">{user.name || user.full_name}</p>
+            <div className="p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
+              <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 rounded-xl p-3 mb-2 shadow-sm">
+                <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user.name || user.full_name}</p>
                 <div className="flex items-center justify-between mt-1">
-                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-cyan-500/20 text-indigo-700 dark:text-cyan-300 border border-indigo-200 dark:border-cyan-400/30">
                     {roleType}
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400">{personalCode || "ACTIVE"}</span>
+                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{personalCode || "ACTIVE"}</span>
                 </div>
               </div>
               <button
                 onClick={onSignOut}
-                className="w-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold py-2.5 px-3 rounded-xl transition-all duration-300 ease-in-out hover:scale-[1.02] border border-rose-500/20 flex items-center justify-center gap-2 text-xs"
+                className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 dark:text-rose-400 font-bold py-2.5 px-3 rounded-xl transition-all duration-200 ease-in-out hover:-translate-y-0.5 border border-rose-200 dark:border-rose-500/20 flex items-center justify-center gap-2 text-xs cursor-pointer"
               >
                 <span>🚪</span> Sign Out
               </button>
@@ -297,15 +297,17 @@ export default function Sidebar() {
       {/* ============================================================ */}
       {/* 3. MOBILE BOTTOM NAVIGATION BAR (Viewports < 768px)          */}
       {/* ============================================================ */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900/90 backdrop-blur-2xl border-t border-white/10 flex items-center justify-around z-40 px-2 shadow-2xl shadow-cyan-500/10">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 dark:bg-slate-900/90 backdrop-blur-2xl border-t border-slate-200 dark:border-white/10 flex items-center justify-around z-40 px-2 shadow-lg dark:shadow-2xl dark:shadow-cyan-500/10 transition-colors duration-200">
         {bottomItems.map((item, idx) => {
           const isActive = location.pathname === item.path;
           return (
             <button
               key={idx}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all duration-300 ease-in-out hover:scale-105 cursor-pointer ${
-                isActive ? "text-cyan-400 font-black drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]" : "text-slate-400 hover:text-slate-200"
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all duration-200 ease-in-out hover:-translate-y-0.5 cursor-pointer ${
+                isActive
+                  ? "text-indigo-600 dark:text-cyan-400 font-black drop-shadow-sm dark:drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]"
+                  : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
               }`}
             >
               <span className="text-lg">{item.icon}</span>
@@ -315,7 +317,7 @@ export default function Sidebar() {
         })}
         <button
           onClick={() => setMobileDrawerOpen(true)}
-          className="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-white transition-all duration-300 ease-in-out cursor-pointer"
+          className="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-all duration-200 ease-in-out cursor-pointer"
         >
           <span className="text-lg">☰</span>
           <span className="text-[10px] font-extrabold">More</span>
@@ -326,22 +328,22 @@ export default function Sidebar() {
       {/* 4. DESKTOP HOLOGRAPHIC SIDEBAR (Viewports >= 768px)          */}
       {/* ============================================================ */}
       <aside
-        className={`hidden md:flex flex-col h-full flex-shrink-0 sticky top-0 z-40 border-r border-slate-800/80 bg-slate-950/80 backdrop-blur-xl shadow-2xl shadow-cyan-500/10 transition-all duration-300 ease-in-out ${
+        className={`hidden md:flex flex-col h-full flex-shrink-0 sticky top-0 z-40 border-r border-slate-200 dark:border-slate-800/80 bg-white/95 dark:bg-slate-950/85 backdrop-blur-xl shadow-sm dark:shadow-2xl dark:shadow-cyan-500/10 transition-all duration-200 ease-in-out ${
           isCollapsed ? "w-20" : "w-64"
         }`}
       >
         {/* Holographic Header */}
-        <div className="p-4 border-b border-slate-800/80 bg-white/5 flex items-center justify-between flex-shrink-0">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/80 dark:bg-white/5 flex items-center justify-between flex-shrink-0 transition-colors">
           {!isCollapsed && (
             <div className="flex items-center gap-3 min-w-0">
               <BrandLogo size="md" customLogoUrl={tenant?.logoUrl} />
               <div className="min-w-0">
-                <h2 className="text-sm font-black text-white leading-snug truncate" title={tenant?.name || "EduSaaS ERP"}>
+                <h2 className="text-sm font-black text-slate-900 dark:text-white leading-snug truncate" title={tenant?.name || "EduSaaS ERP"}>
                   {tenant?.name || "EduSaaS ERP"}
                 </h2>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                  <p className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-widest truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-cyan-400 animate-pulse"></span>
+                  <p className="text-[10px] text-indigo-600 dark:text-cyan-400 font-extrabold uppercase tracking-widest truncate">
                     {schoolCode}
                   </p>
                 </div>
@@ -358,14 +360,14 @@ export default function Sidebar() {
           <button
             onClick={toggleCollapse}
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-cyan-400 transition-all duration-300 ease-in-out hover:scale-[1.05] cursor-pointer ml-auto"
+            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-cyan-400 transition-all duration-200 ease-in-out hover:scale-105 cursor-pointer ml-auto"
           >
             <span className="text-xs font-mono">{isCollapsed ? "»" : "«"}</span>
           </button>
         </div>
 
         {/* Dynamic Holographic Route Links */}
-        <nav className="flex-1 py-4 px-2 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
+        <nav className="flex-1 py-4 px-2 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-800">
           {links.map((link, idx) => {
             const currentFullPath = location.pathname + location.search;
             const isActive = link.path.includes("?")
@@ -376,12 +378,12 @@ export default function Sidebar() {
                 key={idx}
                 onClick={() => navigate(link.path)}
                 title={isCollapsed ? link.name : ""}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs sm:text-sm transition-all duration-300 ease-in-out hover:scale-[1.02] text-left cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs sm:text-sm transition-all duration-200 ease-in-out hover:-translate-y-0.5 text-left cursor-pointer ${
                   isCollapsed ? "justify-center" : ""
                 } ${
                   isActive
-                    ? "border-l-4 border-cyan-400 text-cyan-300 bg-cyan-500/10 shadow-[0_0_20px_rgba(34,211,238,0.2)] font-black"
-                    : "text-slate-400 hover:bg-white/5 hover:text-white hover:shadow-cyan-500/10 font-medium"
+                    ? "border-l-4 border-indigo-600 dark:border-cyan-400 text-indigo-700 dark:text-cyan-300 bg-indigo-50 dark:bg-cyan-500/10 shadow-sm dark:shadow-[0_0_20px_rgba(34,211,238,0.2)] font-black"
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white font-medium"
                 }`}
               >
                 <span className="text-base flex-shrink-0">{link.icon}</span>
@@ -392,22 +394,22 @@ export default function Sidebar() {
         </nav>
 
         {/* User Profile & Sign Out Footer */}
-        <div className="p-3 border-t border-slate-800/80 bg-white/5 flex-shrink-0 mt-auto">
+        <div className="p-3 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/80 dark:bg-white/5 flex-shrink-0 mt-auto transition-colors">
           {!isCollapsed ? (
-            <div className="bg-slate-900/80 border border-white/10 rounded-xl p-3 mb-2 shadow-lg">
-              <p className="text-xs font-bold text-white truncate">{user.name || user.full_name}</p>
+            <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 rounded-xl p-3 mb-2 shadow-sm dark:shadow-lg">
+              <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user.name || user.full_name}</p>
               <div className="flex items-center justify-between mt-1">
-                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-cyan-500/20 text-indigo-700 dark:text-cyan-300 border border-indigo-200 dark:border-cyan-400/30">
                   {roleType}
                 </span>
-                <span className="text-[10px] font-mono text-slate-400 truncate max-w-[80px]">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate max-w-[80px]">
                   {personalCode || "ACTIVE"}
                 </span>
               </div>
             </div>
           ) : (
             <div className="text-center mb-2">
-              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-indigo-100 dark:bg-cyan-500/20 text-indigo-700 dark:text-cyan-300 border border-indigo-200 dark:border-cyan-400/30">
                 {roleType.slice(0, 3)}
               </span>
             </div>
@@ -416,7 +418,7 @@ export default function Sidebar() {
           <button
             onClick={onSignOut}
             title="Sign Out"
-            className={`w-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-extrabold py-2 px-2 rounded-xl transition-all duration-300 ease-in-out hover:scale-[1.02] border border-rose-500/20 flex items-center justify-center gap-2 text-xs cursor-pointer ${
+            className={`w-full bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 dark:text-rose-400 font-extrabold py-2 px-2 rounded-xl transition-all duration-200 ease-in-out hover:-translate-y-0.5 border border-rose-200 dark:border-rose-500/20 flex items-center justify-center gap-2 text-xs cursor-pointer ${
               isCollapsed ? "px-1" : ""
             }`}
           >

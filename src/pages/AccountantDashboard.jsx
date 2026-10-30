@@ -497,37 +497,37 @@ export default function AccountantDashboard() {
   });
 
   return (
-    <div className="relative text-slate-200 min-h-full pb-10 font-sans">
+    <div className="relative text-slate-800 dark:text-slate-200 min-h-full pb-10 font-sans transition-colors duration-200">
       <div className="fixed top-0 left-10 w-96 h-96 bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="relative z-10 max-w-6xl mx-auto">
         <div className="mb-8 flex justify-between items-center flex-wrap gap-4">
           <div>
-            <p className="text-emerald-300 text-sm font-semibold mb-1 uppercase tracking-widest">
+            <p className="text-emerald-600 dark:text-emerald-300 text-sm font-semibold mb-1 uppercase tracking-widest">
               Financial Treasury Suite
             </p>
-            <h1 className="text-3xl font-extrabold text-white">Accountant Command Center 💰</h1>
-            <p className="text-slate-400 text-sm mt-1">
+            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Accountant Command Center 💰</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
               Live tuition fee reconciliation, Razorpay settlements, and defaulter tracking
             </p>
           </div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <button
               onClick={() => navigate("/admin/messages")}
-              className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-xl text-slate-300 font-bold transition-all cursor-pointer"
+              className="text-xs bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-slate-300 px-4 py-2 rounded-xl font-bold transition-all duration-200 hover:-translate-y-0.5 cursor-pointer shadow-sm"
             >
               💬 Staff Messenger
             </button>
             <button
               onClick={() => navigate("/accountant/payroll")}
-              className="text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
+              className="text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2 rounded-xl font-bold transition-all duration-200 hover:-translate-y-0.5 shadow-md shadow-emerald-600/20 cursor-pointer"
             >
               💵 Staff Payroll & Payslips
             </button>
             <button
               onClick={fetchLedger}
               disabled={loading}
-              className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-xl text-slate-300 font-bold transition-all disabled:opacity-50 cursor-pointer"
+              className="text-xs bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-slate-300 px-4 py-2 rounded-xl font-bold transition-all duration-200 disabled:opacity-50 cursor-pointer shadow-sm"
             >
               {loading ? "Syncing..." : "🔄 Refresh Ledger"}
             </button>
@@ -545,8 +545,8 @@ export default function AccountantDashboard() {
             </>
           ) : (
             <>
-              <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-5 shadow-2xl flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-xl font-bold shadow-inner shrink-0">
+              <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-5 shadow-sm dark:shadow-2xl flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30 flex items-center justify-center text-xl font-bold shadow-inner shrink-0">
                   ₹
                 </div>
                 <div>
@@ -555,23 +555,23 @@ export default function AccountantDashboard() {
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
-                    <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                    <p className="text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
                       Total Revenue
                     </p>
                   </div>
                   {stats.totalRevenue > 0 ? (
-                    <p className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400 tracking-tight">
+                    <p className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-cyan-600 dark:from-emerald-400 dark:to-cyan-400 tracking-tight">
                       ₹{stats.totalRevenue.toLocaleString()}
                     </p>
                   ) : (
-                    <p className="text-lg font-bold text-slate-600 font-mono">₹0.00 Cleared</p>
+                    <p className="text-lg font-bold text-slate-400 dark:text-slate-600 font-mono">₹0.00 Cleared</p>
                   )}
-                  <span className="text-[10px] text-slate-400 block mt-0.5">Cleared receipts</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">Cleared receipts</span>
                 </div>
               </div>
 
-              <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] rounded-3xl p-5 shadow-2xl flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xl font-bold shadow-inner shrink-0">
+              <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-amber-400 dark:hover:border-amber-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-5 shadow-sm dark:shadow-2xl flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30 flex items-center justify-center text-xl font-bold shadow-inner shrink-0">
                   ⏳
                 </div>
                 <div>
@@ -580,34 +580,34 @@ export default function AccountantDashboard() {
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                     </span>
-                    <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                    <p className="text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
                       Pending Defaulters
                     </p>
                   </div>
                   {stats.pendingDues > 0 ? (
-                    <p className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-rose-400 tracking-tight">
+                    <p className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-rose-600 dark:from-amber-400 dark:to-rose-400 tracking-tight">
                       ₹{stats.pendingDues.toLocaleString()}
                     </p>
                   ) : (
-                    <p className="text-lg font-bold text-emerald-400 font-mono">₹0.00 Dues</p>
+                    <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono">₹0.00 Dues</p>
                   )}
-                  <span className="text-[10px] text-slate-400 block mt-0.5">Unsettled fees</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">Unsettled fees</span>
                 </div>
               </div>
 
               <div
                 onClick={() => setFilterStatus("pending_verification")}
-                className={`backdrop-blur-2xl border rounded-3xl p-5 shadow-2xl flex items-center gap-4 cursor-pointer transition-all duration-500 ${
+                className={`backdrop-blur-2xl border rounded-3xl p-5 shadow-sm dark:shadow-2xl flex items-center gap-4 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 ${
                   stats.pendingVerificationCount > 0
-                    ? "bg-amber-950/30 border-amber-500/50 hover:border-amber-400 hover:shadow-[0_0_30px_rgba(245,158,11,0.2)]"
-                    : "bg-slate-900/40 border-slate-800/50 hover:border-cyan-500/30"
+                    ? "bg-amber-50/90 border-amber-300 dark:bg-amber-950/30 dark:border-amber-500/50 hover:border-amber-400 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(245,158,11,0.2)]"
+                    : "bg-white/80 border-slate-200/80 dark:bg-slate-900/40 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30"
                 }`}
               >
-                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 flex items-center justify-center text-xl font-bold shadow-inner shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-600 border border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:border-cyan-500/30 flex items-center justify-center text-xl font-bold shadow-inner shrink-0">
                   ⚡
                 </div>
                 <div>
-                  <p className="text-amber-300 text-[11px] font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+                  <p className="text-amber-700 dark:text-amber-300 text-[11px] font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
@@ -619,25 +619,25 @@ export default function AccountantDashboard() {
                       </span>
                     )}
                   </p>
-                  <p className="text-2xl font-extrabold text-white tracking-tight">
+                  <p className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                     {stats.pendingVerificationCount} Awaiting
                   </p>
-                  <span className="text-[10px] text-amber-200/80 block mt-0.5">Click to review receipts</span>
+                  <span className="text-[10px] text-amber-800/80 dark:text-amber-200/80 block mt-0.5">Click to review receipts</span>
                 </div>
               </div>
 
-              <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-5 shadow-2xl flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/30 flex items-center justify-center text-xl font-bold shadow-inner shrink-0">
+              <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-blue-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-5 shadow-sm dark:shadow-2xl flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/30 flex items-center justify-center text-xl font-bold shadow-inner shrink-0">
                   🧾
                 </div>
                 <div>
-                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-0.5">
+                  <p className="text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-0.5">
                     Completed Invoices
                   </p>
-                  <p className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400 tracking-tight">
+                  <p className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 tracking-tight">
                     {stats.totalPaidCount} Invoices
                   </p>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">Tax cleared & settled</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">Tax cleared & settled</span>
                 </div>
               </div>
             </>
@@ -646,26 +646,26 @@ export default function AccountantDashboard() {
 
         {/* PENDING VERIFICATION ALERT BANNER */}
         {stats.pendingVerificationCount > 0 && (
-          <div className="mb-8 bg-gradient-to-r from-amber-950/90 via-slate-900 to-amber-950/80 border-2 border-amber-500/60 rounded-3xl p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl">
+          <div className="mb-8 bg-amber-50/90 dark:bg-gradient-to-r dark:from-amber-950/90 dark:via-slate-900 dark:to-amber-950/80 border-2 border-amber-400/80 dark:border-amber-500/60 rounded-3xl p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm dark:shadow-2xl">
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-2xl font-bold shrink-0">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 flex items-center justify-center text-2xl font-bold shrink-0">
                 🔔
               </div>
               <div>
-                <p className="font-extrabold text-white text-sm sm:text-base flex items-center gap-2">
+                <p className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base flex items-center gap-2">
                   <span>Student UPI Payment Verification Queue</span>
                   <span className="bg-amber-400 text-slate-950 text-xs font-black px-2 py-0.5 rounded-full">
                     {stats.pendingVerificationCount} Pending Action
                   </span>
                 </p>
-                <p className="text-xs text-amber-200/80 mt-0.5">
+                <p className="text-xs text-amber-900/80 dark:text-amber-200/80 mt-0.5">
                   Students have submitted UPI transaction references (UTRs) and receipt screenshots. Review and approve to automatically issue official tax invoices.
                 </p>
               </div>
             </div>
             <button
               onClick={() => setFilterStatus("pending_verification")}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs transition-all shadow-lg cursor-pointer flex items-center gap-2 shrink-0 border border-amber-300"
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs transition-all shadow-md cursor-pointer flex items-center gap-2 shrink-0 border border-amber-300 hover:-translate-y-0.5"
             >
               <span>Review Queue ({stats.pendingVerificationCount})</span>
               <span>⚡</span>
@@ -675,65 +675,65 @@ export default function AccountantDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in-up stagger-2">
           {/* LEFT: MANUAL FEE ENTRY FORM */}
-          <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-emerald-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] rounded-3xl p-6 shadow-2xl h-fit">
+          <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl h-fit">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider block">Terminal Input</span>
-                <h2 className="text-xl font-black text-white">Log Fee Settlement</h2>
+                <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Terminal Input</span>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white">Log Fee Settlement</h2>
               </div>
-              <span className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-sm font-bold shadow-inner">
+              <span className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 flex items-center justify-center text-sm font-bold shadow-inner">
                 ✍️
               </span>
             </div>
             <form onSubmit={handleAddTransaction} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
                   Student Full Name *
                 </label>
                 <input
                   type="text"
                   required
                   placeholder="e.g., Rohan Mehta"
-                  className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm transition-all"
+                  className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 text-sm transition-all focus:ring-2 focus:ring-emerald-500/20"
                   value={formData.student_name}
                   onChange={(e) => setFormData({ ...formData, student_name: e.target.value })}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
                   Class / Section
                 </label>
                 <input
                   type="text"
                   required
                   placeholder="e.g., 10-A, 12-Sci"
-                  className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm transition-all"
+                  className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 text-sm transition-all focus:ring-2 focus:ring-emerald-500/20"
                   value={formData.class_name}
                   onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
                   Amount (₹) *
                 </label>
                 <input
                   type="number"
                   required
                   placeholder="e.g., 5000"
-                  className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-emerald-400 focus:outline-none focus:border-emerald-500 text-sm font-mono font-bold transition-all"
+                  className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 text-emerald-600 dark:text-emerald-400 focus:outline-none focus:border-emerald-500 text-sm font-mono font-bold transition-all focus:ring-2 focus:ring-emerald-500/20"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
                   Payment Status
                 </label>
                 <select
-                  className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 font-bold text-sm transition-all"
+                  className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 font-bold text-sm transition-all focus:ring-2 focus:ring-emerald-500/20"
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 >
@@ -743,11 +743,11 @@ export default function AccountantDashboard() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
                   Payment Mode
                 </label>
                 <select
-                  className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 font-bold text-sm transition-all"
+                  className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 font-bold text-sm transition-all focus:ring-2 focus:ring-emerald-500/20"
                   value={formData.payment_mode}
                   onChange={(e) => setFormData({ ...formData, payment_mode: e.target.value })}
                 >
@@ -761,7 +761,7 @@ export default function AccountantDashboard() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-emerald-600/30 transition-all mt-4 disabled:opacity-50 cursor-pointer"
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold py-3.5 rounded-xl shadow-md shadow-emerald-600/30 transition-all duration-200 mt-4 disabled:opacity-50 cursor-pointer hover:-translate-y-0.5"
               >
                 {submitting ? "Logging Transaction..." : "Record Transaction 🚀"}
               </button>
@@ -769,21 +769,21 @@ export default function AccountantDashboard() {
           </div>
 
           {/* RIGHT: BLOOMBERG-STYLE TREASURY LEDGER */}
-          <div className="lg:col-span-2 bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl shadow-2xl overflow-hidden h-fit">
-            <div className="p-6 border-b border-slate-800/80 bg-slate-950/40 space-y-4">
+          <div className="lg:col-span-2 bg-white dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 rounded-3xl shadow-sm dark:shadow-2xl overflow-hidden h-fit">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-950/40 space-y-4">
               <div className="flex justify-between items-center flex-wrap gap-4">
                 <div className="flex items-center gap-3">
                   <div>
-                    <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[10px] font-mono uppercase font-bold mb-1">
+                    <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/30 text-cyan-700 dark:text-cyan-300 text-[10px] font-mono uppercase font-bold mb-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
                       <span>BLOOMBERG FINTECH TERMINAL</span>
                     </div>
-                    <h2 className="text-lg font-black text-white">Live Institutional Treasury Ledger</h2>
+                    <h2 className="text-lg font-black text-slate-900 dark:text-white">Live Institutional Treasury Ledger</h2>
                   </div>
                   <button
                     onClick={handleBroadcastWhatsApp}
                     title="Send WhatsApp notice to all pending fee defaulters"
-                    className="bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-300 font-bold px-3 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-900/20 cursor-pointer"
+                    className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 dark:bg-emerald-600/15 dark:hover:bg-emerald-600/25 dark:border-emerald-500/30 dark:text-emerald-300 font-bold px-3 py-1.5 rounded-xl text-xs transition-all duration-200 flex items-center gap-1.5 shadow-sm cursor-pointer hover:-translate-y-0.5"
                   >
                     <span>📢</span>
                     <span>Broadcast WhatsApp</span>
@@ -793,7 +793,7 @@ export default function AccountantDashboard() {
                   <button
                     onClick={() => setFilterStatus("all")}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      filterStatus === "all" ? "bg-cyan-600 text-white shadow-md shadow-cyan-600/30" : "bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-white"
+                      filterStatus === "all" ? "bg-cyan-600 text-white shadow-md shadow-cyan-600/30" : "bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 dark:bg-slate-950/80 dark:border-slate-800 dark:text-slate-400 dark:hover:text-white"
                     }`}
                   >
                     All ({ledger.length})
@@ -801,7 +801,7 @@ export default function AccountantDashboard() {
                   <button
                     onClick={() => setFilterStatus("paid")}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      filterStatus === "paid" ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30" : "bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-white"
+                      filterStatus === "paid" ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30" : "bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 dark:bg-slate-950/80 dark:border-slate-800 dark:text-slate-400 dark:hover:text-white"
                     }`}
                   >
                     Paid ({stats.totalPaidCount})
@@ -809,7 +809,7 @@ export default function AccountantDashboard() {
                   <button
                     onClick={() => setFilterStatus("pending")}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      filterStatus === "pending" ? "bg-amber-600 text-white shadow-md shadow-amber-600/30" : "bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-white"
+                      filterStatus === "pending" ? "bg-amber-600 text-white shadow-md shadow-amber-600/30" : "bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 dark:bg-slate-950/80 dark:border-slate-800 dark:text-slate-400 dark:hover:text-white"
                     }`}
                   >
                     Pending ({ledger.filter((r) => (r.status || "").toLowerCase() === "pending").length})
@@ -819,11 +819,11 @@ export default function AccountantDashboard() {
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                       filterStatus === "pending_verification"
                         ? "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/30"
-                        : "bg-slate-950/80 text-amber-400 border border-amber-500/30 hover:bg-slate-900"
+                        : "bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 dark:bg-slate-950/80 dark:text-amber-400 dark:border-amber-500/30 dark:hover:bg-slate-900"
                     }`}
                   >
                     <span>⚡ UPI Queue</span>
-                    <span className="bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded-full text-[10px]">
+                    <span className="bg-amber-400/20 text-amber-800 dark:text-amber-300 px-1.5 py-0.2 rounded-full text-[10px]">
                       {stats.pendingVerificationCount || 0}
                     </span>
                   </button>
@@ -836,7 +836,7 @@ export default function AccountantDashboard() {
                 placeholder="Search ledger by student name, class, or UTR number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 text-sm transition-all"
+                className="w-full bg-white dark:bg-slate-950/70 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500 text-sm transition-all focus:ring-2 focus:ring-cyan-500/20"
               />
             </div>
 
@@ -846,14 +846,14 @@ export default function AccountantDashboard() {
               </div>
             ) : filteredLedger.length === 0 ? (
               <div className="p-12 text-center text-slate-400 bg-tech-grid">
-                <p className="font-bold text-white text-base">No transactions found.</p>
+                <p className="font-bold text-slate-900 dark:text-white text-base">No transactions found.</p>
                 <p className="text-xs text-slate-500 mt-1">Transactions recorded here or paid online via Razorpay appear live.</p>
               </div>
             ) : (
               <div className="overflow-x-auto w-full">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-800 text-slate-400 text-xs font-mono uppercase tracking-wider bg-slate-950/60">
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-mono uppercase tracking-wider bg-slate-50/70 dark:bg-slate-950/60">
                       <th className="p-4 pl-6">Student & Class</th>
                       <th className="p-4">Amount</th>
                       <th className="p-4">Payment Mode</th>
@@ -862,7 +862,7 @@ export default function AccountantDashboard() {
                       <th className="p-4 text-right pr-6">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 text-sm">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-sm">
                     {filteredLedger.map((item, idx) => {
                       const isPaid = (item.status || "").toLowerCase() === "paid";
                       const isPendingVerification = (item.status || "").toLowerCase() === "pending_verification";
@@ -870,39 +870,39 @@ export default function AccountantDashboard() {
                       return (
                         <tr
                           key={item.id}
-                          className={`hover:bg-slate-800/40 hover:shadow-inner transition-colors duration-150 border-b border-slate-800/40 ${
-                            idx % 2 === 1 ? "bg-slate-900/20" : "bg-transparent"
+                          className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors duration-150 border-b border-slate-100 dark:border-slate-800/40 ${
+                            idx % 2 === 1 ? "bg-slate-50/40 dark:bg-slate-900/20" : "bg-transparent"
                           }`}
                         >
                           <td className="p-4 pl-6">
-                            <p className="font-bold text-white">{item.student_name}</p>
-                            <p className="text-xs text-slate-400">Class {item.class_name}</p>
+                            <p className="font-bold text-slate-900 dark:text-white">{item.student_name}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Class {item.class_name}</p>
                             {item.utr && (
-                              <p className="text-[11px] font-mono text-cyan-400 mt-0.5">
+                              <p className="text-[11px] font-mono text-cyan-600 dark:text-cyan-400 mt-0.5">
                                 UTR: {item.utr}
                               </p>
                             )}
                           </td>
                           <td className="p-4">
-                            <span className="font-extrabold text-white text-base font-mono">
+                            <span className="font-extrabold text-slate-900 dark:text-white text-base font-mono">
                               ₹{Number(item.amount).toLocaleString()}
                             </span>
                             {item.is_partial && (
-                              <span className="block text-[10px] text-amber-400 font-medium">
+                              <span className="block text-[10px] text-amber-600 dark:text-amber-400 font-medium">
                                 Partial (Due: ₹{Number(item.remaining_balance || 0).toLocaleString()})
                               </span>
                             )}
                           </td>
-                          <td className="p-4 text-slate-300 text-xs">
+                          <td className="p-4 text-slate-600 dark:text-slate-300 text-xs">
                             <div className="flex flex-col items-start gap-1">
-                              <span className="bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-md text-[11px] font-mono">
+                              <span className="bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-md text-[11px] font-mono">
                                 {item.payment_mode}
                               </span>
                               {(item.screenshot_data || item.screenshot) && (
                                 <button
                                   type="button"
                                   onClick={() => setPreviewReceipt(item)}
-                                  className="text-[11px] text-cyan-400 hover:text-cyan-300 underline font-semibold flex items-center gap-1 cursor-pointer"
+                                  className="text-[11px] text-cyan-600 dark:text-cyan-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
                                 >
                                   <Eye className="w-3 h-3" />
                                   <span>View Screenshot</span>
@@ -914,22 +914,22 @@ export default function AccountantDashboard() {
                             <span
                               className={`px-3 py-1 rounded-full text-[11px] font-mono font-bold uppercase ${
                                 isPaid
-                                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shadow-sm"
                                   : isPendingVerification
-                                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.15)]"
-                                  : "bg-rose-500/10 text-rose-400 border border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.15)]"
+                                  ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 animate-pulse shadow-sm"
+                                  : "bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 shadow-sm"
                               }`}
                             >
                               {isPaid ? "Verified" : isPendingVerification ? "Pending Approval" : "Pending Due"}
                             </span>
                           </td>
-                          <td className="p-4 text-slate-400 text-xs font-mono">{item.date}</td>
+                          <td className="p-4 text-slate-500 dark:text-slate-400 text-xs font-mono">{item.date}</td>
                           <td className="p-4 text-right pr-6">
                             {isPendingVerification ? (
                               <div className="flex items-center justify-end gap-2">
                                 <button
                                   onClick={() => handleApprovePayment(item)}
-                                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all cursor-pointer inline-flex items-center gap-1 shadow-md shadow-emerald-900/30"
+                                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all duration-200 cursor-pointer inline-flex items-center gap-1 shadow-md shadow-emerald-900/30 hover:-translate-y-0.5"
                                   title="Approve settlement and issue official Tax Invoice"
                                 >
                                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -937,7 +937,7 @@ export default function AccountantDashboard() {
                                 </button>
                                 <button
                                   onClick={() => handleRejectPayment(item)}
-                                  className="px-2 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-rose-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                                  className="px-2 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-600/20 dark:hover:bg-rose-600/30 dark:border-rose-500/40 dark:text-rose-300 text-xs font-bold transition-all duration-200 cursor-pointer inline-flex items-center gap-1 hover:-translate-y-0.5"
                                   title="Reject transaction"
                                 >
                                   <XCircle className="w-3.5 h-3.5" />
@@ -948,7 +948,7 @@ export default function AccountantDashboard() {
                               <div className="flex items-center justify-end gap-1.5 flex-wrap">
                                 <button
                                   onClick={() => handleDownloadTaxInvoice(item)}
-                                  className="px-2.5 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                                  className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-600/20 dark:hover:bg-blue-600/30 dark:border-blue-500/40 dark:text-blue-300 text-xs font-bold transition-all duration-200 cursor-pointer inline-flex items-center gap-1 hover:-translate-y-0.5"
                                   title="Download Tax Invoice PDF"
                                 >
                                   <span>🧾</span>
@@ -956,7 +956,7 @@ export default function AccountantDashboard() {
                                 </button>
                                 <button
                                   onClick={() => handleInitiateReversal(item)}
-                                  className="px-2.5 py-1.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                                  className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-600/20 dark:hover:bg-amber-600/30 dark:border-amber-500/40 dark:text-amber-300 text-xs font-bold transition-all duration-200 cursor-pointer inline-flex items-center gap-1 hover:-translate-y-0.5"
                                   title="Request Maker-Checker Credit Note / Reversal from Principal"
                                 >
                                   <RotateCcw className="w-3.5 h-3.5" />
@@ -966,7 +966,7 @@ export default function AccountantDashboard() {
                             ) : (
                               <button
                                 onClick={() => handleSendWhatsAppReminder(item)}
-                                className="px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 shadow-md shadow-emerald-900/20"
+                                className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:border-emerald-500/40 dark:text-emerald-300 text-xs font-bold transition-all duration-200 cursor-pointer inline-flex items-center gap-1 shadow-sm hover:-translate-y-0.5"
                                 title="Send Reminder via WhatsApp"
                               >
                                 <span>📲</span>
@@ -993,32 +993,32 @@ export default function AccountantDashboard() {
 
       {/* MAKER-CHECKER REVERSAL & CREDIT NOTE REQUEST MODAL */}
       {reversalTarget && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
-            <div className="flex justify-between items-center border-b border-slate-700 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-3">
               <div>
-                <span className="text-[10px] font-mono font-bold uppercase text-amber-400">
+                <span className="text-[10px] font-mono font-bold uppercase text-amber-600 dark:text-amber-400">
                   Maker-Checker Dual Control
                 </span>
-                <h3 className="font-extrabold text-white text-base">Request Fee Reversal / Credit Note</h3>
+                <h3 className="font-extrabold text-slate-900 dark:text-white text-base">Request Fee Reversal / Credit Note</h3>
               </div>
               <button
                 onClick={() => setReversalTarget(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg text-lg cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg text-lg cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleConfirmReversalRequest} className="space-y-4 text-xs">
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-                <p className="font-bold text-white text-sm">{reversalTarget.student_name}</p>
-                <p className="text-slate-400">{reversalTarget.class_name} • Receipt: #{reversalTarget.id}</p>
-                <p className="text-emerald-400 font-mono font-bold">Original Settled Amount: ₹{Number(reversalTarget.amount).toLocaleString()}</p>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+                <p className="font-bold text-slate-900 dark:text-white text-sm">{reversalTarget.student_name}</p>
+                <p className="text-slate-500 dark:text-slate-400">{reversalTarget.class_name} • Receipt: #{reversalTarget.id}</p>
+                <p className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">Original Settled Amount: ₹{Number(reversalTarget.amount).toLocaleString()}</p>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
                   Adjustment Amount (₹) *
                 </label>
                 <input
@@ -1026,18 +1026,18 @@ export default function AccountantDashboard() {
                   required
                   value={reversalAmount}
                   onChange={(e) => setReversalAmount(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-amber-400 font-bold"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono text-sm focus:outline-none focus:border-amber-400 font-bold"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
                   Reason for Reversal / Adjustment *
                 </label>
                 <select
                   value={reversalReason}
                   onChange={(e) => setReversalReason(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-amber-400"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-amber-400"
                 >
                   <option value="Scholarship / Fee Concession">Scholarship / Fee Concession Granted</option>
                   <option value="Duplicate Payment Refund">Duplicate Payment by Parent</option>
@@ -1047,7 +1047,7 @@ export default function AccountantDashboard() {
                 </select>
               </div>
 
-              <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 text-[11px] text-amber-200">
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-500/30 text-[11px] text-amber-800 dark:text-amber-200">
                 ⚠️ Notice: Receipts cannot be deleted directly. This request routes immediately to the Principal's Operational Approval Inbox for executive authorization.
               </div>
 
@@ -1055,14 +1055,14 @@ export default function AccountantDashboard() {
                 <button
                   type="button"
                   onClick={() => setReversalTarget(null)}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition-all cursor-pointer"
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 font-bold py-2.5 rounded-xl text-xs transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submittingReversal}
-                  className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-amber-600/30 cursor-pointer"
+                  className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow-md shadow-amber-600/30 cursor-pointer"
                 >
                   {submittingReversal ? "Routing..." : "Submit to Principal"}
                 </button>
@@ -1074,45 +1074,45 @@ export default function AccountantDashboard() {
 
       {/* SCREENSHOT LIGHTBOX MODAL */}
       {previewReceipt && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
-            <div className="flex justify-between items-center border-b border-slate-700 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-3">
               <div>
-                <h3 className="font-extrabold text-white text-base">Payment Receipt Lightbox</h3>
-                <p className="text-xs text-slate-400 font-mono">{previewReceipt.student_name} • {previewReceipt.class_name}</p>
+                <h3 className="font-extrabold text-slate-900 dark:text-white text-base">Payment Receipt Lightbox</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">{previewReceipt.student_name} • {previewReceipt.class_name}</p>
               </div>
               <button
                 onClick={() => setPreviewReceipt(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg text-lg cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg text-lg cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="bg-slate-900 rounded-2xl p-4 text-center border border-slate-800">
+            <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 text-center border border-slate-200 dark:border-slate-800">
               {previewReceipt.screenshot_data ? (
                 <img
                   src={previewReceipt.screenshot_data}
                   alt="Payment Screenshot"
-                  className="max-h-80 mx-auto rounded-xl object-contain border border-slate-700"
+                  className="max-h-80 mx-auto rounded-xl object-contain border border-slate-300 dark:border-slate-700"
                 />
               ) : (
-                <div className="py-12 text-slate-500 flex flex-col items-center gap-2">
+                <div className="py-12 text-slate-400 flex flex-col items-center gap-2">
                   <ImageIcon className="w-12 h-12 stroke-[1.5]" />
-                  <span className="text-xs font-semibold text-slate-400">Attached File: {previewReceipt.screenshot || "Receipt_Proof.jpg"}</span>
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Attached File: {previewReceipt.screenshot || "Receipt_Proof.jpg"}</span>
                   <span className="text-[11px] text-slate-500">Verified digital UTR reference attached below.</span>
                 </div>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+            <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
               <div>
                 <span className="text-slate-500 block uppercase text-[10px]">UTR Reference</span>
-                <span className="font-mono text-emerald-400 font-bold">{previewReceipt.utr || previewReceipt.razorpay_payment_id || "N/A"}</span>
+                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{previewReceipt.utr || previewReceipt.razorpay_payment_id || "N/A"}</span>
               </div>
               <div>
                 <span className="text-slate-500 block uppercase text-[10px]">Submitted Amount</span>
-                <span className="font-bold text-white text-sm">₹{Number(previewReceipt.amount).toLocaleString()}</span>
+                <span className="font-bold text-slate-900 dark:text-white text-sm">₹{Number(previewReceipt.amount).toLocaleString()}</span>
               </div>
             </div>
 
@@ -1123,7 +1123,7 @@ export default function AccountantDashboard() {
                     handleApprovePayment(previewReceipt);
                     setPreviewReceipt(null);
                   }}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-900/30"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-emerald-900/30"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Approve & Issue Tax Invoice</span>
@@ -1131,7 +1131,7 @@ export default function AccountantDashboard() {
               )}
               <button
                 onClick={() => setPreviewReceipt(null)}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-3 rounded-xl text-xs transition-all cursor-pointer"
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 font-bold px-4 py-3 rounded-xl text-xs transition-all cursor-pointer"
               >
                 Close Preview
               </button>

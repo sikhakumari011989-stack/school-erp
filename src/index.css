@@ -1,10 +1,25 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  color-scheme: light dark;
+}
+
 html, body {
-  background: #020617; /* slate-950 deep space theme */
-  color: white;
   font-family: system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+html.dark body {
+  background: #020617; /* deep space Voyager dark */
+  color: #f8fafc;
+}
+
+html:not(.dark) body {
+  background: #f8fafc; /* crisp Voyager high-contrast light */
+  color: #0f172a;
 }
 
 /* Staggered Mount Animations */
@@ -33,17 +48,31 @@ html, body {
 .stagger-8 { animation-delay: 480ms; }
 
 /* Subtle Grid Pattern for Empty States & Telemetry Deck */
-.bg-tech-grid {
+html.dark .bg-tech-grid {
   background-image: radial-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
-/* Eliminate white browser autofill background in dark mode */
-input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus, 
-input:-webkit-autofill:active {
+html:not(.dark) .bg-tech-grid {
+  background-image: radial-gradient(rgba(100, 116, 139, 0.12) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Eliminate browser autofill background */
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover, 
+html.dark input:-webkit-autofill:focus, 
+html.dark input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px #020617 inset !important;
   -webkit-text-fill-color: #f8fafc !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+html:not(.dark) input:-webkit-autofill,
+html:not(.dark) input:-webkit-autofill:hover, 
+html:not(.dark) input:-webkit-autofill:focus, 
+html:not(.dark) input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #0f172a !important;
   transition: background-color 5000s ease-in-out 0s;
 }

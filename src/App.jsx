@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AppProvider } from "./context/AppContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { ToastProvider, useToast } from "./context/ToastContext";
 import ProtectedRoute from "./Components/ProtectedRoute";
 
@@ -144,7 +145,7 @@ const AppLayout = ({ children }) => {
   };
 
   return (
-    <div className="h-[100dvh] w-screen overflow-hidden flex bg-slate-950 text-slate-100 font-sans relative">
+    <div className="h-[100dvh] w-screen overflow-hidden flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans relative transition-colors duration-200">
       <OfflineBanner />
       {!isPublicPage && <Sidebar />}
       <main
@@ -182,8 +183,9 @@ const AppLayout = ({ children }) => {
 export default function App() {
   return (
     <SentryErrorBoundary>
-      <AppProvider>
-        <ToastProvider>
+      <ThemeProvider>
+        <AppProvider>
+          <ToastProvider>
         <AppLayout>
           <ErrorBoundary>
             <Routes>
@@ -460,6 +462,7 @@ export default function App() {
         </AppLayout>
       </ToastProvider>
     </AppProvider>
+    </ThemeProvider>
     </SentryErrorBoundary>
   );
 }
