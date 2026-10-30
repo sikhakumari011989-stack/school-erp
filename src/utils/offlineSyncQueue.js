@@ -1,4 +1,5 @@
 import { supabase } from "../supabaseClient";
+import { captureException } from "../telemetry/sentry";
 
 /**
  * INDEXED-DB PERSISTENT OFFLINE MUTATION QUEUE
@@ -417,6 +418,7 @@ export async function flushOfflineMutationQueue(schoolId = null) {
       }
     } catch (err) {
       console.warn(`[OfflineQueue] Failed to sync item ${item.event_id}:`, err);
+      captureException(err, { context: "offlineSyncQueue.flush", eventId: item.event_id });
     }
   }
 

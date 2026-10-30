@@ -50,10 +50,36 @@ export default function ProtectedRoute({ children, allowedRoles }) {
 
   // If specific roles are required and user does not have required role (SuperAdmin has full access)
   if (allowedRoles && allowedRoles.length > 0) {
-    const userRole = (resolvedUser.role || "").toLowerCase();
+    const rawRole = (resolvedUser.role || inferRoleFromCode(resolvedUser.role_code || resolvedUser.roll_number || resolvedUser.id) || "").toLowerCase();
+    const roleCode = String(resolvedUser.role_code || resolvedUser.id || "").toUpperCase();
+
     const hasRole =
-      allowedRoles.some((r) => r.toLowerCase() === userRole) ||
-      userRole === "admin";
+      allowedRoles.some((r) => {
+        const lowerR = r.toLowerCase();
+        if (lowerR === rawRole) return true;
+
+        // Executive Cross-Administrative Access: Trustee (HOD) and Principal (PRIN)
+        if (
+          (lowerR === "trustee" || lowerR === "principal" || lowerR === "hod") &&
+          (rawRole === "trustee" || rawRole === "principal" || rawRole === "hod" || roleCode.startsWith("HOD-") || roleCode.startsWith("PRIN-") || roleCode.startsWith("TR-"))
+        ) {
+          return true;
+        }
+
+        // Staff and Non-Teaching Staff (NTS)
+        if (
+          lowerR === "staff" &&
+          (rawRole === "staff" || rawRole === "non_teaching" || rawRole === "nts" || roleCode.startsWith("NTS-") || roleCode.startsWith("NON-") || roleCode.startsWith("STF-"))
+        ) {
+          return true;
+        }
+
+        return false;
+      }) ||
+      rawRole === "admin" ||
+      rawRole === "super_admin" ||
+      roleCode.startsWith("ADM-") ||
+      roleCode.startsWith("SUPER-");
 
     if (!hasRole) {
       showToast(

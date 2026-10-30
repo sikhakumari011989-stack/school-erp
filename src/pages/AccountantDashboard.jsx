@@ -326,11 +326,11 @@ export default function AccountantDashboard() {
           class: item.class_name || "Class 10",
         },
         payment: {
-          invoiceNo: `INV-${String(item.id || Date.now()).slice(-6)}`,
+          invoiceNo: `INV-${String(item.id || item.receipt_number || "REC001").slice(-6)}`,
           date: item.date || new Date().toISOString().split("T")[0],
           amount: item.amount,
           payment_mode: item.payment_mode || "Cash / Cheque",
-          transactionId: item.razorpay_payment_id || item.id || `TXN-${Date.now()}`,
+          transactionId: item.razorpay_payment_id || item.id || "TXN-DIRECT",
           title: "Tuition & Institutional Fee Settlement",
         },
       });
@@ -399,11 +399,11 @@ export default function AccountantDashboard() {
             class: item.class_name || "Class 10",
           },
           payment: {
-            invoiceNo: `INV-${String(item.id || Date.now()).slice(-6)}`,
+            invoiceNo: `INV-${String(item.id || item.receipt_number || "REC001").slice(-6)}`,
             date: new Date().toISOString().split("T")[0],
             amount: item.amount,
             payment_mode: item.payment_mode || "School UPI QR",
-            transactionId: item.utr || item.razorpay_payment_id || item.id || `TXN-${Date.now()}`,
+            transactionId: item.utr || item.razorpay_payment_id || item.id || "TXN-VERIFIED",
             title: item.title || "Tuition & Institutional Fee Settlement",
           },
         });

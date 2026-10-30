@@ -1343,6 +1343,52 @@ export function listenToPDFBatchJob(jobId, schoolId, onStatusChange) {
   };
 }
 
+/**
+ * Client-Side HTML DOM to PDF Report Card Generator
+ * Captures responsive HTML preview elements and produces multi-page vector-aligned PDF documents.
+ */
+export async function generateHTMLReportCardPDF(element, filename = "Academic_Report_Card.pdf") {
+  if (typeof window === "undefined" || !element) {
+    console.warn("[PDFGenerator] Invalid element provided for HTML to PDF capture.");
+    return false;
+  }
+
+  try {
+    const html2canvas = (await import("html2canvas")).default;
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#ffffff",
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("portrait", "mm", "a4");
+    const imgWidth = 210;
+    const pageHeight = 295;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    pdf.save(filename);
+    return true;
+  } catch (err) {
+    console.error("[PDFGenerator] HTML Report Card generation error:", err);
+    return false;
+  }
+}
+
+
 
 
 

@@ -722,7 +722,8 @@ export default function PrincipalAssistant({ schoolCode = "CAMPUS-01" }) {
 
       const radarFlags = [];
       students.forEach((s) => {
-        const bal = parseFloat(s.remaining_balance ?? s.pending_fees ?? (s.totalFees - s.paidFees) ?? 15000);
+        const computedDiff = s.totalFees != null && s.paidFees != null ? s.totalFees - s.paidFees : null;
+        const bal = parseFloat(s.remaining_balance ?? s.pending_fees ?? computedDiff ?? 15000);
         const att = parseFloat(s.attendance_percentage ?? 85);
         if (bal > 10000 || att < 78) {
           const riskIndex = Math.min(99, Math.round((bal / 50000) * 50 + (100 - att) * 0.5));

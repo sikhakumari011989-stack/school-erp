@@ -59,25 +59,8 @@ export default function BroadcastManager({ institutionCode: propSchoolCode }) {
   // Dynamic Class/Batch List mapped directly from Students Directory
   const [availableClasses, setAvailableClasses] = useState([]);
 
-  // Load Directory and Notices
-  useEffect(() => {
-    loadDynamicClasses();
-    loadNotices();
-
-    const handleNoticesUpdate = () => loadNotices();
-    const handleDirUpdate = () => loadDynamicClasses();
-
-    window.addEventListener("erp-notices-updated", handleNoticesUpdate);
-    window.addEventListener("erp-directory-updated", handleDirUpdate);
-
-    return () => {
-      window.removeEventListener("erp-notices-updated", handleNoticesUpdate);
-      window.removeEventListener("erp-directory-updated", handleDirUpdate);
-    };
-  }, [schoolCode]);
-
   // Map students directory to extract unique classes/batches automatically
-  const loadDynamicClasses = () => {
+  const loadDynamicClasses = React.useCallback(() => {
     try {
       let dir = [];
       const raw = localStorage.getItem(`erp_directory_${schoolCode}`);
@@ -112,9 +95,9 @@ export default function BroadcastManager({ institutionCode: propSchoolCode }) {
       console.warn("Could not load dynamic classes from directory:", e);
       setAvailableClasses([]);
     }
-  };
+  }, [schoolCode, formData.targetClass]);
 
-  const loadNotices = async () => {
+  const loadNotices = React.useCallback(async () => {
     setLoading(true);
     try {
       const list = await getNotices(schoolCode);
@@ -124,7 +107,24 @@ export default function BroadcastManager({ institutionCode: propSchoolCode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [schoolCode]);
+
+  // Load Directory and Notices
+  useEffect(() => {
+    loadDynamicClasses();
+    loadNotices();
+
+    const handleNoticesUpdate = () => loadNotices();
+    const handleDirUpdate = () => loadDynamicClasses();
+
+    window.addEventListener("erp-notices-updated", handleNoticesUpdate);
+    window.addEventListener("erp-directory-updated", handleDirUpdate);
+
+    return () => {
+      window.removeEventListener("erp-notices-updated", handleNoticesUpdate);
+      window.removeEventListener("erp-directory-updated", handleDirUpdate);
+    };
+  }, [schoolCode, loadDynamicClasses, loadNotices]);
 
   // Submit Targeted Notice
   const handlePublish = async (e) => {
@@ -421,7 +421,7 @@ export default function BroadcastManager({ institutionCode: propSchoolCode }) {
                     </span>
                     <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
                       <Clock className="w-3 h-3 text-slate-500" />
-                      {notice.date || new Date(notice.created_at || Date.now()).toLocaleDateString("en-IN")}
+                      {notice.date || (notice.created_at ? new Date(notice.created_at).toLocaleDateString("en-IN") : "Today")}
                     </span>
                   </div>
 

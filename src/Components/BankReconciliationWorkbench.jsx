@@ -17,15 +17,7 @@ export default function BankReconciliationWorkbench({ schoolCode = "CAMPUS-01" }
   const [ocrScanning, setOcrScanning] = useState(false);
   const [ocrResult, setOcrResult] = useState(null);
 
-  useEffect(() => {
-    loadLedgerAndReconcile();
-
-    const handleUpdate = () => loadLedgerAndReconcile();
-    window.addEventListener("erp-fee-ledger-updated", handleUpdate);
-    return () => window.removeEventListener("erp-fee-ledger-updated", handleUpdate);
-  }, [cleanSchool]);
-
-  const loadLedgerAndReconcile = () => {
+  const loadLedgerAndReconcile = React.useCallback(() => {
     try {
       const raw = localStorage.getItem(`erp_fee_ledger_${cleanSchool}`);
       const txns = raw ? JSON.parse(raw) : [];
@@ -58,7 +50,15 @@ export default function BankReconciliationWorkbench({ schoolCode = "CAMPUS-01" }
     } catch (e) {
       console.warn("Reconciliation parse error:", e);
     }
-  };
+  }, [cleanSchool]);
+
+  useEffect(() => {
+    loadLedgerAndReconcile();
+
+    const handleUpdate = () => loadLedgerAndReconcile();
+    window.addEventListener("erp-fee-ledger-updated", handleUpdate);
+    return () => window.removeEventListener("erp-fee-ledger-updated", handleUpdate);
+  }, [cleanSchool, loadLedgerAndReconcile]);
 
   // UPI OCR Image Extract Simulator
   const handleOcrUpload = (e) => {

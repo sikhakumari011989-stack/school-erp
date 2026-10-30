@@ -270,7 +270,7 @@ export default function TeacherAnalytics() {
     const pct = Math.round((maths + science + english) / 3);
     const attendance = "96%";
 
-    let performanceAssessment = "";
+    let performanceAssessment;
     if (pct >= 85) {
       performanceAssessment = `${row.student_name} demonstrates outstanding academic excellence across all core subjects with a composite grade average of ${pct}%.`;
     } else if (pct >= 65) {

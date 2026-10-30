@@ -50,8 +50,8 @@ export default function SystemDiagnostic({ isOpen = true, onClose = null, standa
     // --- TEST 1: MULTI-TENANT ISOLATION CHECK ---
     await new Promise((r) => setTimeout(r, 220));
     const t1Start = performance.now();
-    let t1Passed = true;
-    let t1Details = "";
+    let t1Passed;
+    let t1Details;
     try {
       // Verify isolation keys are partitioned by activeSchoolCode
       const dirKey = `erp_directory_${activeSchoolCode}`;
@@ -85,8 +85,8 @@ export default function SystemDiagnostic({ isOpen = true, onClose = null, standa
     // --- TEST 2: 2-TIER AUTH MAPPER CHECK ---
     await new Promise((r) => setTimeout(r, 180));
     const t2Start = performance.now();
-    let t2Passed = true;
-    let t2Details = "";
+    let t2Passed;
+    let t2Details;
     try {
       const testCases = [
         { code: "HOD-01", expectedRole: "trustee", expectedDash: "/trustee/dashboard" },
@@ -131,8 +131,8 @@ export default function SystemDiagnostic({ isOpen = true, onClose = null, standa
     // --- TEST 3: MOBILE SESSION NON-BLOCKING CHECK ---
     await new Promise((r) => setTimeout(r, 190));
     const t3Start = performance.now();
-    let t3Passed = true;
-    let t3Details = "";
+    let t3Passed;
+    let t3Details;
     try {
       const cachedSession =
         localStorage.getItem("erp_session_user") ||
@@ -159,8 +159,8 @@ export default function SystemDiagnostic({ isOpen = true, onClose = null, standa
     // --- TEST 4: SCHOOL UPI QR & FEE LEDGER SYNC ---
     await new Promise((r) => setTimeout(r, 210));
     const t4Start = performance.now();
-    let t4Passed = true;
-    let t4Details = "";
+    let t4Passed;
+    let t4Details;
     try {
       const savedQr =
         localStorage.getItem(`erp_school_qr_${activeSchoolCode}`) ||
@@ -193,8 +193,8 @@ export default function SystemDiagnostic({ isOpen = true, onClose = null, standa
     // --- TEST 5: LMS, HOMEWORK & ATTENDANCE RECORDING ---
     await new Promise((r) => setTimeout(r, 200));
     const t5Start = performance.now();
-    let t5Passed = true;
-    let t5Details = "";
+    let t5Passed;
+    let t5Details;
     try {
       const hwIds = JSON.parse(localStorage.getItem("completed_hw_ids") || "[]");
       const directory = JSON.parse(

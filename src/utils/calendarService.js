@@ -189,7 +189,7 @@ export function getTodayAndUpcomingPulse(schoolCode = "CAMPUS-01") {
     }
   }
 
-  let todayPulse = null;
+  let todayPulse;
 
   if (todayEvent) {
     todayPulse = {

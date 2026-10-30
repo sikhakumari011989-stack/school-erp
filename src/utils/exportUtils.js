@@ -7,9 +7,9 @@
  */
 
 export function exportToCSV(arg1, arg2, arg3) {
-  let filename = "export";
-  let headers = [];
-  let rows = [];
+  let filename;
+  let headers;
+  let rows;
 
   if (typeof arg1 === "object" && arg1 !== null && !Array.isArray(arg1)) {
     filename = arg1.filename || "export";

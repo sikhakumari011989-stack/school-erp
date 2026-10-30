@@ -34,6 +34,22 @@ export function initSentry() {
         return event;
       },
     });
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("unhandledrejection", (event) => {
+        captureException(event.reason || new Error("Unhandled Promise Rejection"), {
+          type: "unhandledrejection",
+        });
+      });
+      window.addEventListener("error", (event) => {
+        captureException(event.error || new Error(event.message), {
+          type: "window.onerror",
+          filename: event.filename,
+          lineno: event.lineno,
+        });
+      });
+    }
+
     isInitialized = true;
     console.info("[Sentry] Telemetry client initialized successfully.");
   } catch (err) {

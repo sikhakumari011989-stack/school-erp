@@ -15,13 +15,7 @@ export default function AcademicRolloverModal({ isOpen, onClose, schoolId, onRol
 
   const cleanSchool = String(schoolId || "CAMPUS-01").trim().toUpperCase();
 
-  useEffect(() => {
-    if (isOpen) {
-      loadStudentsAndBuildPreview();
-    }
-  }, [isOpen, cleanSchool, finalGradeBatch]);
-
-  const loadStudentsAndBuildPreview = () => {
+  const loadStudentsAndBuildPreview = React.useCallback(() => {
     try {
       const dirKey = `erp_directory_${cleanSchool}`;
       const raw = localStorage.getItem(dirKey);
@@ -53,7 +47,7 @@ export default function AcademicRolloverModal({ isOpen, onClose, schoolId, onRol
         } else {
           // Promote by incrementing class number if possible
           const classNumMatch = currentClass.match(/\d+/);
-          let nextClass = currentClass;
+          let nextClass;
           if (classNumMatch) {
             const currentNum = parseInt(classNumMatch[0], 10);
             nextClass = currentClass.replace(String(currentNum), String(currentNum + 1));
@@ -77,7 +71,13 @@ export default function AcademicRolloverModal({ isOpen, onClose, schoolId, onRol
     } catch (e) {
       console.warn("Could not calculate rollover preview:", e);
     }
-  };
+  }, [cleanSchool, finalGradeBatch]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadStudentsAndBuildPreview();
+    }
+  }, [isOpen, loadStudentsAndBuildPreview]);
 
   const handleExecuteRollover = () => {
     if (students.length === 0) {
