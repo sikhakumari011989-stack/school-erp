@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
-import { dashboardFor } from "../pages/Login";
+import { dashboardFor, inferRoleFromCode } from "../pages/Login";
 
 export default function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useContext(AppContext);

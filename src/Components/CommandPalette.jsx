@@ -22,6 +22,7 @@ import {
   ClipboardList,
   CheckCircle2,
   HeartPulse,
+  Award,
 } from "lucide-react";
 
 export default function CommandPalette() {
