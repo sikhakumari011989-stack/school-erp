@@ -1,8 +1,30 @@
-import React, { useState, useEffect, useContext, useRef } from "react";
+import React, { useState, useEffect, useContext, useRef, useMemo } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { logSecurityAction } from "../utils/auditLogger";
-import { Upload, Download, CheckCircle2, AlertTriangle, FileSpreadsheet, X, Trash2, Plus } from "lucide-react";
+import {
+  detectTimetableConflicts,
+  findAlternativeSlots,
+  generateOptimizedTimetable,
+  publishTimetableVersion,
+  STANDARD_PERIODS,
+} from "../utils/aiTimetableOptimizer";
+import {
+  Upload,
+  Download,
+  CheckCircle2,
+  AlertTriangle,
+  FileSpreadsheet,
+  X,
+  Trash2,
+  Plus,
+  Sparkles,
+  ShieldCheck,
+  RotateCcw,
+  Layers,
+  ArrowRight,
+  Info,
+} from "lucide-react";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -40,6 +62,44 @@ export default function MasterTimetableManager({ schoolId: propSchoolId }) {
     teacher: "Prof. S. R. Sharma",
     room: "Room 101",
   });
+
+  const [publishing, setPublishing] = useState(false);
+  const [activeTab, setActiveTab] = useState("editor"); // 'editor' | 'conflicts' | 'versions'
+
+  // Live constraint validation
+  const conflictAnalysis = useMemo(() => {
+    return detectTimetableConflicts(schedule);
+  }, [schedule]);
+
+  const handleAutoOptimize = () => {
+    const generated = generateOptimizedTimetable({});
+    setSchedule(generated);
+    localStorage.setItem(`erp_master_timetable_${schoolId}`, JSON.stringify(generated));
+    window.dispatchEvent(new Event("erp-timetable-updated"));
+    showToast("✨ AI Timetable Optimizer: Generated 100% conflict-free master timetable across all standard batches!", "success");
+  };
+
+  const handlePublishOfficial = async () => {
+    if (!conflictAnalysis.isConflictFree) {
+      showToast(`Cannot publish timetable with ${conflictAnalysis.totalClashes} unresolved clashes. Review conflict panel.`, "error");
+      return;
+    }
+
+    setPublishing(true);
+    try {
+      await publishTimetableVersion({
+        schoolId,
+        schedule,
+        versionTitle: `Term Timetable v${new Date().toLocaleDateString().replace(/\//g, ".")}`,
+        user,
+      });
+      showToast("🎉 Official Master Timetable published & synchronized with all Student and Teacher portals!", "success");
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   const loadSchedule = () => {
     try {
@@ -295,11 +355,33 @@ export default function MasterTimetableManager({ schoolId: propSchoolId }) {
 
         <div className="flex items-center gap-3 flex-wrap">
           <button
+            type="button"
+            onClick={handleAutoOptimize}
+            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-2"
+            title="Algorithmically generate 100% conflict-free timetable across all standard batches"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>AI Auto-Optimize Schedule</span>
+          </button>
+          <button
+            type="button"
+            disabled={publishing}
+            onClick={handlePublishOfficial}
+            className={`font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-lg transition-all cursor-pointer flex items-center gap-2 ${
+              conflictAnalysis.isConflictFree
+                ? "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30"
+                : "bg-slate-700 text-slate-400 cursor-not-allowed"
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>{publishing ? "Publishing..." : "Publish Official Version"}</span>
+          </button>
+          <button
             onClick={() => setShowImportModal(true)}
             className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-lg shadow-purple-600/30 transition-all cursor-pointer flex items-center gap-2"
           >
             <Upload className="w-4 h-4" />
-            <span>Bulk Import Timetable (CSV/Excel)</span>
+            <span>Bulk Import (CSV)</span>
           </button>
           <button
             onClick={() => {
@@ -313,6 +395,50 @@ export default function MasterTimetableManager({ schoolId: propSchoolId }) {
           </button>
         </div>
       </div>
+
+      {/* CONFLICT RADAR STATUS BANNER */}
+      {conflictAnalysis.totalClashes > 0 ? (
+        <div className="bg-rose-500/10 border border-rose-500/30 p-5 rounded-3xl space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-rose-400 font-bold text-sm">
+              <AlertTriangle className="w-5 h-5 text-rose-500 animate-pulse" />
+              <span>Hard Constraint Violations Detected ({conflictAnalysis.totalClashes} Clashes)</span>
+            </div>
+            <span className="text-xs text-rose-300 font-semibold">
+              Publishing blocked until clashes are resolved
+            </span>
+          </div>
+
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {conflictAnalysis.conflicts.map((conf) => {
+              const clashingPeriod = schedule.find((s) => s.id === conf.involvedIds[0]) || { teacher: conf.entity, day: conf.day, periodNo: conf.period };
+              const alternates = findAlternativeSlots(clashingPeriod, schedule);
+
+              return (
+                <div key={conf.id} className="bg-slate-900/80 p-3 rounded-xl border border-rose-500/20 text-xs space-y-1.5">
+                  <p className="text-rose-300 font-semibold">{conf.message}</p>
+                  {alternates.length > 0 && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-emerald-400">
+                      <span>💡 Suggested Alternate:</span>
+                      <span className="font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        {alternates[0].day} {alternates[0].periodNo} ({alternates[0].suggestedRoom})
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-2xl flex items-center justify-between">
+          <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span>Master Schedule Verified: 0 Teacher or Facility Collisions (100% Conflict-Free)</span>
+          </div>
+          <span className="text-[11px] text-emerald-400/80 font-mono">Ready for publication</span>
+        </div>
+      )}
 
       {/* DAY SELECTOR TABS & SCHEDULE TABLE */}
       <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl shadow-2xl overflow-hidden">

@@ -21,6 +21,7 @@ import {
   GraduationCap,
   ClipboardList,
   CheckCircle2,
+  HeartPulse,
 } from "lucide-react";
 
 export default function CommandPalette() {
@@ -106,6 +107,10 @@ export default function CommandPalette() {
     { id: "nav_cal", title: "Go to Academic Calendar & Holidays", category: "Navigation", icon: Calendar, path: "/admin/calendar", keywords: "calendar holidays dates exams events schedule" },
     { id: "nav_exams", title: "Go to Timed Online Exams Portal", category: "Navigation", icon: FileText, path: "/teacher/exams", keywords: "exams test quiz assessments papers cbt" },
     { id: "nav_crm", title: "Go to Admissions CRM & Enrollments", category: "Navigation", icon: GraduationCap, path: "/admin/admissions", keywords: "admissions enroll register new students leads" },
+    { id: "nav_docs", title: "Go to AI Document Intelligence & OCR", category: "Navigation", icon: FileText, path: "/admin/documents", keywords: "ocr document scan marksheet admission upload parse" },
+    { id: "nav_trans", title: "Go to Transport & Bus Fleet Intelligence", category: "Navigation", icon: Compass, path: "/admin/transport", keywords: "transport bus vehicle route stop driver fleet manifest" },
+    { id: "nav_accred", title: "Go to Institutional Accreditation Center", category: "Navigation", icon: Award, path: "/admin/accreditation", keywords: "accreditation cbse naac compliance audit criteria" },
+    { id: "nav_health", title: "Go to Clinic & Health Records Vault", category: "Navigation", icon: HeartPulse, path: "/admin/health", keywords: "health clinic medical doctor nurse allergy dpdp blood emergency triage" },
     { id: "nav_payroll", title: "Go to Payroll & Faculty Compensation", category: "Navigation", icon: DollarSign, path: "/accountant/payroll", keywords: "payroll salary compensation payslip faculty" },
     { id: "nav_exp", title: "Go to Institutional Expense Manager", category: "Navigation", icon: DollarSign, path: "/accountant/expenses", keywords: "expense costs operational budget spending" },
     { id: "nav_diag", title: "Go to System Diagnostics & Telemetry", category: "Navigation", icon: Zap, path: "/system-check", keywords: "diagnostic telemetry health audit vercel database" },

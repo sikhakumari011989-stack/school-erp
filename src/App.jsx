@@ -38,6 +38,11 @@ import ContactUs from "./pages/ContactUs";
 import SystemDiagnosticPage from "./pages/SystemDiagnosticPage";
 import MasterSchoolSetup from "./pages/MasterSchoolSetup";
 import AdmissionsCRM from "./pages/AdmissionsCRM";
+import DocumentIntelligence from "./pages/DocumentIntelligence";
+import TransportManager from "./pages/TransportManager";
+import AccreditationCenter from "./pages/AccreditationCenter";
+import PublicCredentialVerify from "./pages/PublicCredentialVerify";
+import ClinicHealthVault from "./pages/ClinicHealthVault";
 
 import OnlineExams from "./pages/OnlineExams";
 import StudentExam from "./pages/StudentExam";
@@ -65,13 +70,16 @@ const PUBLIC_ROUTES = [
   "/pricing-policy",
   "/refund-policy",
   "/contact",
+  "/verify-credential",
 ];
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const isPublicPage = PUBLIC_ROUTES.includes(location.pathname);
+  const isPublicPage =
+    PUBLIC_ROUTES.includes(location.pathname) ||
+    location.pathname.startsWith("/verify-credential");
 
   const [installPrompt, setInstallPrompt] = React.useState(null);
   const [isInstalled, setIsInstalled] = React.useState(false);
@@ -210,6 +218,7 @@ export default function App() {
               <Route path="/pricing-policy" element={<PricingPolicy />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
               <Route path="/contact" element={<ContactUs />} />
+              <Route path="/verify-credential/:token" element={<PublicCredentialVerify />} />
 
             {/* SUPER ADMIN & SYSTEM AUDIT (Admin only) */}
             <Route
@@ -231,8 +240,40 @@ export default function App() {
             <Route
               path="/admin/admissions"
               element={
-                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant"]}>
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant", "staff"]}>
                   <AdmissionsCRM />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/documents"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant", "staff", "teacher"]}>
+                  <DocumentIntelligence />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/transport"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant", "staff"]}>
+                  <TransportManager />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/accreditation"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal"]}>
+                  <AccreditationCenter />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/health"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal"]}>
+                  <ClinicHealthVault />
                 </ProtectedRoute>
               }
             />

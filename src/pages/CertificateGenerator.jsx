@@ -3,6 +3,7 @@ import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { generateOfficialCertificatePDF } from "../utils/pdfGenerator";
+import { ExternalLink, ShieldCheck } from "lucide-react";
 
 export const getDefaultCertificateRequests = () => [];
 
@@ -273,8 +274,26 @@ export default function CertificateGenerator() {
                       <td className="p-4 pl-6 font-mono text-xs font-bold text-blue-400">
                         {req.id}
                       </td>
-                      <td className="p-4 font-bold text-white">
-                        {req.certificate_type}
+                      <td className="p-4">
+                        <p className="font-bold text-white">{req.certificate_type}</p>
+                        {req.serial_number && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                              {req.serial_number}
+                            </span>
+                            {req.verification_code && (
+                              <a
+                                href={`/verify-credential/${req.verification_code}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300 underline"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                <span>Verify</span>
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="p-4 text-xs text-slate-400 font-mono whitespace-nowrap">
                         {req.request_date}

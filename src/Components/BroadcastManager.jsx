@@ -3,6 +3,12 @@ import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { getNotices, publishNotice, deleteNotice } from "../utils/noticeService";
 import {
+  dispatchParentNotification,
+  getCommunicationGatewayStatus,
+  getNotificationHistory,
+  COMMUNICATION_CATEGORIES,
+} from "../utils/notifications";
+import {
   Megaphone,
   Send,
   Users,
@@ -16,7 +22,10 @@ import {
   CheckCircle2,
   Clock,
   Layers,
-  Search
+  Search,
+  MessageSquare,
+  Smartphone,
+  RefreshCw,
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -45,6 +54,20 @@ export default function BroadcastManager({ institutionCode: propSchoolCode }) {
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
+
+  const [activeTab, setActiveTab] = useState("notices"); // 'notices' | 'parent_outbound'
+  const [outboundLogs, setOutboundLogs] = useState([]);
+  const [gatewayStatus, setGatewayStatus] = useState(() => getCommunicationGatewayStatus());
+
+  // Parent Notification Form State
+  const [parentNotifData, setParentNotifData] = useState({
+    recipientPhone: "",
+    recipientName: "",
+    category: "announcement",
+    channel: "whatsapp",
+    message: "",
+  });
+  const [sendingParentNotif, setSendingParentNotif] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -97,6 +120,13 @@ export default function BroadcastManager({ institutionCode: propSchoolCode }) {
     }
   }, [schoolCode, formData.targetClass]);
 
+  const loadParentLogs = React.useCallback(async () => {
+    try {
+      const history = getNotificationHistory();
+      setOutboundLogs(history);
+    } catch (e) {}
+  }, []);
+
   const loadNotices = React.useCallback(async () => {
     setLoading(true);
     try {
@@ -113,6 +143,7 @@ export default function BroadcastManager({ institutionCode: propSchoolCode }) {
   useEffect(() => {
     loadDynamicClasses();
     loadNotices();
+    loadParentLogs();
 
     const handleNoticesUpdate = () => loadNotices();
     const handleDirUpdate = () => loadDynamicClasses();
@@ -124,7 +155,45 @@ export default function BroadcastManager({ institutionCode: propSchoolCode }) {
       window.removeEventListener("erp-notices-updated", handleNoticesUpdate);
       window.removeEventListener("erp-directory-updated", handleDirUpdate);
     };
-  }, [schoolCode, loadDynamicClasses, loadNotices]);
+  }, [schoolCode, loadDynamicClasses, loadNotices, loadParentLogs]);
+
+  const handleSendParentNotification = async (e) => {
+    e.preventDefault();
+    if (!parentNotifData.recipientPhone.trim() || !parentNotifData.message.trim()) {
+      showToast("Please provide recipient phone number and notification message.", "error");
+      return;
+    }
+
+    setSendingParentNotif(true);
+    try {
+      const result = await dispatchParentNotification({
+        schoolId: schoolCode,
+        recipientPhone: parentNotifData.recipientPhone.trim(),
+        recipientName: parentNotifData.recipientName.trim() || "Parent / Guardian",
+        category: parentNotifData.category,
+        channel: parentNotifData.channel,
+        message: parentNotifData.message.trim(),
+      });
+
+      const statusMsg = result.delivery_status === "delivered" 
+        ? "✅ Message delivered via WhatsApp Gateway!"
+        : "ℹ️ Message queued in Parent Communication Hub.";
+
+      showToast(statusMsg, result.delivery_status === "delivered" ? "success" : "info");
+      loadParentLogs();
+      setParentNotifData({
+        recipientPhone: "",
+        recipientName: "",
+        category: "announcement",
+        channel: "whatsapp",
+        message: "",
+      });
+    } catch (err) {
+      showToast("Dispatch error: " + err.message, "error");
+    } finally {
+      setSendingParentNotif(false);
+    }
+  };
 
   // Submit Targeted Notice
   const handlePublish = async (e) => {
@@ -203,8 +272,205 @@ export default function BroadcastManager({ institutionCode: propSchoolCode }) {
 
   return (
     <div className="space-y-6">
+      {/* MODULE NAVIGATION TABS */}
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveTab("notices")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "notices"
+              ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800/60"
+          }`}
+        >
+          <Megaphone className="w-4 h-4" />
+          In-App Circulars & Broadcasts
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("parent_outbound")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "parent_outbound"
+              ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800/60"
+          }`}
+        >
+          <Smartphone className="w-4 h-4" />
+          Parent Communication Hub (WhatsApp & SMS)
+        </button>
+      </div>
+
+      {/* PARENT OUTBOUND COMMUNICATION HUB */}
+      {activeTab === "parent_outbound" && (
+        <div className="space-y-6">
+          {/* Gateway Status Banner */}
+          <div className="bg-white/90 dark:bg-slate-900/80 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-emerald-500" />
+                Parent Communication Gateway Telemetry
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Multi-channel event triggers for Attendance Absence, Fee Dues, and Exam Results.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${gatewayStatus.whatsappConfigured ? "bg-emerald-400" : "bg-amber-400"}`} />
+                {gatewayStatus.whatsappGateway}
+              </span>
+            </div>
+          </div>
+
+          {/* Quick Dispatch Composer */}
+          <div className="bg-white/90 dark:bg-slate-900/80 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Send className="w-4 h-4 text-emerald-500" />
+              Automated Parent Advisory Dispatcher
+            </h4>
+
+            <form onSubmit={handleSendParentNotification} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Notification Trigger Category
+                  </label>
+                  <select
+                    value={parentNotifData.category}
+                    onChange={(e) => {
+                      const cat = e.target.value;
+                      let defaultMsg = "";
+                      if (cat === "absence") defaultMsg = "🚨 Absence Alert: Your ward was marked absent for roll call today.";
+                      if (cat === "fee_reminder") defaultMsg = "💰 Fee Advisory: Term fee installment is pending. Pay online via school portal.";
+                      if (cat === "exam_result") defaultMsg = "📊 Term Exam Results have been approved and published to the Student Portal.";
+                      if (cat === "homework") defaultMsg = "📚 Daily Assignment: Today's homework has been posted to the Student LMS.";
+                      if (cat === "event") defaultMsg = "📅 Calendar Notice: School will observe a declared holiday tomorrow.";
+                      setParentNotifData({ ...parentNotifData, category: cat, message: defaultMsg });
+                    }}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                  >
+                    {COMMUNICATION_CATEGORIES.map((c) => (
+                      <option key={c.id} value={c.id}>{c.icon} {c.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Parent Phone Number <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="+91 98200 12345"
+                    value={parentNotifData.recipientPhone}
+                    onChange={(e) => setParentNotifData({ ...parentNotifData, recipientPhone: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Outbound Channel
+                  </label>
+                  <select
+                    value={parentNotifData.channel}
+                    onChange={(e) => setParentNotifData({ ...parentNotifData, channel: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="whatsapp">📱 WhatsApp Gateway</option>
+                    <option value="sms">💬 SMS REST Route</option>
+                    <option value="in_app">🔔 In-App Push Only</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Advisory Message Payload <span className="text-rose-400">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={parentNotifData.message}
+                  onChange={(e) => setParentNotifData({ ...parentNotifData, message: e.target.value })}
+                  placeholder="Type official notification message..."
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-[11px] text-slate-400">
+                  Deliveries respect parent communication preferences and audit every dispatch.
+                </span>
+                <button
+                  type="submit"
+                  disabled={sendingParentNotif}
+                  className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {sendingParentNotif ? "Dispatching..." : "Dispatch to Parent"}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Outbound Logs History Table */}
+          <div className="bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xl p-5 space-y-4">
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Clock className="w-4 h-4 text-slate-400" />
+              Parent Communication Outbound Log ({outboundLogs.length})
+            </h4>
+
+            {outboundLogs.length === 0 ? (
+              <p className="text-xs text-slate-400 py-6 text-center">No outbound notifications logged yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 font-bold">
+                      <th className="py-2.5 px-3">Recipient</th>
+                      <th className="py-2.5 px-3">Channel</th>
+                      <th className="py-2.5 px-3">Category</th>
+                      <th className="py-2.5 px-3">Status</th>
+                      <th className="py-2.5 px-3">Message Snippet</th>
+                      <th className="py-2.5 px-3">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                    {outboundLogs.slice(0, 15).map((log, idx) => (
+                      <tr key={log.id || idx}>
+                        <td className="py-2.5 px-3 font-semibold">{log.recipient_phone || log.recipient}</td>
+                        <td className="py-2.5 px-3 uppercase text-[10px] font-bold">{log.channel}</td>
+                        <td className="py-2.5 px-3">{log.category || "Alert"}</td>
+                        <td className="py-2.5 px-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            log.delivery_status === "delivered" || log.status === "delivered"
+                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                              : "bg-blue-500/15 text-blue-600 dark:text-blue-400"
+                          }`}>
+                            {log.delivery_status || log.status || "queued"}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 truncate max-w-xs text-slate-500">{log.message}</td>
+                        <td className="py-2.5 px-3 text-slate-400 text-[10px]">
+                          {log.timestamp ? new Date(log.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Just now"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Broadcast Composer Card */}
-      <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-slate-700/70 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+      {activeTab === "notices" && (
+      <>
+      <div className="bg-white/90 dark:bg-[#1E293B]/80 backdrop-blur-xl border border-slate-200 dark:border-slate-700/70 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-700/60">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold uppercase tracking-wider mb-2">
@@ -447,6 +713,8 @@ export default function BroadcastManager({ institutionCode: propSchoolCode }) {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

@@ -77,6 +77,10 @@ export default function Sidebar() {
         { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
         { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
         { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
+        { name: "Document Intelligence", path: "/admin/documents", icon: "📄" },
+        { name: "Transport Fleet", path: "/admin/transport", icon: "🚌" },
+        { name: "Accreditation Center", path: "/admin/accreditation", icon: "🏆" },
+        { name: "Health & Clinic Vault", path: "/admin/health", icon: "🩺" },
         { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
         { name: "Expense Tracker", path: "/accountant/expenses", icon: "🧾" },
         { name: "Academic Calendar", path: "/admin/calendar", icon: "📅" },
@@ -88,6 +92,10 @@ export default function Sidebar() {
         { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
         { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
         { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
+        { name: "Document Intelligence", path: "/admin/documents", icon: "📄" },
+        { name: "Transport Fleet", path: "/admin/transport", icon: "🚌" },
+        { name: "Accreditation Center", path: "/admin/accreditation", icon: "🏆" },
+        { name: "Health & Clinic Vault", path: "/admin/health", icon: "🩺" },
         { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
         { name: "Expense Tracker", path: "/accountant/expenses", icon: "🧾" },
         { name: "Treasury Ledger", path: "/accountant/dashboard", icon: "💰" },
@@ -115,6 +123,10 @@ export default function Sidebar() {
     } else if (roleType === "staff") {
       return [
         { name: "Operations Command", path: "/staff/dashboard", icon: "🛠️" },
+        { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
+        { name: "Document Intelligence", path: "/admin/documents", icon: "📄" },
+        { name: "Transport Fleet", path: "/admin/transport", icon: "🚌" },
+        { name: "Accreditation Center", path: "/admin/accreditation", icon: "🏆" },
         { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
       ];
     } else if (roleType === "admin") {
@@ -126,6 +138,10 @@ export default function Sidebar() {
         { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
         { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
         { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
+        { name: "Document Intelligence", path: "/admin/documents", icon: "📄" },
+        { name: "Transport Fleet", path: "/admin/transport", icon: "🚌" },
+        { name: "Accreditation Center", path: "/admin/accreditation", icon: "🏆" },
+        { name: "Health & Clinic Vault", path: "/admin/health", icon: "🩺" },
         { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
         { name: "Expense Tracker", path: "/accountant/expenses", icon: "🧾" },
         { name: "Online Exams (CBT)", path: "/teacher/exams", icon: "📝" },

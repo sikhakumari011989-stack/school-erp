@@ -32,6 +32,7 @@ const DEFAULT_RISK_CASES = [
     riskLevel: "CRITICAL",
     riskScore: 92,
     primaryReason: "Dual Failure: Attendance < 75% AND Test Marks < 40%",
+    hasMedicalAlert: true,
   },
   {
     id: "risk_2",
@@ -136,6 +137,23 @@ export default function RiskRadarWidget({ className = "" }) {
           }
         } catch {}
 
+        // 4. Fetch Health Alert summary (Data Minimization: Allergy/Medical flag only)
+        let healthAlertMap = {};
+        try {
+          const rawHealth = localStorage.getItem(`erp_student_health_records_${schoolId}`);
+          if (rawHealth) {
+            const parsed = JSON.parse(rawHealth);
+            parsed.forEach((h) => {
+              const hasAlert = (h.critical_allergies && h.critical_allergies.length > 0) ||
+                               (h.chronic_conditions && h.chronic_conditions.length > 0);
+              if (hasAlert) {
+                healthAlertMap[String(h.student_id).toUpperCase()] = true;
+                healthAlertMap[String(h.student_name).toLowerCase()] = true;
+              }
+            });
+          }
+        } catch {}
+
         // Scan students for risks: Attendance < 75% AND Test Marks < 40%
         const identifiedCases = [];
 
@@ -188,6 +206,7 @@ export default function RiskRadarWidget({ className = "" }) {
               parentPhone: s.phone || "+91 98201 55900",
               riskLevel,
               riskScore,
+              hasMedicalAlert: !!(healthAlertMap[roll] || healthAlertMap[String(s.name || "").toLowerCase()]),
               primaryReason: isDualRisk
                 ? "Attendance < 75% AND Academic Scores < 40%"
                 : isSevereAttendance
@@ -376,6 +395,11 @@ export default function RiskRadarWidget({ className = "" }) {
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/30">
                         <span>Dues:</span>
                         <strong>₹{student.feeOverdue.toLocaleString("en-IN")}</strong>
+                      </span>
+                    )}
+                    {student.hasMedicalAlert && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/40" title="Life-Safety Allergy or Medical Alert on record">
+                        <span>⚠️ Medical Alert</span>
                       </span>
                     )}
                   </div>

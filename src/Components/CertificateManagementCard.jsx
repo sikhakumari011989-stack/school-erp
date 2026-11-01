@@ -8,6 +8,12 @@ import {
   listenToPDFBatchJob,
 } from "../utils/pdfGenerator";
 import { getDefaultCertificateRequests } from "../pages/CertificateGenerator";
+import {
+  issueOfficialCertificate,
+  revokeCertificate,
+  fetchIssuedCertificates,
+} from "../utils/certificateService";
+import { ExternalLink, ShieldCheck, ShieldAlert, CheckCircle, Ban } from "lucide-react";
 
 export default function CertificateManagementCard({ mode = "teacher", title }) {
   const { user, tenant } = useContext(AppContext) || {};
@@ -92,12 +98,36 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
   const handleDigitallySignAndIssue = async (cert) => {
     setProcessingId(cert.id);
     try {
-      // Mark as approved first if not already
-      if (cert.status !== "APPROVED") {
-        await updateCertificateStatus(cert.id, "APPROVED");
-      }
+      // 1. Issue cryptographically sealed certificate
+      const issued = await issueOfficialCertificate({
+        schoolId: activeSchoolId,
+        certType: cert.certificate_type,
+        studentId: cert.roll_number || cert.id,
+        studentName: cert.student_name,
+        className: cert.class_name,
+        reason: cert.reason,
+        issuedBy: user?.name || user?.full_name || "Principal Office",
+      });
 
-      // Generate & Download the authentic PDF
+      // 2. Mark as approved in requests ledger with serial & code attached
+      const storageKey = `erp_certificate_requests_${activeSchoolId}`;
+      const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      const updated = existing.map((c) =>
+        c.id === cert.id
+          ? {
+              ...c,
+              status: "APPROVED",
+              serial_number: issued.serial_number,
+              verification_code: issued.verification_code,
+              verification_url: issued.verification_url,
+            }
+          : c
+      );
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+      localStorage.setItem("erp_certificate_requests", JSON.stringify(updated));
+      setRequests(updated);
+
+      // 3. Generate & Download authentic PDF with official serial
       generateOfficialCertificatePDF({
         tenant: {
           name: tenant?.name || user?.institution_name || user?.school_name || "Institutional Campus",
@@ -110,21 +140,39 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
           class_name: cert.class_name,
         },
         certificate: {
-          id: cert.id,
+          id: issued.serial_number || cert.id,
           certificate_type: cert.certificate_type,
           reason: cert.reason,
           request_date: cert.request_date,
           issue_date: new Date().toISOString().split("T")[0],
+          verification_url: issued.verification_url,
         },
       });
 
       showToast(
-        `Digitally signed & issued official ${cert.certificate_type} for ${cert.student_name}!`,
+        `Digitally signed & issued ${cert.certificate_type} [${issued.serial_number}]! Verification QR Active.`,
         "success"
       );
     } catch (err) {
       console.error("Sign & Issue PDF error:", err);
       showToast("Failed to digitally issue certificate PDF.", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleRevoke = async (cert) => {
+    const reason = window.prompt("Reason for revoking this certificate:", "Administrative recall / Duplicate request");
+    if (!reason) return;
+
+    setProcessingId(cert.id);
+    try {
+      await revokeCertificate(activeSchoolId, cert.serial_number || cert.id, reason, user?.name || "Principal");
+      await updateCertificateStatus(cert.id, "REJECTED");
+      showToast(`Certificate ${cert.serial_number || cert.id} revoked successfully.`, "info");
+    } catch (err) {
+      console.error("Revoke error:", err);
+      showToast("Revocation failed.", "error");
     } finally {
       setProcessingId(null);
     }
@@ -329,6 +377,11 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
                   <td className="p-4">
                     <span className="font-semibold text-slate-200">{cert.certificate_type}</span>
                     <p className="text-[10px] font-mono text-slate-500">{cert.id}</p>
+                    {cert.serial_number && (
+                      <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        {cert.serial_number}
+                      </span>
+                    )}
                   </td>
                   <td className="p-4 text-xs font-medium text-slate-300 whitespace-nowrap">
                     {cert.class_name}
@@ -385,6 +438,18 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
                     ) : (
                       /* Principal / Trustee Action */
                       <div className="flex items-center justify-end gap-2">
+                        {cert.verification_code && (
+                          <a
+                            href={`/verify-credential/${cert.verification_code}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold rounded-xl transition-all flex items-center gap-1"
+                            title="Open public cryptographic verification gateway"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Verify</span>
+                          </a>
+                        )}
                         {cert.status === "PENDING" && (
                           <button
                             disabled={processingId === cert.id}
@@ -399,8 +464,18 @@ export default function CertificateManagementCard({ mode = "teacher", title }) {
                           onClick={() => handleDigitallySignAndIssue(cert)}
                           className="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-extrabold rounded-xl transition-all shadow-md shadow-purple-600/30 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                         >
-                          <span>✍️</span> Digitally Sign & Issue (PDF)
+                          <span>✍️</span> {cert.status === "APPROVED" ? "Re-Download (PDF)" : "Sign & Issue (PDF)"}
                         </button>
+                        {cert.status === "APPROVED" && (
+                          <button
+                            disabled={processingId === cert.id}
+                            onClick={() => handleRevoke(cert)}
+                            className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl transition-all"
+                            title="Revoke Certificate"
+                          >
+                            <Ban className="w-4 h-4" />
+                          </button>
+                        )}
                         {cert.status === "PENDING" && (
                           <button
                             disabled={processingId === cert.id}

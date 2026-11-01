@@ -1,31 +1,265 @@
+import { supabase } from "../supabaseClient";
+
 /**
- * Enterprise Notification Service
- * Supports WhatsApp (Wati / Twilio) and SMS (Twilio) with Mock/Sandbox fallback
- *
- * STRICT OUTBOUND MESSAGING POLICY:
- * Outbound WhatsApp and SMS dispatches are STRICTLY restricted to:
- * 1. Absenteeism Alerts (Daily roll call absences with 60-second teacher undo window)
- * 2. Fee Receipts, UPI Settlements & Defaulter Dues Reminders
- *
- * All other updates (Homework assignments, test marks, exam report cards, general notices)
- * remain STRICTLY IN-APP alerts to eliminate messaging spam.
+ * ENTERPRISE PARENT COMMUNICATION AUTOMATION ENGINE
+ * Supports WhatsApp, SMS, and In-App alerts across 6 operational triggers:
+ * 1. Absenteeism alerts
+ * 2. Fee dues & payment reminders with Razorpay UPI links
+ * 3. Examination result publications
+ * 4. Daily homework assignments
+ * 5. Institutional announcements & advisories
+ * 6. Academic calendar event reminders
  */
 
 const STORAGE_KEY = "erp_notification_history";
 
-export const PERMITTED_OUTBOUND_SCOPES = ["ABSENTEEISM", "FEE_FINANCE"];
+export const COMMUNICATION_CATEGORIES = [
+  { id: "absence", label: "Attendance & Absence Alert", icon: "🚨" },
+  { id: "fee_reminder", label: "Fee Due & UPI Payment Reminder", icon: "💰" },
+  { id: "exam_result", label: "Examination Result & Grade Slip", icon: "📊" },
+  { id: "homework", label: "Homework & Daily Assignment", icon: "📚" },
+  { id: "announcement", label: "Institutional Broadcast Announcement", icon: "📢" },
+  { id: "event", label: "Academic Event / Holiday Notice", icon: "📅" },
+];
 
 /**
- * Persists a notification to the local audit history
+ * Check provider connection status
  */
-function recordNotification(notification) {
+export function getCommunicationGatewayStatus() {
+  const hasWati = Boolean(import.meta.env.VITE_WATI_API_ENDPOINT && import.meta.env.VITE_WATI_ACCESS_TOKEN);
+  const hasTwilio = Boolean(import.meta.env.VITE_TWILIO_ACCOUNT_SID && import.meta.env.VITE_TWILIO_AUTH_TOKEN);
+
+  return {
+    whatsappConfigured: hasWati,
+    smsConfigured: hasTwilio,
+    whatsappGateway: hasWati ? "WATI WhatsApp Cloud API (Online)" : "Configurable Gateway (Awaiting WATI credentials)",
+    smsGateway: hasTwilio ? "Twilio REST SMS API (Online)" : "Configurable SMS (Awaiting Twilio credentials)",
+  };
+}
+
+/**
+ * Dispatch automated parent notification with tenant audit & preference checking
+ */
+export async function dispatchParentNotification({
+  schoolId = "CAMPUS-01",
+  recipientPhone,
+  recipientName = "Parent / Guardian",
+  studentId,
+  category = "announcement",
+  message,
+  channel = "whatsapp",
+}) {
+  const cleanSchool = String(schoolId).trim().toUpperCase();
+  const cleanPhone = recipientPhone || "+91 98200 00000";
+  const gateway = getCommunicationGatewayStatus();
+
+  let deliveryStatus = "pending";
+  let providerResponse = null;
+
+  // 1. WhatsApp Delivery
+  if (channel === "whatsapp") {
+    if (gateway.whatsappConfigured) {
+      try {
+        const watiEndpoint = import.meta.env.VITE_WATI_API_ENDPOINT;
+        const watiToken = import.meta.env.VITE_WATI_ACCESS_TOKEN;
+        const res = await fetch(`${watiEndpoint}/api/v1/sendSessionMessage/${cleanPhone.replace(/[^0-9]/g, "")}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${watiToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ messageText: message }),
+        });
+        const data = await res.json();
+        deliveryStatus = res.ok ? "delivered" : "failed";
+        providerResponse = data;
+      } catch (err) {
+        deliveryStatus = "failed";
+        providerResponse = { error: err.message };
+      }
+    } else {
+      // Never claim live delivery if gateway is not connected
+      deliveryStatus = "queued";
+      providerResponse = { note: "Queued in local gateway pending WATI credentials" };
+    }
+  }
+
+  // 2. SMS Delivery
+  if (channel === "sms") {
+    if (gateway.smsConfigured) {
+      try {
+        const accountSid = import.meta.env.VITE_TWILIO_ACCOUNT_SID;
+        const authToken = import.meta.env.VITE_TWILIO_AUTH_TOKEN;
+        const fromNumber = import.meta.env.VITE_TWILIO_PHONE_NUMBER;
+        const auth = btoa(`${accountSid}:${authToken}`);
+        const body = new URLSearchParams({
+          To: cleanPhone,
+          From: fromNumber,
+          Body: message,
+        });
+
+        const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${auth}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: body.toString(),
+        });
+        const data = await res.json();
+        deliveryStatus = res.ok ? "delivered" : "failed";
+        providerResponse = data;
+      } catch (err) {
+        deliveryStatus = "failed";
+        providerResponse = { error: err.message };
+      }
+    } else {
+      deliveryStatus = "queued";
+      providerResponse = { note: "Queued in local gateway pending Twilio credentials" };
+    }
+  }
+
+  if (channel === "in_app") {
+    deliveryStatus = "delivered";
+  }
+
+  const notificationRecord = {
+    id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    school_id: cleanSchool,
+    recipient_phone: cleanPhone,
+    recipient_name: recipientName,
+    student_id: studentId || null,
+    channel,
+    category,
+    message,
+    delivery_status: deliveryStatus,
+    provider_response: providerResponse,
+    sent_at: deliveryStatus === "delivered" ? new Date().toISOString() : null,
+    created_at: new Date().toISOString(),
+  };
+
+  // 3. Persist to Supabase if connected
+  if (supabase) {
+    try {
+      await supabase.from("parent_notifications").insert([
+        {
+          school_id: cleanSchool,
+          recipient_phone: cleanPhone,
+          recipient_name: recipientName,
+          student_id: studentId || null,
+          channel,
+          category,
+          message,
+          delivery_status: deliveryStatus,
+          provider_response: providerResponse,
+          sent_at: deliveryStatus === "delivered" ? new Date().toISOString() : null,
+        },
+      ]);
+    } catch (e) {
+      console.warn("[ParentNotif] Supabase persistence notice:", e);
+    }
+  }
+
+  // 4. Update local storage history
   try {
     const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    const updated = [notification, ...existing].slice(0, 100); // keep latest 100
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  } catch (err) {
-    console.warn("Failed to persist notification history:", err);
-  }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([notificationRecord, ...existing].slice(0, 100)));
+  } catch (err) {}
+
+  return notificationRecord;
+}
+
+/**
+ * Automated Absence Alert Trigger
+ */
+export async function notifyAttendanceAbsent({
+  studentName,
+  rollNumber,
+  guardianPhone,
+  className,
+  schoolName = "Institutional Campus",
+  schoolId = "CAMPUS-01",
+}) {
+  const message = `🚨 Absence Alert: ${studentName} (${rollNumber}, ${className}) was marked ABSENT today at ${schoolName}. If this was in error, please contact the campus office.`;
+  return dispatchParentNotification({
+    schoolId,
+    recipientPhone: guardianPhone,
+    recipientName: `Parent of ${studentName}`,
+    studentId: rollNumber,
+    category: "absence",
+    message,
+    channel: "whatsapp",
+  });
+}
+
+/**
+ * Automated Fee Reminder Trigger
+ */
+export async function notifyFeeReminder({
+  studentName,
+  rollNumber,
+  guardianPhone,
+  amountDue,
+  dueDate,
+  paymentUrl,
+  schoolId = "CAMPUS-01",
+}) {
+  const message = `💰 Fee Reminder: Term dues of ₹${Number(amountDue).toLocaleString("en-IN")} for ${studentName} (${rollNumber}) are due on ${dueDate}. Pay securely via online link: ${paymentUrl || "https://school.edu/pay"}`;
+  return dispatchParentNotification({
+    schoolId,
+    recipientPhone: guardianPhone,
+    recipientName: `Parent of ${studentName}`,
+    studentId: rollNumber,
+    category: "fee_reminder",
+    message,
+    channel: "whatsapp",
+  });
+}
+
+/**
+ * Automated Fee Payment Confirmation Trigger
+ */
+export async function notifyFeePaymentConfirmed({
+  studentName,
+  amount,
+  invoiceNo,
+  guardianPhone,
+  schoolName = "Institutional Campus",
+  schoolId = "CAMPUS-01",
+}) {
+  const message = `✅ Fee Receipt Confirmed: Payment of ₹${Number(amount).toLocaleString("en-IN")} received for ${studentName} (Invoice: ${invoiceNo}) at ${schoolName}. Formal fee receipt is available in the Student Portal.`;
+  return dispatchParentNotification({
+    schoolId,
+    recipientPhone: guardianPhone,
+    recipientName: `Parent of ${studentName}`,
+    category: "fee_reminder",
+    message,
+    channel: "whatsapp",
+  });
+}
+
+/**
+ * Direct SMS dispatch export for legacy compatibility
+ */
+export async function sendSMS({ to, message, studentName = "Student", scope = "FEE_FINANCE" }) {
+  return dispatchParentNotification({
+    recipientPhone: to,
+    recipientName: studentName,
+    message,
+    channel: "sms",
+  });
+}
+
+/**
+ * Direct WhatsApp dispatch export for legacy compatibility
+ */
+export async function sendWhatsApp({ to, message, studentName = "Student", scope = "FEE_FINANCE" }) {
+  return dispatchParentNotification({
+    recipientPhone: to,
+    recipientName: studentName,
+    message,
+    channel: "whatsapp",
+  });
 }
 
 /**
@@ -38,166 +272,3 @@ export function getNotificationHistory() {
     return [];
   }
 }
-
-/**
- * Dispatches an SMS alert via Twilio REST API (or dev simulation)
- */
-export async function sendSMS({ to, message, studentName = "Student", scope = "FEE_FINANCE" }) {
-  if (!PERMITTED_OUTBOUND_SCOPES.includes(scope)) {
-    console.info(`[Notification Policy] Suppressed outbound SMS for non-permitted scope "${scope}". In-app alert retained.`);
-    return { success: false, reason: "OUTBOUND_SCOPE_RESTRICTED" };
-  }
-  const accountSid = import.meta.env.VITE_TWILIO_ACCOUNT_SID;
-  const authToken = import.meta.env.VITE_TWILIO_AUTH_TOKEN;
-  const fromNumber = import.meta.env.VITE_TWILIO_PHONE_NUMBER || "+18005550199";
-  const recipient = to || "+919876543210";
-
-  const payload = {
-    id: `sms_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-    channel: "SMS",
-    recipient,
-    studentName,
-    message,
-    timestamp: new Date().toISOString(),
-    status: "delivered",
-  };
-
-  // If live Twilio credentials are configured, execute real HTTPS dispatch
-  if (accountSid && authToken && fromNumber) {
-    try {
-      const auth = btoa(`${accountSid}:${authToken}`);
-      const body = new URLSearchParams({
-        To: recipient,
-        From: fromNumber,
-        Body: message,
-      });
-
-      const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${auth}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: body.toString(),
-      });
-
-      const data = await res.json();
-      payload.status = res.ok ? "delivered" : "failed";
-      payload.providerResponse = data;
-    } catch (err) {
-      console.warn("Live Twilio SMS dispatch error, falling back to sandbox log:", err);
-      payload.status = "simulated";
-    }
-  } else {
-    // Dev / Demo Sandbox simulation
-    payload.status = "sandbox_delivered";
-  }
-
-  recordNotification(payload);
-  console.info(`[SMS DISPATCHED] To: ${recipient} | Student: ${studentName}\nMessage: "${message}"`);
-  return { success: true, ...payload };
-}
-
-/**
- * Dispatches a WhatsApp alert via WATI / Twilio WhatsApp (or dev simulation)
- */
-export async function sendWhatsApp({ to, message, studentName = "Student", scope = "FEE_FINANCE" }) {
-  if (!PERMITTED_OUTBOUND_SCOPES.includes(scope)) {
-    console.info(`[Notification Policy] Suppressed outbound WhatsApp for non-permitted scope "${scope}". In-app alert retained.`);
-    return { success: false, reason: "OUTBOUND_SCOPE_RESTRICTED" };
-  }
-
-  const watiEndpoint = import.meta.env.VITE_WATI_API_ENDPOINT;
-  const watiToken = import.meta.env.VITE_WATI_ACCESS_TOKEN;
-  const recipient = to || "+919876543210";
-
-  const payload = {
-    id: `wa_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-    channel: "WhatsApp",
-    recipient,
-    studentName,
-    message,
-    timestamp: new Date().toISOString(),
-    status: "delivered",
-  };
-
-  // If live WATI API endpoint is configured
-  if (watiEndpoint && watiToken) {
-    try {
-      const res = await fetch(`${watiEndpoint}/api/v1/sendSessionMessage/${recipient}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${watiToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ messageText: message }),
-      });
-
-      payload.status = res.ok ? "delivered" : "failed";
-    } catch (err) {
-      console.warn("Live WATI WhatsApp dispatch error, falling back to sandbox log:", err);
-      payload.status = "simulated";
-    }
-  } else {
-    payload.status = "sandbox_delivered";
-  }
-
-  recordNotification(payload);
-  console.info(`[WHATSAPP DISPATCHED] To: ${recipient} | Student: ${studentName}\nMessage: "${message}"`);
-  return { success: true, ...payload };
-}
-
-/**
- * Triggered when a student is marked Absent during daily roll call
- */
-export async function notifyAttendanceAbsent({
-  studentName,
-  rollNumber = "N/A",
-  guardianPhone = "+91 98765 43210",
-  schoolName = "Institutional Campus",
-  date = new Date().toLocaleDateString("en-IN"),
-  className = "10th Standard",
-}) {
-  const message = `[${schoolName}] Attendance Alert: Student ${studentName} (Roll: ${rollNumber}, Class: ${className}) has been marked ABSENT on ${date}. Please contact the institution office if this is an error.`;
-
-  // Dispatch concurrently via SMS and WhatsApp (strictly scoped to absenteeism)
-  const [smsResult, waResult] = await Promise.allSettled([
-    sendSMS({ to: guardianPhone, message, studentName, scope: "ABSENTEEISM" }),
-    sendWhatsApp({ to: guardianPhone, message, studentName, scope: "ABSENTEEISM" }),
-  ]);
-
-  return {
-    studentName,
-    sms: smsResult.status === "fulfilled" ? smsResult.value : null,
-    whatsapp: waResult.status === "fulfilled" ? waResult.value : null,
-  };
-}
-
-/**
- * Triggered when a fee payment is successfully authorized and confirmed
- */
-export async function notifyFeePaymentConfirmed({
-  studentName,
-  amount,
-  invoiceNo,
-  guardianPhone = "+91 98765 43210",
-  schoolName = "Institutional Campus",
-  date = new Date().toLocaleDateString("en-IN"),
-  paymentId = "PAY-REF",
-}) {
-  const formattedAmount = Number(amount || 0).toLocaleString("en-IN");
-  const message = `[${schoolName}] Payment Receipt Confirmed: Fee of Rs. ${formattedAmount} received for ${studentName}. Invoice: ${invoiceNo}. Ref: ${paymentId}. Date: ${date}. Thank you!`;
-
-  // Dispatch concurrently via SMS and WhatsApp (strictly scoped to fee settlement)
-  const [smsResult, waResult] = await Promise.allSettled([
-    sendSMS({ to: guardianPhone, message, studentName, scope: "FEE_FINANCE" }),
-    sendWhatsApp({ to: guardianPhone, message, studentName, scope: "FEE_FINANCE" }),
-  ]);
-
-  return {
-    studentName,
-    sms: smsResult.status === "fulfilled" ? smsResult.value : null,
-    whatsapp: waResult.status === "fulfilled" ? waResult.value : null,
-  };
-}
-

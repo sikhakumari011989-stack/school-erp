@@ -2,6 +2,13 @@ import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import {
+  calculateGrade,
+  validateMarksEntry,
+  DEFAULT_EXAM_SESSIONS,
+  DEFAULT_EXAM_RESULTS,
+  finalizeAndPublishSession,
+} from "../utils/examinationEngine";
+import {
   FileSpreadsheet,
   PlusCircle,
   Clock,
@@ -17,7 +24,11 @@ import {
   Users,
   Search,
   Sparkles,
-  BarChart2
+  BarChart2,
+  Calendar,
+  Lock,
+  Printer,
+  FileCheck,
 } from "lucide-react";
 
 const SUBJECTS = [
@@ -54,6 +65,70 @@ export default function OnlineExams() {
   ).toUpperCase();
 
   const [exams, setExams] = useState([]);
+  const [activeTab, setActiveTab] = useState("cbt"); // 'cbt' | 'formal_sessions' | 'marks_ledger'
+  const [examSessions, setExamSessions] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`erp_exam_sessions_${schoolCode}`);
+      return saved ? JSON.parse(saved) : DEFAULT_EXAM_SESSIONS;
+    } catch {
+      return DEFAULT_EXAM_SESSIONS;
+    }
+  });
+
+  const [examResults, setExamResults] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`erp_exam_results_${schoolCode}`);
+      return saved ? JSON.parse(saved) : DEFAULT_EXAM_RESULTS;
+    } catch {
+      return DEFAULT_EXAM_RESULTS;
+    }
+  });
+
+  const handleUpdateMarks = (resultId, newMarks, maxMarks = 100) => {
+    try {
+      validateMarksEntry(newMarks, maxMarks);
+      const gradeObj = calculateGrade(newMarks, maxMarks);
+      const updated = examResults.map((r) =>
+        r.id === resultId
+          ? {
+              ...r,
+              marks_obtained: Number(newMarks),
+              final_marks: Number(newMarks) + Number(r.moderation_marks || 0),
+              grade: gradeObj.grade,
+            }
+          : r
+      );
+      setExamResults(updated);
+      localStorage.setItem(`erp_exam_results_${schoolCode}`, JSON.stringify(updated));
+      showToast(`Marks updated. Auto-graded as ${gradeObj.grade} (${gradeObj.remark})`, "success");
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  };
+
+  const handlePublishResults = async (session) => {
+    try {
+      await finalizeAndPublishSession({
+        sessionId: session.id,
+        schoolId: schoolCode,
+        user,
+      });
+
+      const updatedSessions = examSessions.map((s) => (s.id === session.id ? { ...s, status: "published" } : s));
+      const updatedResults = examResults.map((r) => ({ ...r, is_finalized: true }));
+
+      setExamSessions(updatedSessions);
+      setExamResults(updatedResults);
+
+      localStorage.setItem(`erp_exam_sessions_${schoolCode}`, JSON.stringify(updatedSessions));
+      localStorage.setItem(`erp_exam_results_${schoolCode}`, JSON.stringify(updatedResults));
+
+      showToast(`🎉 Results finalized and published to all Student Portals! Locked against modification.`, "success");
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  };
+
   const [submissions, setSubmissions] = useState([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeSubmissionsExam, setActiveSubmissionsExam] = useState(null);
@@ -298,6 +373,204 @@ export default function OnlineExams() {
         </button>
       </div>
 
+      {/* NAVIGATION TABS */}
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab("cbt")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "cbt"
+              ? "bg-purple-600 text-white shadow-md shadow-purple-500/20"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800/60"
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          CBT Tests & Quizzes
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("formal_sessions")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "formal_sessions"
+              ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800/60"
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
+          Formal Exam Sessions & Hall Seating
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("marks_ledger")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "marks_ledger"
+              ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800/60"
+          }`}
+        >
+          <Award className="w-4 h-4" />
+          Marks Entry & CBSE 9-Point Grading
+        </button>
+      </div>
+
+      {/* FORMAL EXAM SESSIONS VIEW */}
+      {activeTab === "formal_sessions" && (
+        <div className="space-y-6">
+          {examSessions.map((session) => (
+            <div key={session.id} className="bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-bold uppercase">
+                      {session.academic_year}
+                    </span>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{session.session_name}</h3>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Grading Scale: {session.grading_scale} &bull; Window: {session.start_date} to {session.end_date}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    session.status === "published"
+                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                      : "bg-blue-500/15 text-blue-600 dark:text-blue-400"
+                  }`}>
+                    {session.status === "published" ? "✓ Results Published" : "Active Session"}
+                  </span>
+                  {session.status !== "published" && (
+                    <button
+                      type="button"
+                      onClick={() => handlePublishResults(session)}
+                      className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl shadow cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      Publish & Lock Results
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Schedules Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 font-bold">
+                      <th className="py-2.5 px-3">Subject</th>
+                      <th className="py-2.5 px-3">Class</th>
+                      <th className="py-2.5 px-3">Date & Time</th>
+                      <th className="py-2.5 px-3">Room / Hall</th>
+                      <th className="py-2.5 px-3">Invigilator</th>
+                      <th className="py-2.5 px-3">Max / Pass</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                    {session.schedules?.map((sch) => (
+                      <tr key={sch.id}>
+                        <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">{sch.subject}</td>
+                        <td className="py-2.5 px-3">{sch.class_name}</td>
+                        <td className="py-2.5 px-3 font-medium">
+                          {sch.exam_date} ({sch.start_time} - {sch.end_time})
+                        </td>
+                        <td className="py-2.5 px-3">{sch.room}</td>
+                        <td className="py-2.5 px-3 text-purple-600 dark:text-purple-400 font-semibold">{sch.invigilator_name}</td>
+                        <td className="py-2.5 px-3 font-mono">{sch.max_marks} / {sch.passing_marks}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* MARKS ENTRY & MODERATION VIEW */}
+      {activeTab === "marks_ledger" && (
+        <div className="bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Award className="w-5 h-5 text-emerald-500" />
+                Marks Moderation & CBSE 9-Point Scale Grading
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Validated marks entry preventing negative or out-of-bounds scores. Auto-generates letter grades.
+              </p>
+            </div>
+            <button
+              onClick={() => window.print()}
+              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              Print Bulk Marksheets
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 font-bold">
+                  <th className="py-3 px-4">Scholar Name</th>
+                  <th className="py-3 px-4">Roll Number</th>
+                  <th className="py-3 px-4">Class</th>
+                  <th className="py-3 px-4">Subject</th>
+                  <th className="py-3 px-4">Raw Marks (/100)</th>
+                  <th className="py-3 px-4">Moderation (+/-)</th>
+                  <th className="py-3 px-4">Final Grade</th>
+                  <th className="py-3 px-4">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                {examResults.map((r) => (
+                  <tr key={r.id}>
+                    <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{r.student_name}</td>
+                    <td className="py-3 px-4 font-mono">{r.student_id}</td>
+                    <td className="py-3 px-4">{r.class_name}</td>
+                    <td className="py-3 px-4">{r.subject}</td>
+                    <td className="py-3 px-4">
+                      {r.is_finalized ? (
+                        <span className="font-bold">{r.marks_obtained}</span>
+                      ) : (
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          defaultValue={r.marks_obtained}
+                          onBlur={(e) => handleUpdateMarks(r.id, e.target.value, 100)}
+                          className="w-20 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-slate-900 dark:text-white"
+                        />
+                      )}
+                    </td>
+                    <td className="py-3 px-4 font-mono">{r.moderation_marks ? `+${r.moderation_marks}` : "0.00"}</td>
+                    <td className="py-3 px-4">
+                      <span className="px-2 py-0.5 rounded-md font-bold text-xs bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30">
+                        {r.grade}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      {r.is_finalized ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-500 font-bold">
+                          <Lock className="w-3 h-3" /> Finalized
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-amber-500 font-bold">Draft / Editable</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* CBT TESTS VIEW */}
+      {activeTab === "cbt" && (
+      <>
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-in-up stagger-2">
         <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-purple-500/30 transition-all duration-500 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] p-5 rounded-3xl shadow-xl">
@@ -437,6 +710,8 @@ export default function OnlineExams() {
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* CREATE EXAM MODAL */}
       {isCreateModalOpen && (

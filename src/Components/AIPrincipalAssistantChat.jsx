@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
-import { supabase } from "../supabaseClient";
+import { queryExecutiveAssistant } from "../utils/aiIntelligenceEngine";
 import {
   Sparkles,
   Bot,
@@ -80,74 +80,13 @@ export default function AIPrincipalAssistantChat() {
     setIsTyping(true);
 
     try {
-      // 2. Fetch live institutional context from Supabase or storage
-      let feeRecords = [];
-      let attendanceRecords = [];
-      let studentsList = [];
-
-      try {
-        const rawFees = localStorage.getItem(`erp_fee_ledger_${schoolId}`);
-        if (rawFees) feeRecords = JSON.parse(rawFees);
-
-        const rawAtt = localStorage.getItem(`erp_attendance_${schoolId}_${new Date().toISOString().split("T")[0]}`);
-        if (rawAtt) attendanceRecords = JSON.parse(rawAtt);
-
-        const rawDir = localStorage.getItem(`erp_directory_${schoolId}`);
-        if (rawDir) studentsList = JSON.parse(rawDir);
-      } catch {}
-
-      // Optional: Hook into Supabase Edge Function if deployed
-      // const edgeResponse = await supabase.functions.invoke("executive-ai-assistant", {
-      //   body: { prompt: cleanPrompt, schoolId, role: userRole }
-      // });
-
-      // Artificial cognitive processing delay for realistic fluid micro-interaction
-      await new Promise((resolve) => setTimeout(resolve, 650));
-
-      // 3. Intelligent Query Routing
-      let responseText = "";
-      const lower = cleanPrompt.toLowerCase();
-
-      if (lower.includes("lowest attendance") || lower.includes("attendance")) {
-        responseText = `📊 **Attendance Telemetry Analysis (Term 2026-27):**\n\n` +
-          `• **Lowest Batch:** **Class 9-B** has the lowest recorded attendance this week at **78.4%** (4 scholars below statutory 75%).\n` +
-          `• **Highest Batch:** **Class 10-ICSE** leads with **96.2%** punctuality.\n` +
-          `• **Institutional Average:** Campus-wide student attendance is currently **91.8%**.\n\n` +
-          `💡 *Executive Recommendation:* Consider scheduling an advisory notice to Class 9-B parents via the School WhatsApp Gateway.`;
-      } else if (lower.includes("fee default") || lower.includes("overdue") || lower.includes("fee")) {
-        const totalDue = feeRecords.reduce((sum, f) => {
-          const s = (f.status || "").toLowerCase();
-          return s === "pending" || s === "due" || s === "unpaid" ? sum + Number(f.amount || 0) : sum;
-        }, 342000);
-
-        responseText = `💰 **Fee Collection & Default Ledger Summary:**\n\n` +
-          `• **Total Outstanding Overdue:** **₹${totalDue.toLocaleString("en-IN")}** across active batches.\n` +
-          `• **High-Exposure Default Cases:** 8 students have cumulative balances exceeding ₹25,000.\n` +
-          `• **Current Collection Velocity:** 78.5% of projected monthly term fees have been reconciled via Razorpay & Bank NEFT.\n\n` +
-          `⚡ *Immediate Action:* Automated payment link reminders can be dispatched from the Accountant Command Center.`;
-      } else if (lower.includes("at-risk") || lower.includes("risk") || lower.includes("warning")) {
-        responseText = `⚠️ **Early Warning Radar Scan (4 Critical Cases Flagged):**\n\n` +
-          `1. **Aman Verma (STU-108 - Class 10-A):** Attendance: 64% • Recent Test Avg: 32% (Dual Risk)\n` +
-          `2. **Riya Sen (STU-114 - Class 9-B):** Attendance: 68% • Recent Test Avg: 38% • Fee Due: ₹24,000\n` +
-          `3. **Kartik Nair (STU-121 - Class 10-ICSE):** Unit Test Average: 35% in Sciences\n\n` +
-          `🚨 *Protocol:* The Early Warning Radar has flagged these cases. You can trigger automated Parent WhatsApp Advisories with 1 click in the Risk Radar Widget.`;
-      } else if (lower.includes("collection") || lower.includes("today")) {
-        responseText = `📈 **Today's Financial Inflow Summary:**\n\n` +
-          `• **Online UPI / Gateway Receipts:** ₹48,500 (6 Transactions)\n` +
-          `• **Direct Bank Counter Cash Deposits:** ₹25,000 (2 Transactions)\n` +
-          `• **Total Reconciled Today:** **₹73,500**\n\n` +
-          `All transactions have generated idempotent receipts and are synchronized with Row-Level Security.`;
-      } else {
-        responseText = `Executive analysis complete for prompt: "${cleanPrompt}".\n\n` +
-          `• **Campus Node:** ${schoolId}\n` +
-          `• **Operational Status:** All modules (Attendance Registers, Fee Terminal, Online CBT Engine, Biometrics) are operating within normal operational bounds.\n\n` +
-          `Feel free to ask for deeper telemetry on faculty lesson plans, student attendance streaks, or balance reconciliations.`;
-      }
+      const result = await queryExecutiveAssistant(cleanPrompt, schoolId, userRole);
 
       const aiMsg = {
         id: `a_${Date.now()}`,
         role: "assistant",
-        text: responseText,
+        text: result.response,
+        source: result.source,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
 
