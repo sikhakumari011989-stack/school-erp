@@ -5,6 +5,8 @@ import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import NoticeBanner from "../Components/NoticeBanner";
 import CampusPulseCard from "../Components/CampusPulseCard";
+import AttendanceStreak from "../Components/AttendanceStreak";
+import RecentTestScores from "../Components/RecentTestScores";
 import { generateReportCardPDF } from "../utils/pdfGenerator";
 
 export default function StudentDashboard() {
@@ -685,6 +687,12 @@ export default function StudentDashboard() {
             </div>
           </div>
 
+        </div>
+
+        {/* GAMIFIED ATTENDANCE STREAK LEADERBOARD & RECENT CLASS TEST EVALUATIONS */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 my-8">
+          <AttendanceStreak studentRoll={studentRoll} />
+          <RecentTestScores studentRoll={studentRoll} />
         </div>
 
         {/* 4. HONOR CREST & MERIT LEDGER + QUICK EXPANDED ACCESS */}

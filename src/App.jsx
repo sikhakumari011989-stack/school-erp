@@ -47,6 +47,8 @@ import StaffMessenger from "./pages/StaffMessenger";
 import ExpenseManagerPage from "./pages/ExpenseManager";
 import OfflineBanner from "./Components/OfflineBanner";
 import ErrorBoundary from "./Components/ErrorBoundary";
+import CommandPalette from "./Components/CommandPalette";
+import AIPrincipalAssistantChat from "./Components/AIPrincipalAssistantChat";
 import { SentryErrorBoundary, initSentry } from "./telemetry/sentry";
 
 // Initialize Sentry Telemetry for production observability
@@ -176,6 +178,12 @@ const AppLayout = ({ children }) => {
           </button>
         </div>
       )}
+
+      {/* UNIVERSAL GLOBAL COMMAND PALETTE (Ctrl + K) */}
+      <CommandPalette />
+
+      {/* FLOATING AI PRINCIPAL ASSISTANT COPILOT */}
+      {!isPublicPage && <AIPrincipalAssistantChat />}
     </div>
   );
 };

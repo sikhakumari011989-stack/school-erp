@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useToast } from "../context/ToastContext";
 import { useAppContext } from "../context/AppContext";
 import CampusPulseCard from "../Components/CampusPulseCard";
+import SchoolCalendar from "../Components/SchoolCalendar";
 import {
   getCalendarEvents,
   saveCalendarEvents,
@@ -198,6 +199,9 @@ export default function AcademicCalendar() {
 
       {/* Live Campus Pulse Preview */}
       <CampusPulseCard schoolCode={schoolCode} />
+
+      {/* Global Interactive Academic Calendar Grid */}
+      <SchoolCalendar viewMode="global" className="mb-8" />
 
       {/* Two Column Layout: Add Event Form & Calendar Directory */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

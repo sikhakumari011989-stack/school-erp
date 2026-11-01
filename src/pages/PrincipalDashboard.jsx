@@ -43,6 +43,7 @@ import OnboardingWizard from "../Components/OnboardingWizard";
 import AcademicRolloverModal from "../Components/AcademicRolloverModal";
 import PrincipalAssistant from "../Components/PrincipalAssistant";
 import OperationalApprovalInbox from "../Components/OperationalApprovalInbox";
+import RiskRadarWidget from "../Components/RiskRadarWidget";
 import { getNotices, publishNotice, deleteNotice } from "../utils/noticeService";
 import { logSecurityAction } from "../utils/auditLogger";
 
@@ -1373,6 +1374,9 @@ export default function PrincipalDashboard() {
                     </div>
                   );
                 })()}
+
+                {/* STUDENT EARLY WARNING SYSTEM (PROACTIVE RADAR) */}
+                <RiskRadarWidget />
 
                 {/* OPERATIONAL APPROVAL INBOX & SCOPED NATURAL LANGUAGE ASSISTANT */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up stagger-2">

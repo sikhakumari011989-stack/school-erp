@@ -17,6 +17,7 @@ import NonTeachingStaffManager from "../Components/NonTeachingStaffManager";
 import FeeStructureConfigurator from "../Components/FeeStructureConfigurator";
 import BroadcastManager from "../Components/BroadcastManager";
 import ComprehensiveMemberModal from "../Components/ComprehensiveMemberModal";
+import RiskRadarWidget from "../Components/RiskRadarWidget";
 import { buildStandardErpEmail } from "./Login";
 import { getNextMemberId, getDefaultSchoolDirectory } from "../utils/idGenerator";
 import { enrollMemberInCloud, fetchCloudDirectory, detectRoleFromId } from "../utils/cloudSyncService";
@@ -676,6 +677,9 @@ export default function TrusteeDashboard() {
 
         {activeTab === "overview" ? (
           <div className="space-y-8">
+            {/* STUDENT EARLY WARNING SYSTEM (PROACTIVE RADAR) */}
+            <RiskRadarWidget />
+
             {/* METRICS GRID */}
             {(() => {
               const enrolledStudentsCount = students.filter(s => detectRoleFromId(s.roll_number || s.personal_code || s.role_code, s.role) === "student").length;

@@ -9,11 +9,22 @@ import NoticeBanner from "../Components/NoticeBanner";
 import CampusPulseCard from "../Components/CampusPulseCard";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
 import QRScannerModule from "../Components/QRScannerModule";
+import SchoolCalendar from "../Components/SchoolCalendar";
+import ClassTestEntry from "../Components/ClassTestEntry";
 
 export default function TeacherDashboard() {
   const { user } = useContext(AppContext);
   const { showToast } = useToast();
   const navigate = useNavigate();
+
+  const [stats, setStats] = useState({
+    classesCount: 0,
+    studentsCount: 0,
+    homeworkCount: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+  const [showTestModal, setShowTestModal] = useState(false);
 
   const handleGenerateSampleReport = () => {
     generateReportCardPDF({
@@ -31,14 +42,6 @@ export default function TeacherDashboard() {
     });
     showToast("Official Academic Transcript PDF generated successfully!", "success");
   };
-
-  const [stats, setStats] = useState({
-    classesCount: 0,
-    studentsCount: 0,
-    homeworkCount: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [showScannerModal, setShowScannerModal] = useState(false);
 
   useEffect(() => {
     const fetchTeacherStats = async () => {
@@ -156,6 +159,13 @@ export default function TeacherDashboard() {
       path: "/admin/calendar",
     },
     {
+      name: "Class Tests & Marks",
+      desc: "Rapid grading grid & publish test scores",
+      icon: "📝",
+      color: "from-cyan-500/20 to-blue-500/10 text-cyan-400 border-cyan-500/30",
+      action: "openTestEntry",
+    },
+    {
       name: "QR Gate & Library Scanner",
       desc: "Camera scan student ID cards for library issue / entry",
       icon: "📷",
@@ -192,10 +202,16 @@ export default function TeacherDashboard() {
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <button
+              onClick={() => setShowTestModal(true)}
+              className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border border-cyan-400/30 px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/20 cursor-pointer"
+            >
+              <span>📝</span> Record Class Test Marks
+            </button>
+            <button
               onClick={() => navigate("/teacher/classes")}
               className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/40 px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 shadow-lg cursor-pointer"
             >
-              <span>🗓️</span> Weekly Master Timetable
+              <span>🗓️</span> Weekly Timetable
             </button>
             <button
               onClick={() => setShowScannerModal(true)}
@@ -207,7 +223,7 @@ export default function TeacherDashboard() {
               onClick={handleGenerateSampleReport}
               className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/40 px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 shadow-lg cursor-pointer"
             >
-              <span>📜</span> Export Term Report Card (PDF)
+              <span>📜</span> Report Card (PDF)
             </button>
             <div className="text-right bg-slate-900/60 border border-slate-800 p-3 rounded-2xl hidden sm:block">
               <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Today's Date</p>
@@ -308,6 +324,8 @@ export default function TeacherDashboard() {
               onClick={() => {
                 if (action.action === "openScanner") {
                   setShowScannerModal(true);
+                } else if (action.action === "openTestEntry") {
+                  setShowTestModal(true);
                 } else if (action.path) {
                   navigate(action.path);
                 }
@@ -334,8 +352,23 @@ export default function TeacherDashboard() {
           ))}
         </div>
 
+        {/* INTERACTIVE ACADEMIC CALENDAR & ATTENDANCE ALERTS */}
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+            <h2 className="text-xl font-bold text-white tracking-tight">Faculty Academic Calendar & Attendance Alerts</h2>
+          </div>
+          <SchoolCalendar viewMode="teacher" assignedClass={user?.class_name || "Class 10-A"} />
+        </div>
+
         {/* STUDENT CERTIFICATE REQUESTS APPROVAL WORKFLOW */}
         <CertificateManagementCard mode="teacher" />
+
+        {/* RAPID-ENTRY CLASS TEST EVALUATION MODAL */}
+        <ClassTestEntry
+          isOpen={showTestModal}
+          onClose={() => setShowTestModal(false)}
+        />
 
         {/* QR SCANNER MODAL */}
         {showScannerModal && (

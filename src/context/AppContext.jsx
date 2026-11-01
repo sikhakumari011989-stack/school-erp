@@ -109,6 +109,25 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+function normalizeRole(role, roleCode) {
+  const code = String(roleCode || "").toUpperCase();
+  if (code.startsWith("PRIN")) return "principal";
+  if (code.startsWith("HOD") || code.startsWith("TR")) return "trustee";
+  if (code.startsWith("ACC")) return "accountant";
+  if (code.startsWith("TCH") || code.startsWith("FAC")) return "teacher";
+  if (code.startsWith("NON") || code.startsWith("NTS") || code.startsWith("STF") || code.startsWith("STAFF")) return "staff";
+  if (code.startsWith("ADM") || code.startsWith("SUPER")) return "admin";
+
+  const r = String(role || "").toLowerCase();
+  if (r === "principal" || r === "prin") return "principal";
+  if (r === "trustee" || r === "hod") return "trustee";
+  if (r === "accountant" || r === "acc") return "accountant";
+  if (r === "teacher" || r === "tch" || r === "fac") return "teacher";
+  if (r === "staff" || r === "non_teaching" || r === "nts") return "staff";
+  if (r === "admin" || r === "super_admin" || r === "superadmin") return "admin";
+  return "student";
+}
+
   // Reads the authenticated user's profile strictly from Supabase
   const loadProfile = async (currentSession) => {
     try {
@@ -133,6 +152,21 @@ export const AppProvider = ({ children }) => {
 
       setSession(currentSession);
 
+      // Read claims from both user_metadata and app_metadata (where RLS JWT stores role and school_id)
+      const userMeta = currentSession.user.user_metadata || {};
+      const appMeta = currentSession.user.app_metadata || {};
+      const combinedMeta = { ...userMeta, ...appMeta };
+
+      // Check existing cached session to prevent race downgrades
+      const cached = (() => {
+        try {
+          const s = localStorage.getItem("erp_session_user");
+          return s ? JSON.parse(s) : null;
+        } catch {
+          return null;
+        }
+      })();
+
       // Fetch user profile from Supabase profiles table
       const { data: profile, error } = await supabase
         .from("profiles")
@@ -141,14 +175,23 @@ export const AppProvider = ({ children }) => {
         .maybeSingle();
 
       if (profile && !error) {
+        const detectedRole = normalizeRole(profile.role, profile.role_code || combinedMeta.role_code);
+        const resolvedRole =
+          cached &&
+          (cached.id === currentSession.user.id || cached.authUid === currentSession.user.id) &&
+          cached.role &&
+          cached.role !== "student"
+            ? cached.role
+            : detectedRole;
+
         const userObj = {
           id: profile.id,
-          name: profile.full_name || currentSession.user.email?.split("@")[0] || "User",
-          role: profile.role || "student",
-          role_code: profile.role_code || "STU",
-          school_id: profile.school_id || "default-school-node",
-          institution_code: profile.schools?.code || resolveTenantCode(),
-          institution_name: profile.schools?.name || "Academic Campus",
+          name: profile.full_name || combinedMeta.full_name || combinedMeta.name || currentSession.user.email?.split("@")[0] || "User",
+          role: resolvedRole,
+          role_code: profile.role_code || combinedMeta.role_code || "STU",
+          school_id: profile.school_id || combinedMeta.school_id || "default-school-node",
+          institution_code: profile.schools?.code || combinedMeta.institution_code || resolveTenantCode(),
+          institution_name: profile.schools?.name || combinedMeta.institution_name || "Academic Campus",
           email: currentSession.user.email,
           authUid: currentSession.user.id,
         };
@@ -159,16 +202,25 @@ export const AppProvider = ({ children }) => {
           loadTenantDetails(profile.schools.code);
         }
       } else {
-        // Fallback: Check metadata on Supabase Auth user
-        const meta = currentSession.user.user_metadata || {};
+        // Fallback: Check metadata on Supabase Auth user (app_metadata takes precedence for RLS)
+        const metaRole = combinedMeta.role || combinedMeta.role_code;
+        const detectedRole = normalizeRole(metaRole, combinedMeta.role_code);
+        const resolvedRole =
+          cached &&
+          (cached.id === currentSession.user.id || cached.authUid === currentSession.user.id) &&
+          cached.role &&
+          cached.role !== "student"
+            ? cached.role
+            : detectedRole;
+
         const userObj = {
           id: currentSession.user.id,
-          name: meta.full_name || currentSession.user.email?.split("@")[0] || "Authenticated Member",
-          role: meta.role || "student",
-          role_code: meta.role_code || "MEMBER",
-          school_id: meta.school_id || "default-school-node",
-          institution_code: meta.institution_code || resolveTenantCode(),
-          institution_name: meta.institution_name || "Academic Campus",
+          name: combinedMeta.full_name || combinedMeta.name || currentSession.user.email?.split("@")[0] || "Authenticated Member",
+          role: resolvedRole,
+          role_code: combinedMeta.role_code || "MEMBER",
+          school_id: combinedMeta.school_id || "default-school-node",
+          institution_code: combinedMeta.institution_code || resolveTenantCode(),
+          institution_name: combinedMeta.institution_name || "Academic Campus",
           email: currentSession.user.email,
           authUid: currentSession.user.id,
         };
@@ -253,10 +305,14 @@ export const AppProvider = ({ children }) => {
       console.warn("IndexedDB offline queue purge notice:", idbErr);
     }
 
-    // 1. Explicitly purge localStorage & sessionStorage to guarantee zero cross-user data leakage on shared devices
+    // 1. Explicitly purge localStorage & sessionStorage, preserving theme preference
     try {
+      const savedTheme = localStorage.getItem("erp_theme_mode");
       localStorage.clear();
       sessionStorage.clear();
+      if (savedTheme) {
+        localStorage.setItem("erp_theme_mode", savedTheme);
+      }
     } catch (e) {
       console.warn("Storage clear error:", e);
     }

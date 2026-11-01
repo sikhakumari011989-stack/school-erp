@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
+import SchoolCalendar from "../Components/SchoolCalendar";
 
 export default function StudentCalendar() {
   const { user } = useContext(AppContext);
@@ -102,6 +103,14 @@ export default function StudentCalendar() {
           </div>
           <div className="text-4xl">🏫</div>
         </div>
+
+        {/* INTERACTIVE MONTHLY STUDENT CALENDAR & DAILY ATTENDANCE STATUS */}
+        <SchoolCalendar
+          viewMode="student"
+          studentRoll={user?.role_code || user?.roll_number || user?.personal_code}
+          assignedClass={user?.class_name || "Class 10-A"}
+          className="mb-8"
+        />
 
         {/* EVENTS LIST */}
         <div className="bg-[#1E293B] border border-slate-700 rounded-3xl shadow-2xl overflow-hidden">

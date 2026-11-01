@@ -3,6 +3,7 @@ import { AppContext } from "../context/AppContext";
 import { EduSaaSVectorEmblem } from "./BrandLogo";
 import { getPendingQueueCount, syncOfflineQueue } from "../utils/offlineSync";
 import ThemeToggle from "./ThemeToggle";
+import { Search } from "lucide-react";
 
 /**
  * Top Institutional Navigation Bar - Voyager Tier
@@ -125,6 +126,20 @@ export default function Navbar({ onMenuToggle, title, subtitle, className = "" }
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Universal Command Palette Trigger (Ctrl + K) */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-cyan-500/40 text-xs font-semibold transition-all shadow-sm cursor-pointer"
+          title="Search anything across Academic OS (Ctrl + K)"
+        >
+          <Search className="w-3.5 h-3.5 text-cyan-500" />
+          <span className="hidden md:inline">Search ERP...</span>
+          <kbd className="hidden sm:inline-flex text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700">
+            Ctrl+K
+          </kbd>
+        </button>
+
         {/* Stealth Theme Toggle */}
         <ThemeToggle />
 
