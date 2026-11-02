@@ -1,4 +1,4 @@
-import { supabase } from "../supabaseClient";
+import { supabase } from "../supabaseClient.js";
 
 /**
  * AI SCHOOL INTELLIGENCE & EXECUTIVE COPILOT ENGINE
@@ -8,7 +8,6 @@ import { supabase } from "../supabaseClient";
 
 export async function fetchLiveInstitutionalTelemetry(schoolId) {
   const cleanId = (schoolId || "CAMPUS-01").trim().toUpperCase();
-  const today = new Date().toISOString().split("T")[0];
 
   let students = [];
   let teachers = [];
@@ -78,10 +77,10 @@ export async function fetchLiveInstitutionalTelemetry(schoolId) {
 
   const overallAttendanceRate = totalAttMarked > 0 
     ? Math.round((totalAttPresent / totalAttMarked) * 100) 
-    : 91.5; // Benchmark institutional baseline
+    : 0;
 
-  let lowestClass = { name: "Class 9-B", rate: 78.4 };
-  let highestClass = { name: "Class 10-ICSE", rate: 96.2 };
+  let lowestClass = { name: "N/A", rate: 0 };
+  let highestClass = { name: "N/A", rate: 0 };
 
   const classRateEntries = Object.entries(classAttendanceMap).map(([cls, stat]) => ({
     name: cls,
@@ -124,69 +123,50 @@ export async function fetchLiveInstitutionalTelemetry(schoolId) {
     if (s.due >= 25000) highRiskDefaultCount += 1;
   });
 
-  // Provide realistic defaults if school has no transactions yet
-  if (totalFeesBilled === 0) {
-    totalFeesBilled = 1250000;
-    totalFeesCollected = 980000;
-    totalFeesOverdue = 270000;
-    highRiskDefaultCount = 6;
-  }
-
   const collectionVelocity = totalFeesBilled > 0 
     ? Math.round((totalFeesCollected / totalFeesBilled) * 100) 
-    : 78;
+    : 0;
 
-  // 5. Early Warning Radar Identification (Attendance < 75% AND Marks < 40%)
-  const earlyWarningStudents = [
-    {
-      id: "risk_1",
-      name: "Aman Verma",
-      roll_number: "STU-108",
-      class_name: "Class 10-A",
-      attendanceRate: 64,
-      testAverage: 32,
-      feeOverdue: 18500,
-      parentPhone: "+91 98201 44820",
-      riskLevel: "CRITICAL",
-      riskScore: 92,
-      primaryReason: "Dual Risk: Attendance 64% (<75%) and Unit Test Avg 32% (<40%)",
-    },
-    {
-      id: "risk_2",
-      name: "Riya Sen",
-      roll_number: "STU-114",
-      class_name: "Class 9-B",
-      attendanceRate: 68,
-      testAverage: 38,
-      feeOverdue: 24000,
-      parentPhone: "+91 98202 88412",
-      riskLevel: "CRITICAL",
-      riskScore: 88,
-      primaryReason: "Chronic Absenteeism (68%) and Score Drop in Mathematics",
-    },
-    {
-      id: "risk_3",
-      name: "Kartik Nair",
-      roll_number: "STU-121",
-      class_name: "Class 10-ICSE",
-      attendanceRate: 71,
-      testAverage: 35,
-      feeOverdue: 12000,
-      parentPhone: "+91 98203 11984",
-      riskLevel: "HIGH",
-      riskScore: 78,
-      primaryReason: "Physics & Chemistry Unit Test Failures (<40%)",
-    },
-  ];
+  // 5. Early Warning Radar Identification (Attendance < 75% OR Test Marks < 40%)
+  const earlyWarningStudents = [];
+  students.forEach((stu) => {
+    const sId = stu.id || stu.roll_number;
+    const stuAtt = attendance.filter((a) => (a.student_id === sId || a.student_id === stu.roll_number));
+    const attPresent = stuAtt.filter((a) => String(a.status).toLowerCase() === "present").length;
+    const attRate = stuAtt.length > 0 ? Math.round((attPresent / stuAtt.length) * 100) : null;
 
-  const ptr = teachers.length > 0 ? (students.length / teachers.length).toFixed(1) : "24.5";
+    const stuScores = testScores.filter((s) => s.student_id === sId || s.student_id === stu.roll_number);
+    const scoreAvg = stuScores.length > 0
+      ? Math.round(stuScores.reduce((sum, sc) => sum + Number(sc.marks_obtained || 0), 0) / stuScores.length)
+      : null;
+
+    const dueAmount = studentFeeAggregates[stu.roll_number]?.due || studentFeeAggregates[sId]?.due || 0;
+
+    if ((attRate !== null && attRate < 75) || (scoreAvg !== null && scoreAvg < 40)) {
+      earlyWarningStudents.push({
+        id: stu.id || `risk_${stu.roll_number}`,
+        name: stu.name || stu.full_name || "Enrolled Student",
+        roll_number: stu.roll_number || "STU-GEN",
+        class_name: stu.class_name || "General Batch",
+        attendanceRate: attRate !== null ? attRate : 0,
+        testAverage: scoreAvg !== null ? scoreAvg : 0,
+        feeOverdue: dueAmount,
+        parentPhone: stu.phone || stu.guardian_phone || "Not on file",
+        riskLevel: (attRate !== null && attRate < 65) || (scoreAvg !== null && scoreAvg < 35) ? "CRITICAL" : "HIGH",
+        riskScore: Math.round(100 - ((attRate || 50) * 0.5 + (scoreAvg || 50) * 0.5)),
+        primaryReason: `${attRate !== null && attRate < 75 ? `Attendance ${attRate}% (<75%)` : ""}${attRate !== null && attRate < 75 && scoreAvg !== null && scoreAvg < 40 ? " & " : ""}${scoreAvg !== null && scoreAvg < 40 ? `Test Average ${scoreAvg}% (<40%)` : ""}`,
+      });
+    }
+  });
+
+  const ptr = teachers.length > 0 ? (students.length / teachers.length).toFixed(1) : "0.0";
 
   return {
     schoolId: cleanId,
     timestamp: new Date().toISOString(),
-    studentsCount: students.length || 450,
-    teachersCount: teachers.length || 28,
-    classesCount: classes.length || 16,
+    studentsCount: students.length,
+    teachersCount: teachers.length,
+    classesCount: classes.length,
     ptr,
     overallAttendanceRate,
     lowestClass,
@@ -210,7 +190,7 @@ export async function queryExecutiveAssistant(prompt, schoolId, userRole = "prin
   const lower = cleanPrompt.toLowerCase();
   const telemetry = await fetchLiveInstitutionalTelemetry(schoolId);
 
-  let responseText = "";
+  let responseText;
   const source = import.meta.env.VITE_AI_PROVIDER_API_KEY ? "gemini_api" : "deterministic_engine";
 
   if (lower.includes("attendance") || lower.includes("lowest attendance") || lower.includes("absent")) {

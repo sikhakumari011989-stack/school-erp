@@ -79,7 +79,7 @@ async function claimAndProcessJob() {
         if (!error && data) {
           claimedJob = Array.isArray(data) ? data[0] : data;
         }
-      } catch (rpcErr) {
+      } catch (_rpcErr) {
         // Fallback: Optimistic query if RPC is not present
         const { data: candidates } = await supabase
           .from("pdf_jobs")

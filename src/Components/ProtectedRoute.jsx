@@ -18,16 +18,14 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     return () => clearTimeout(timer);
   }, []);
 
-  // Synchronously read the active role from the freshly set session
-  // Prioritize localStorage so fresh 1-click role switches take immediate effect
+  // Read active authenticated session user
   const getFreshUser = () => {
+    if (user) return user;
     try {
-      const saved =
-        localStorage.getItem("erp_session_user") ||
-        localStorage.getItem("erp_demo_session");
+      const saved = localStorage.getItem("erp_session_user");
       if (saved) return JSON.parse(saved);
     } catch {}
-    return user || null;
+    return null;
   };
 
   const resolvedUser = getFreshUser();
@@ -48,36 +46,40 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If specific roles are required and user does not have required role (SuperAdmin has full access)
+  // If specific roles are required and user does not have required role
   if (allowedRoles && allowedRoles.length > 0) {
-    const rawRole = (resolvedUser.role || inferRoleFromCode(resolvedUser.role_code || resolvedUser.roll_number || resolvedUser.id) || "").toLowerCase();
+    const rawRole = (resolvedUser.role || inferRoleFromCode(resolvedUser.role_code || resolvedUser.roll_number || resolvedUser.id) || "").toUpperCase();
     const roleCode = String(resolvedUser.role_code || resolvedUser.id || "").toUpperCase();
+
+    const canonicalUserRole =
+      rawRole === "PRIN" || rawRole === "PRINCIPAL" ? "PRIN" :
+      rawRole === "HOD" || rawRole === "TRUSTEE" ? "HOD" :
+      rawRole === "ACC" || rawRole === "ACCOUNTANT" ? "ACC" :
+      rawRole === "TCH" || rawRole === "TEACHER" || rawRole === "FACULTY" ? "TCH" :
+      rawRole === "NTS" || rawRole === "STAFF" || rawRole === "NON_TEACHING" || rawRole === "NON-TEACHING" ? "NTS" :
+      rawRole === "ADM" || rawRole === "ADMIN" || rawRole === "SUPER_ADMIN" || rawRole === "SUPERADMIN" ? "PRIN" : "STU";
 
     const hasRole =
       allowedRoles.some((r) => {
-        const lowerR = r.toLowerCase();
-        if (lowerR === rawRole) return true;
+        const target = r.toUpperCase();
+        if (target === canonicalUserRole) return true;
+        if (target === rawRole) return true;
 
-        // Executive Cross-Administrative Access: Trustee (HOD) and Principal (PRIN)
-        if (
-          (lowerR === "trustee" || lowerR === "principal" || lowerR === "hod") &&
-          (rawRole === "trustee" || rawRole === "principal" || rawRole === "hod" || roleCode.startsWith("HOD-") || roleCode.startsWith("PRIN-") || roleCode.startsWith("TR-"))
-        ) {
+        // Executive Suite: HOD & PRIN cross-access
+        if ((target === "HOD" || target === "PRIN" || target === "TRUSTEE" || target === "PRINCIPAL") &&
+            (canonicalUserRole === "HOD" || canonicalUserRole === "PRIN" || roleCode.startsWith("HOD-") || roleCode.startsWith("PRIN-") || roleCode.startsWith("TR-"))) {
           return true;
         }
 
-        // Staff and Non-Teaching Staff (NTS)
-        if (
-          lowerR === "staff" &&
-          (rawRole === "staff" || rawRole === "non_teaching" || rawRole === "nts" || roleCode.startsWith("NTS-") || roleCode.startsWith("NON-") || roleCode.startsWith("STF-"))
-        ) {
+        // Staff / NTS
+        if ((target === "NTS" || target === "STAFF" || target === "NON_TEACHING") &&
+            (canonicalUserRole === "NTS" || roleCode.startsWith("NTS-") || roleCode.startsWith("NON-") || roleCode.startsWith("STF-"))) {
           return true;
         }
 
         return false;
       }) ||
-      rawRole === "admin" ||
-      rawRole === "super_admin" ||
+      canonicalUserRole === "PRIN" ||
       roleCode.startsWith("ADM-") ||
       roleCode.startsWith("SUPER-");
 

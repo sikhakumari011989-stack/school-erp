@@ -19,10 +19,10 @@ test.describe("Tuition ERP - Multi-Tenant Institutional E2E Lifecycle", () => {
     // ------------------------------------------------------------------------
     // STEP 1: LOGIN AS HOD / TRUSTEE
     // ------------------------------------------------------------------------
-    await page.fill('input[placeholder*="OASIS-TUTORIALS"]', "OASIS-TUTORIALS");
-    await page.fill('input[placeholder*="HOD-01"]', "HOD-01");
-    await page.fill('input[type="password"]', "password123");
-    await page.click('button[type="submit"]');
+    await page.fill('[data-testid="input-institution-code"]', "OASIS-TUTORIALS");
+    await page.fill('[data-testid="input-personal-code"]', "HOD-01");
+    await page.fill('[data-testid="input-password"]', "password123");
+    await page.click('[data-testid="btn-login-submit"]');
 
     // Confirm navigation to Trustee Command Center
     await expect(page).toHaveURL(/\/trustee\/dashboard/, { timeout: 15000 });
@@ -54,10 +54,10 @@ test.describe("Tuition ERP - Multi-Tenant Institutional E2E Lifecycle", () => {
     // ------------------------------------------------------------------------
     // STEP 4: LOGIN AS FACULTY TEACHER
     // ------------------------------------------------------------------------
-    await page.fill('input[placeholder*="OASIS-TUTORIALS"]', "OASIS-TUTORIALS");
-    await page.fill('input[placeholder*="HOD-01"]', "TCH-01");
-    await page.fill('input[type="password"]', "password123");
-    await page.click('button[type="submit"]');
+    await page.fill('[data-testid="input-institution-code"]', "OASIS-TUTORIALS");
+    await page.fill('[data-testid="input-personal-code"]', "TCH-01");
+    await page.fill('[data-testid="input-password"]', "password123");
+    await page.click('[data-testid="btn-login-submit"]');
 
     await expect(page).toHaveURL(/\/teacher\/dashboard/, { timeout: 15000 });
     await expect(page.locator("h1")).toContainText(/Welcome back/i);
@@ -96,10 +96,10 @@ test.describe("Tuition ERP - Multi-Tenant Institutional E2E Lifecycle", () => {
     await page.locator('button:has-text("Sign Out")').click();
     await expect(page).toHaveURL(/\/login/, { timeout: 10000 });
 
-    await page.fill('input[placeholder*="OASIS-TUTORIALS"]', "OASIS-TUTORIALS");
-    await page.fill('input[placeholder*="HOD-01"]', "STU-1024");
-    await page.fill('input[type="password"]', "password123");
-    await page.click('button[type="submit"]');
+    await page.fill('[data-testid="input-institution-code"]', "OASIS-TUTORIALS");
+    await page.fill('[data-testid="input-personal-code"]', "STU-1024");
+    await page.fill('[data-testid="input-password"]', "password123");
+    await page.click('[data-testid="btn-login-submit"]');
 
     await expect(page).toHaveURL(/\/student\/dashboard/, { timeout: 15000 });
     await expect(page.locator("h1")).toContainText(/Welcome Back/i);
@@ -110,8 +110,9 @@ test.describe("Tuition ERP - Multi-Tenant Institutional E2E Lifecycle", () => {
 
   test("Multi-Tenant Subdomain & White-Label Resolution", async ({ page }) => {
     await page.goto("/login?tenant=OASIS-TUTORIALS");
-    const institutionInput = page.locator('input[placeholder*="OASIS-TUTORIALS"]');
+    const institutionInput = page.locator('[data-testid="input-institution-code"]');
     await expect(institutionInput).toBeVisible();
+    await expect(institutionInput).toHaveValue("OASIS-TUTORIALS");
     await expect(page).toHaveTitle(/Tuition ERP/i);
   });
 

@@ -28,41 +28,30 @@ function resolveTenantCode() {
       return parts[0].toUpperCase();
     }
 
-    // 3. Check LocalStorage
+    // 3. Check LocalStorage active tenant
     const saved = localStorage.getItem("erp_active_tenant");
     if (saved) return saved.trim().toUpperCase();
+
+    // 4. Check locally registered institutions
+    const rawSchools = localStorage.getItem("erp_registered_schools");
+    if (rawSchools) {
+      const list = JSON.parse(rawSchools);
+      if (Array.isArray(list) && list.length > 0 && list[0]?.code) {
+        return list[0].code.trim().toUpperCase();
+      }
+    }
   } catch (err) {
     console.warn("Tenant resolution check:", err);
   }
 
-  // 4. Fallback Default
+  // 5. Unconfigured Fallback
   return "CAMPUS-01";
 }
 
 export const AppProvider = ({ children }) => {
   const [session, setSession] = useState(null);
-  const [user, setUser] = useState(() => {
-    try {
-      const saved =
-        localStorage.getItem("erp_session_user") ||
-        localStorage.getItem("erp_demo_session");
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  // If local session already exists, start with loading=false for 0ms dashboard render
-  const [loading, setLoading] = useState(() => {
-    try {
-      const saved =
-        localStorage.getItem("erp_session_user") ||
-        localStorage.getItem("erp_demo_session");
-      return saved ? false : true;
-    } catch {
-      return true;
-    }
-  });
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [tenant, setTenant] = useState({
     id: "campus-default",
@@ -109,128 +98,111 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-function normalizeRole(role, roleCode) {
-  const code = String(roleCode || "").toUpperCase();
-  if (code.startsWith("PRIN")) return "principal";
-  if (code.startsWith("HOD") || code.startsWith("TR")) return "trustee";
-  if (code.startsWith("ACC")) return "accountant";
-  if (code.startsWith("TCH") || code.startsWith("FAC")) return "teacher";
-  if (code.startsWith("NON") || code.startsWith("NTS") || code.startsWith("STF") || code.startsWith("STAFF")) return "staff";
-  if (code.startsWith("ADM") || code.startsWith("SUPER")) return "admin";
+  /**
+   * Normalizes any incoming role to Academic OS canonical roles:
+   * 'PRIN' | 'HOD' | 'ACC' | 'TCH' | 'STU' | 'NTS'
+   */
+  function normalizeRole(role, roleCode) {
+    const code = String(roleCode || "").toUpperCase();
+    if (code.startsWith("PRIN")) return "PRIN";
+    if (code.startsWith("HOD") || code.startsWith("TR")) return "HOD";
+    if (code.startsWith("ACC")) return "ACC";
+    if (code.startsWith("TCH") || code.startsWith("FAC")) return "TCH";
+    if (code.startsWith("NON") || code.startsWith("NTS") || code.startsWith("STF") || code.startsWith("STAFF")) return "NTS";
+    if (code.startsWith("ADM") || code.startsWith("SUPER")) return "PRIN";
 
-  const r = String(role || "").toLowerCase();
-  if (r === "principal" || r === "prin") return "principal";
-  if (r === "trustee" || r === "hod") return "trustee";
-  if (r === "accountant" || r === "acc") return "accountant";
-  if (r === "teacher" || r === "tch" || r === "fac") return "teacher";
-  if (r === "staff" || r === "non_teaching" || r === "nts") return "staff";
-  if (r === "admin" || r === "super_admin" || r === "superadmin") return "admin";
-  return "student";
-}
+    const r = String(role || "").toUpperCase();
+    if (r === "PRIN" || r === "PRINCIPAL" || r === "ADMIN" || r === "SUPER_ADMIN" || r === "SUPERADMIN") return "PRIN";
+    if (r === "HOD" || r === "TRUSTEE") return "HOD";
+    if (r === "ACC" || r === "ACCOUNTANT") return "ACC";
+    if (r === "TCH" || r === "TEACHER" || r === "FACULTY" || r === "FAC") return "TCH";
+    if (r === "NTS" || r === "STAFF" || r === "NON_TEACHING" || r === "NON-TEACHING") return "NTS";
+    if (r === "STU" || r === "STUDENT" || r === "PARENT") return "STU";
+    return "STU";
+  }
 
   // Reads the authenticated user's profile strictly from Supabase
   const loadProfile = async (currentSession) => {
     try {
       if (!currentSession?.user) {
         setSession(null);
-        if (typeof window !== "undefined" && window.location.search.includes("signedOut=true")) {
-          setUser(null);
-          return;
-        }
-        const saved =
-          localStorage.getItem("erp_session_user") ||
-          localStorage.getItem("erp_demo_session");
-        if (saved) {
-          try {
-            setUser(JSON.parse(saved));
-          } catch {
-            setUser(null);
-          }
-        }
+        setUser(null);
         return;
       }
 
       setSession(currentSession);
 
-      // Read claims from both user_metadata and app_metadata (where RLS JWT stores role and school_id)
-      const userMeta = currentSession.user.user_metadata || {};
+      // Server-controlled app_metadata is the authoritative identity authority for RLS
       const appMeta = currentSession.user.app_metadata || {};
-      const combinedMeta = { ...userMeta, ...appMeta };
+      const userMeta = currentSession.user.user_metadata || {};
 
-      // Check existing cached session to prevent race downgrades
-      const cached = (() => {
-        try {
-          const s = localStorage.getItem("erp_session_user");
-          return s ? JSON.parse(s) : null;
-        } catch {
-          return null;
+      let profileData = null;
+      try {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("id, role, role_code, full_name, school_id, schools ( code, name )")
+          .eq("id", currentSession.user.id)
+          .maybeSingle();
+
+        if (!error && profile) {
+          profileData = profile;
         }
-      })();
+      } catch (profErr) {
+        console.warn("Supabase profile read notice:", profErr);
+      }
 
-      // Fetch user profile from Supabase profiles table
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("id, role, role_code, full_name, school_id, schools ( code, name )")
-        .eq("id", currentSession.user.id)
-        .maybeSingle();
+      // Authoritative role: prioritize server app_metadata, then profiles table, then user_metadata
+      const authoritativeRole =
+        appMeta.role ||
+        profileData?.role ||
+        userMeta.role ||
+        "STU";
 
-      if (profile && !error) {
-        const detectedRole = normalizeRole(profile.role, profile.role_code || combinedMeta.role_code);
-        const resolvedRole =
-          cached &&
-          (cached.id === currentSession.user.id || cached.authUid === currentSession.user.id) &&
-          cached.role &&
-          cached.role !== "student"
-            ? cached.role
-            : detectedRole;
+      const authoritativeRoleCode =
+        appMeta.role_code ||
+        profileData?.role_code ||
+        userMeta.role_code ||
+        "";
 
-        const userObj = {
-          id: profile.id,
-          name: profile.full_name || combinedMeta.full_name || combinedMeta.name || currentSession.user.email?.split("@")[0] || "User",
-          role: resolvedRole,
-          role_code: profile.role_code || combinedMeta.role_code || "STU",
-          school_id: profile.school_id || combinedMeta.school_id || "default-school-node",
-          institution_code: profile.schools?.code || combinedMeta.institution_code || resolveTenantCode(),
-          institution_name: profile.schools?.name || combinedMeta.institution_name || "Academic Campus",
-          email: currentSession.user.email,
-          authUid: currentSession.user.id,
-        };
-        setUser(userObj);
-        localStorage.setItem("erp_session_user", JSON.stringify(userObj));
+      const canonicalRole = normalizeRole(authoritativeRole, authoritativeRoleCode);
 
-        if (profile.schools?.code) {
-          loadTenantDetails(profile.schools.code);
-        }
-      } else {
-        // Fallback: Check metadata on Supabase Auth user (app_metadata takes precedence for RLS)
-        const metaRole = combinedMeta.role || combinedMeta.role_code;
-        const detectedRole = normalizeRole(metaRole, combinedMeta.role_code);
-        const resolvedRole =
-          cached &&
-          (cached.id === currentSession.user.id || cached.authUid === currentSession.user.id) &&
-          cached.role &&
-          cached.role !== "student"
-            ? cached.role
-            : detectedRole;
+      const tenantCode =
+        appMeta.school_id ||
+        profileData?.schools?.code ||
+        profileData?.school_id ||
+        userMeta.school_id ||
+        resolveTenantCode();
 
-        const userObj = {
-          id: currentSession.user.id,
-          name: combinedMeta.full_name || combinedMeta.name || currentSession.user.email?.split("@")[0] || "Authenticated Member",
-          role: resolvedRole,
-          role_code: combinedMeta.role_code || "MEMBER",
-          school_id: combinedMeta.school_id || "default-school-node",
-          institution_code: combinedMeta.institution_code || resolveTenantCode(),
-          institution_name: combinedMeta.institution_name || "Academic Campus",
-          email: currentSession.user.email,
-          authUid: currentSession.user.id,
-        };
-        setUser(userObj);
-        localStorage.setItem("erp_session_user", JSON.stringify(userObj));
+      const fullName =
+        profileData?.full_name ||
+        userMeta.full_name ||
+        userMeta.name ||
+        currentSession.user.email?.split("@")[0] ||
+        "Authenticated Member";
+
+      const userObj = {
+        id: currentSession.user.id,
+        name: fullName,
+        full_name: fullName,
+        role: canonicalRole,
+        role_code: authoritativeRoleCode || canonicalRole,
+        school_id: tenantCode,
+        institution_code: tenantCode,
+        institution_name: profileData?.schools?.name || userMeta.institution_name || "Academic Campus",
+        email: currentSession.user.email,
+        authUid: currentSession.user.id,
+      };
+
+      setUser(userObj);
+      localStorage.setItem("erp_session_user", JSON.stringify(userObj));
+
+      if (tenantCode) {
+        loadTenantDetails(tenantCode);
       }
     } catch (err) {
-      console.warn("Error loading Supabase profile, preserving local cache:", err);
+      console.warn("Error resolving Supabase session:", err);
+      setUser(null);
     } finally {
-      // Unconditionally clear loading state
       setLoading(false);
     }
   };
@@ -257,21 +229,14 @@ function normalizeRole(role, roleCode) {
     // 3. Listen to live Supabase Auth state changes (SIGN_IN, SIGN_OUT, TOKEN_REFRESH)
     const { data: listener } = supabase?.auth?.onAuthStateChange
       ? supabase.auth.onAuthStateChange((event, currentSession) => {
-          if (event === "SIGNED_OUT") {
+          if (event === "SIGNED_OUT" || !currentSession) {
             setSession(null);
             setUser(null);
-            return;
-          }
-          if (!currentSession) {
-            // Mobile Swipe-to-Refresh & Persistent Offline Local Session Protection:
-            // Do NOT overwrite user if local persistent session exists
-            const saved =
-              localStorage.getItem("erp_session_user") ||
-              localStorage.getItem("erp_demo_session");
-            if (!saved) {
-              setSession(null);
-              setUser(null);
-            }
+            try {
+              localStorage.removeItem("erp_session_user");
+              localStorage.removeItem("erp_demo_session");
+            } catch {}
+            setLoading(false);
             return;
           }
           loadProfile(currentSession);

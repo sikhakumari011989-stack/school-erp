@@ -22,11 +22,11 @@ export default function AttendanceStreak({
   const currentStudentName = user?.name || user?.full_name || "Scholar Member";
   const studentBatch = user?.class_name || "Class 10-A";
 
-  const [currentStreak, setCurrentStreak] = useState(14);
-  const [longestStreak, setLongestStreak] = useState(21);
-  const [attendanceRate, setAttendanceRate] = useState(96);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
+  const [attendanceRate, setAttendanceRate] = useState(0);
   const [leaderboard, setLeaderboard] = useState([]);
-  const [myRank, setMyRank] = useState(3);
+  const [myRank, setMyRank] = useState(1);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,18 +58,6 @@ export default function AttendanceStreak({
           } catch (e) {}
         }
 
-        // Fallback roster if empty to ensure competitive gamification is always live
-        if (batchStudents.length < 5) {
-          batchStudents = [
-            { roll_number: "STU-01", name: "Aarav Sharma", streak: 26, rate: 99.2 },
-            { roll_number: "STU-02", name: "Diya Patel", streak: 22, rate: 98.4 },
-            { roll_number: currentRoll, name: currentStudentName, streak: 18, rate: 96.8 },
-            { roll_number: "STU-04", name: "Rohan Deshmukh", streak: 15, rate: 95.0 },
-            { roll_number: "STU-05", name: "Ananya Iyer", streak: 13, rate: 94.2 },
-            { roll_number: "STU-06", name: "Kabir Khan", streak: 9, rate: 91.5 },
-          ];
-        }
-
         // 2. Fetch Recent Attendance Records
         let attendanceRecords = [];
         if (supabase) {
@@ -79,7 +67,7 @@ export default function AttendanceStreak({
               .select("date, records")
               .eq("school_id", schoolId)
               .order("date", { ascending: false })
-              .limit(30);
+              .limit(60);
             if (data) attendanceRecords = data;
           } catch (e) {}
         }
@@ -94,70 +82,78 @@ export default function AttendanceStreak({
           }
         } catch {}
 
-        // 3. Compute student's unbroken streak
-        let calculatedStreak = 0;
-        let totalPresent = 0;
-        let totalMarkedDays = 0;
-
-        if (attendanceRecords.length > 0) {
-          // Sort records descending by date
-          const sorted = [...attendanceRecords].sort((a, b) => b.date.localeCompare(a.date));
+        // Helper function to calculate unbroken streak for a given roll number
+        const computeStudentStreak = (roll) => {
+          let streak = 0;
+          let presentCount = 0;
+          let markedDays = 0;
           let streakBroken = false;
+
+          const sorted = [...attendanceRecords].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
           for (const day of sorted) {
             const list = day.records || [];
-            const studentEntry = list.find((r) => {
+            const entry = list.find((r) => {
               const rRoll = String(r.roll_number || r.student_id || r.id || "").trim().toUpperCase();
-              return rRoll === currentRoll;
+              return rRoll === roll;
             });
 
-            if (studentEntry) {
-              totalMarkedDays++;
-              const isPresent = (studentEntry.status || "present").toLowerCase() === "present";
+            if (entry) {
+              markedDays++;
+              const isPresent = (entry.status || "present").toLowerCase() === "present";
               if (isPresent) {
-                totalPresent++;
-                if (!streakBroken) {
-                  calculatedStreak++;
-                }
+                presentCount++;
+                if (!streakBroken) streak++;
               } else {
                 streakBroken = true;
               }
             }
           }
-        }
 
-        const effectiveStreak = calculatedStreak > 0 ? calculatedStreak : 14;
-        const effectiveRate = totalMarkedDays > 0 ? Math.round((totalPresent / totalMarkedDays) * 100) : 96;
+          const rate = markedDays > 0 ? Math.round((presentCount / markedDays) * 100) : 0;
+          return { streak, rate, markedDays };
+        };
 
-        // 4. Construct Leaderboard with Gamified Streaks
+        // 3. Compute student's unbroken streak
+        const currentStats = computeStudentStreak(currentRoll);
+        const effectiveStreak = currentStats.streak;
+        const effectiveRate = currentStats.rate;
+
+        // 4. Construct Leaderboard from real batch students
         const studentStreaks = batchStudents.map((s, idx) => {
           const roll = String(s.roll_number || s.personal_code || s.id || `STU-${idx + 1}`).trim().toUpperCase();
           const isCurrent = roll === currentRoll;
-          const sStreak = isCurrent
-            ? effectiveStreak
-            : (s.streak || Math.max(4, 28 - idx * 3));
-          const sRate = isCurrent
-            ? effectiveRate
-            : (s.rate || Math.min(100, 99.5 - idx * 1.2));
+          const stats = isCurrent ? currentStats : computeStudentStreak(roll);
 
           return {
             roll,
             name: s.name || s.full_name || `Scholar ${idx + 1}`,
-            streak: sStreak,
-            rate: parseFloat(Number(sRate).toFixed(1)),
+            streak: stats.streak,
+            rate: parseFloat(Number(stats.rate).toFixed(1)),
             isCurrent,
           };
         });
 
-        // Sort by streak descending
+        // Ensure current student is in the list
+        if (!studentStreaks.some((s) => s.isCurrent)) {
+          studentStreaks.push({
+            roll: currentRoll,
+            name: currentStudentName,
+            streak: effectiveStreak,
+            rate: parseFloat(Number(effectiveRate).toFixed(1)),
+            isCurrent: true,
+          });
+        }
+
+        // Sort by streak descending, then attendance rate
         studentStreaks.sort((a, b) => b.streak - a.streak || b.rate - a.rate);
 
         const currentRankIndex = studentStreaks.findIndex((s) => s.isCurrent);
-        const resolvedRank = currentRankIndex !== -1 ? currentRankIndex + 1 : 4;
+        const resolvedRank = currentRankIndex !== -1 ? currentRankIndex + 1 : 1;
 
         if (!isMounted) return;
         setCurrentStreak(effectiveStreak);
-        setLongestStreak(Math.max(effectiveStreak, 21));
+        setLongestStreak(effectiveStreak);
         setAttendanceRate(effectiveRate);
         setLeaderboard(studentStreaks.slice(0, 5));
         setMyRank(resolvedRank);
@@ -283,19 +279,24 @@ export default function AttendanceStreak({
 
         {/* Leaderboard Table / Cards */}
         <div className="space-y-2.5">
-          {leaderboard.map((student, index) => {
-            const rank = index + 1;
-            const isMe = student.isCurrent;
+          {leaderboard.length === 0 ? (
+            <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+              No attendance records logged for this class yet. Attendance logs will automatically compute active streaks!
+            </div>
+          ) : (
+            leaderboard.map((student, index) => {
+              const rank = index + 1;
+              const isMe = student.isCurrent;
 
-            return (
-              <div
-                key={student.roll}
-                className={`p-3 sm:p-3.5 rounded-2xl border transition-all duration-200 flex items-center justify-between gap-3 ${
-                  isMe
-                    ? "border-cyan-500/60 bg-cyan-500/10 dark:bg-cyan-500/15 shadow-md shadow-cyan-500/10 ring-1 ring-cyan-500/40"
-                    : "border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700"
-                }`}
-              >
+              return (
+                <div
+                  key={student.roll}
+                  className={`p-3 sm:p-3.5 rounded-2xl border transition-all duration-200 flex items-center justify-between gap-3 ${
+                    isMe
+                      ? "border-cyan-500/60 bg-cyan-500/10 dark:bg-cyan-500/15 shadow-md shadow-cyan-500/10 ring-1 ring-cyan-500/40"
+                      : "border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700"
+                  }`}
+                >
                 {/* Left: Rank & Avatar & Name */}
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="w-8 text-center text-base sm:text-lg font-black shrink-0">
@@ -334,7 +335,7 @@ export default function AttendanceStreak({
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
 
         {/* Current Student Position Banner (if outside top 5) */}

@@ -34,7 +34,7 @@ export default function FeeRiskRadar({ schoolCode = "CAMPUS-01" }) {
       const scored = students.map((st) => {
         const studentCode = (st.roll_number || st.id || "").toUpperCase();
         const studentName = st.name || st.full_name || "Scholar";
-        const total = Number(st.totalFees || 45000);
+        const total = Number(st.totalFees || st.total_fees || st.fee_amount || 0);
         const initialPaid = Number(st.paidFees || 0);
 
         // Find transactions for this student

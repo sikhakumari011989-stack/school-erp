@@ -18,63 +18,6 @@ import {
   Sparkles,
 } from "lucide-react";
 
-// Fallback high-risk cases if school has newly initialized data
-const DEFAULT_RISK_CASES = [
-  {
-    id: "risk_1",
-    name: "Aman Verma",
-    roll_number: "STU-108",
-    class_name: "Class 10-A",
-    attendanceRate: 64,
-    testAverage: 32,
-    feeOverdue: 18500,
-    parentPhone: "+91 98201 44820",
-    riskLevel: "CRITICAL",
-    riskScore: 92,
-    primaryReason: "Dual Failure: Attendance < 75% AND Test Marks < 40%",
-    hasMedicalAlert: true,
-  },
-  {
-    id: "risk_2",
-    name: "Riya Sen",
-    roll_number: "STU-114",
-    class_name: "Class 9-B",
-    attendanceRate: 68,
-    testAverage: 38,
-    feeOverdue: 24000,
-    parentPhone: "+91 98202 88412",
-    riskLevel: "CRITICAL",
-    riskScore: 88,
-    primaryReason: "Chronic Absenteeism & Mid-Term Score Drop",
-  },
-  {
-    id: "risk_3",
-    name: "Kartik Nair",
-    roll_number: "STU-121",
-    class_name: "Class 10-ICSE",
-    attendanceRate: 71,
-    testAverage: 35,
-    feeOverdue: 12000,
-    parentPhone: "+91 98203 11984",
-    riskLevel: "HIGH",
-    riskScore: 78,
-    primaryReason: "Physics & Chemistry Unit Test Failures (<40%)",
-  },
-  {
-    id: "risk_4",
-    name: "Zoya Shaikh",
-    roll_number: "STU-132",
-    class_name: "Class 8-A",
-    attendanceRate: 73,
-    testAverage: 39,
-    feeOverdue: 0,
-    parentPhone: "+91 98204 77219",
-    riskLevel: "HIGH",
-    riskScore: 74,
-    primaryReason: "Approaching Statutory 75% Attendance Threshold",
-  },
-];
-
 export default function RiskRadarWidget({ className = "" }) {
   const { user } = useContext(AppContext) || {};
   const { showToast } = useToast();
@@ -216,8 +159,8 @@ export default function RiskRadarWidget({ className = "" }) {
           }
         });
 
-        // Use scanned cases or default robust dataset
-        const finalCases = identifiedCases.length > 0 ? identifiedCases : DEFAULT_RISK_CASES;
+        // Use authentic scanned cases
+        const finalCases = identifiedCases;
 
         // Sort by risk score descending
         finalCases.sort((a, b) => b.riskScore - a.riskScore);
@@ -226,7 +169,7 @@ export default function RiskRadarWidget({ className = "" }) {
         setRiskCases(finalCases);
       } catch (err) {
         console.error("Early warning radar error:", err);
-        if (isMounted) setRiskCases(DEFAULT_RISK_CASES);
+        if (isMounted) setRiskCases([]);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -331,7 +274,20 @@ export default function RiskRadarWidget({ className = "" }) {
 
       {/* ACTIVE RISK CARDS LIST */}
       <div className="space-y-3.5">
-        {filteredCases.map((student) => {
+        {filteredCases.length === 0 ? (
+          <div className="p-8 text-center rounded-2xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20">
+            <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3 text-xl font-bold">
+              ✓
+            </div>
+            <h4 className="text-sm font-bold text-slate-800 dark:text-white">
+              Radar Clear — No At-Risk Scholars Flagged
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1">
+              All enrolled scholars are currently performing above the 75% attendance and 40% academic threshold.
+            </p>
+          </div>
+        ) : (
+          filteredCases.map((student) => {
           const isNotified = notifiedStudents[student.id];
           const isSending = sendingId === student.id;
           const isCritical = student.riskLevel === "CRITICAL";
@@ -453,7 +409,7 @@ export default function RiskRadarWidget({ className = "" }) {
               </div>
             </div>
           );
-        })}
+        }))}
       </div>
     </div>
   );

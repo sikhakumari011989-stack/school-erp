@@ -59,7 +59,11 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Invalid cryptographic signature." });
       }
     } else {
-      console.warn("[Razorpay Webhook] Signature header missing. Processing in sandbox mode.");
+      if (process.env.NODE_ENV === "production") {
+        console.error("[Razorpay Webhook] Missing required x-razorpay-signature in production.");
+        return res.status(401).json({ error: "Missing required signature header." });
+      }
+      console.warn("[Razorpay Webhook] Signature header missing. Processing in non-production sandbox mode.");
     }
 
     const event = typeof req.body === "object" ? req.body : JSON.parse(rawBody);
@@ -94,14 +98,17 @@ export default async function handler(req, res) {
 
       const supabase = createClient(supabaseUrl, supabaseKey);
 
-      // 5. Update Supabase fee_ledger table server-side
-      let updateQuery = supabase.from("fee_ledger").update({
-        status: "paid",
-        payment_mode: `Online (Razorpay ${payment.method || "Verified"})`,
-        razorpay_payment_id: paymentId,
-        verified_server_side: true,
-        verified_at: new Date().toISOString(),
-      });
+      // 5. Update Supabase fee_ledger table server-side with strict tenant isolation
+      let updateQuery = supabase
+        .from("fee_ledger")
+        .update({
+          status: "paid",
+          payment_mode: `Online (Razorpay ${payment.method || "Verified"})`,
+          razorpay_payment_id: paymentId,
+          verified_server_side: true,
+          verified_at: new Date().toISOString(),
+        })
+        .eq("school_id", schoolId);
 
       if (ledgerId) {
         updateQuery = updateQuery.eq("id", ledgerId);

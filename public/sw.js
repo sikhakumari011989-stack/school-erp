@@ -47,6 +47,11 @@ self.addEventListener("fetch", (event) => {
   // Ignore chrome-extension or non-HTTP requests
   if (!req.url.startsWith("http")) return;
 
+  // Network pass-through: Never intercept or cache serverless APIs or Supabase queries
+  if (url.pathname.startsWith("/api/") || url.hostname.includes("supabase.co")) {
+    return;
+  }
+
   // Navigation requests (HTML pages)
   if (req.mode === "navigate") {
     event.respondWith(

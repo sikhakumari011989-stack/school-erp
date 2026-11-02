@@ -18,54 +18,9 @@ import {
   RefreshCw,
   Sparkles,
 } from "lucide-react";
+import { buildStandardErpEmail, inferRoleFromCode, dashboardFor } from "../utils/credentials";
 
-/**
- * Standardizes email generation pattern for 2-Tier institutional credentials:
- * [institution_code].[personal_code]@erp-login.com (forced lowercase, trimmed of spaces)
- */
-export function buildStandardErpEmail(institutionCode, personalCode) {
-  const cleanInst = String(institutionCode || "campus")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/\s+/g, "-");
-  const cleanRole = String(personalCode || "")
-    .trim()
-    .toLowerCase()
-    .replace(/@.*$/, "") // Strip domain if user accidentally typed an email
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/\s+/g, "-");
-  return `${cleanInst || "campus"}.${cleanRole || "user"}@erp-login.com`;
-}
-
-export const inferRoleFromCode = (code) => {
-  const upper = String(code || "").toUpperCase();
-  if (upper.startsWith("PRIN")) return "principal";
-  if (upper.startsWith("HOD") || upper.startsWith("TR")) return "trustee";
-  if (upper.startsWith("ACC")) return "accountant";
-  if (upper.startsWith("TCH") || upper.startsWith("FAC")) return "teacher";
-  if (upper.startsWith("NON") || upper.startsWith("NTS") || upper.startsWith("STF") || upper.startsWith("STAFF")) return "staff";
-  if (upper.startsWith("ADM") || upper.startsWith("SUPER")) return "admin";
-  const lower = String(code || "").toLowerCase();
-  if (lower === "principal") return "principal";
-  if (lower === "trustee" || lower === "hod") return "trustee";
-  if (lower === "accountant") return "accountant";
-  if (lower === "teacher") return "teacher";
-  if (lower === "staff" || lower === "non_teaching") return "staff";
-  if (lower === "admin" || lower === "super_admin") return "admin";
-  return "student";
-};
-
-export const dashboardFor = (role) => {
-  const normalized = String(role || "student").toLowerCase();
-  if (normalized === "admin") return "/admin/dashboard";
-  if (normalized === "accountant") return "/accountant/dashboard";
-  if (normalized === "principal") return "/principal/dashboard";
-  if (normalized === "trustee" || normalized === "hod") return "/trustee/dashboard";
-  if (normalized === "teacher") return "/teacher/dashboard";
-  if (normalized === "staff" || normalized === "non_teaching" || normalized === "nts") return "/staff/dashboard";
-  return "/student/dashboard";
-};
+export { buildStandardErpEmail, inferRoleFromCode, dashboardFor };
 
 export default function Login({ isDirectPortal = false }) {
   const { user, setUser, login } = useContext(AppContext);
@@ -75,10 +30,12 @@ export default function Login({ isDirectPortal = false }) {
 
   const searchParams = new URLSearchParams(location.search);
   const isDirect = isDirectPortal || location.pathname === "/portal";
+  const savedTenant = typeof localStorage !== "undefined" ? localStorage.getItem("erp_active_tenant") : "";
   const initialSchool =
     searchParams.get("school") ||
     searchParams.get("tenant") ||
     searchParams.get("code") ||
+    savedTenant ||
     "";
 
   const [formData, setFormData] = useState({
@@ -99,7 +56,7 @@ export default function Login({ isDirectPortal = false }) {
       const active =
         user ||
         (() => {
-          const s = localStorage.getItem("erp_session_user") || localStorage.getItem("erp_demo_session");
+          const s = localStorage.getItem("erp_session_user");
           return s ? JSON.parse(s) : null;
         })();
 
@@ -123,13 +80,18 @@ export default function Login({ isDirectPortal = false }) {
     const pass = formData.password.trim();
 
     // Validation checks
+    if (!cleanInst) {
+      setError("Please provide your Institution Access Code (e.g. PALGHAR-01, DEL-01).");
+      return;
+    }
+
     if (!pass) {
       setError("Please enter your security password.");
       return;
     }
 
-    if (!isEmail && (!cleanInst || !cleanPersonal)) {
-      setError("Please provide all required fields: Institution Access Code, Personal Credential ID, and Password.");
+    if (!isEmail && !cleanPersonal) {
+      setError("Please provide your Personal Credential ID (e.g. PRIN-01, HOD-01, TCH-01, ACC-01, STU-01).");
       return;
     }
 
@@ -261,7 +223,6 @@ export default function Login({ isDirectPortal = false }) {
         // Synchronously store session before routing
         try {
           localStorage.setItem("erp_session_user", JSON.stringify(sessionPayload));
-          localStorage.setItem("erp_demo_session", JSON.stringify(sessionPayload));
           localStorage.setItem("erp_active_tenant", cleanInst || sessionPayload.institution_code);
         } catch {}
 
@@ -298,7 +259,6 @@ export default function Login({ isDirectPortal = false }) {
 
           try {
             localStorage.setItem("erp_session_user", JSON.stringify(sessionPayload));
-            localStorage.setItem("erp_demo_session", JSON.stringify(sessionPayload));
             localStorage.setItem("erp_active_tenant", cleanInst);
           } catch {}
 
@@ -329,13 +289,13 @@ export default function Login({ isDirectPortal = false }) {
     setLoading(false);
   };
 
-  // Quick fill demo role credentials for rapid evaluation
+  // Quick fill role credential ID for testing
   const setDemoCredentials = (roleCode) => {
-    setFormData({
-      institutionCode: formData.institutionCode || "CAMPUS-01",
+    setFormData((prev) => ({
+      ...prev,
       personalCode: roleCode,
       password: "password123",
-    });
+    }));
     setError("");
   };
 
@@ -397,9 +357,12 @@ export default function Login({ isDirectPortal = false }) {
             <div className="relative">
               <Building2 className="absolute left-4 top-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
               <input
+                id="login-institution-code"
+                data-testid="input-institution-code"
+                name="institutionCode"
                 type="text"
                 required
-                placeholder="CAMPUS-01"
+                placeholder="e.g. PALGHAR-01"
                 className="w-full bg-slate-950/80 border border-slate-800 text-white placeholder-slate-600 rounded-xl pl-11 pr-4 py-3.5 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/40 focus:ring-offset-2 focus:ring-offset-slate-950 transition-all font-mono uppercase tracking-wider text-sm font-semibold"
                 value={formData.institutionCode}
                 onChange={(e) => setFormData({ ...formData, institutionCode: e.target.value })}
@@ -411,7 +374,7 @@ export default function Login({ isDirectPortal = false }) {
           {/* TIER 2: PERSONAL CREDENTIAL ID */}
           <div>
             <div className="flex justify-between items-center mb-1.5 ml-1">
-              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <label htmlFor="login-personal-code" className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Personal ID or Institutional Email</span>
               </label>
@@ -420,6 +383,9 @@ export default function Login({ isDirectPortal = false }) {
             <div className="relative">
               <User className="absolute left-4 top-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
               <input
+                id="login-personal-code"
+                data-testid="input-personal-code"
+                name="personalCode"
                 type="text"
                 required
                 placeholder="PRIN-01 or user@school.com"
@@ -434,7 +400,7 @@ export default function Login({ isDirectPortal = false }) {
           {/* PASSWORD */}
           <div>
             <div className="flex justify-between items-center mb-1.5 ml-1">
-              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <label htmlFor="login-password" className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Lock className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Security Password</span>
               </label>
@@ -442,6 +408,9 @@ export default function Login({ isDirectPortal = false }) {
             <div className="relative">
               <Lock className="absolute left-4 top-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
               <input
+                id="login-password"
+                data-testid="input-password"
+                name="password"
                 type={showPassword ? "text" : "password"}
                 required
                 placeholder="••••••••••••"
@@ -489,6 +458,7 @@ export default function Login({ isDirectPortal = false }) {
           {/* Submit Action Button */}
           <button
             type="submit"
+            data-testid="btn-login-submit"
             disabled={loading}
             className="w-full bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-cyan-500/20 disabled:opacity-50 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer mt-4"
           >

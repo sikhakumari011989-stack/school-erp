@@ -47,8 +47,8 @@ export async function processDocumentFile({ file, documentType, schoolId, upload
   }
 
   // 2. Structured Extraction Pipeline
-  let extracted = {};
-  let confidence = 0.0;
+  let extracted;
+  let confidence;
   const validationErrors = [];
 
   if (documentType === "admission_form") {

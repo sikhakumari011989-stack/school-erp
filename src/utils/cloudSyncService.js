@@ -1,5 +1,5 @@
-import { supabase } from "../supabaseClient";
-import { buildStandardErpEmail } from "../pages/Login";
+import { supabase } from "../supabaseClient.js";
+import { buildStandardErpEmail } from "./credentials.js";
 
 /**
  * Role-Detection Helper Function
@@ -564,9 +564,10 @@ export async function verifyCloudLogin({ institutionCode, personalCode, password
     console.warn("[CloudSync] Local cache error:", localErr);
   }
 
+  // If no authentic account matches
   return {
     success: false,
-    error: `No institutional account found matching ID "${cleanPersonal}" for school "${cleanInst}". Please verify your credentials or register the institution.`,
+    error: `No institutional account found matching ID "${cleanPersonal}" for campus "${cleanInst}". Please verify your credentials or contact your administrator.`,
   };
 }
 

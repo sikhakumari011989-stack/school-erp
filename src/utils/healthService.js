@@ -1,5 +1,5 @@
-import { supabase } from "../supabaseClient";
-import { dispatchParentNotification } from "./notifications";
+import { supabase } from "../supabaseClient.js";
+import { dispatchParentNotification } from "./notifications.js";
 
 const DEFAULT_HEALTH_RECORDS = [
   {
@@ -144,11 +144,13 @@ export async function logMedicalAccess({ schoolId, studentId, actionType, actorI
   }
 
   const storageKey = `erp_medical_access_logs_${schoolId}`;
-  try {
-    const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
-    localStorage.setItem(storageKey, JSON.stringify([auditEntry, ...existing.slice(0, 99)]));
-  } catch (err) {
-    console.warn("[HealthService] Storage audit notice:", err);
+  if (typeof localStorage !== "undefined") {
+    try {
+      const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      localStorage.setItem(storageKey, JSON.stringify([auditEntry, ...existing.slice(0, 99)]));
+    } catch (err) {
+      console.warn("[HealthService] Storage audit notice:", err);
+    }
   }
 
   return auditEntry;
@@ -184,13 +186,27 @@ export async function fetchHealthRecords(schoolId, actor) {
 
   const storageKey = `erp_student_health_records_${schoolId}`;
   try {
-    const saved = localStorage.getItem(storageKey);
-    if (saved) return JSON.parse(saved);
+    const saved = typeof localStorage !== "undefined" ? localStorage.getItem(storageKey) : null;
+    const records = saved ? JSON.parse(saved) : [];
+    
+    // Data Minimization: Least-privilege redaction for Non-Teaching Staff (NTS)
+    const isMedicalAdmin =
+      actor?.role === "PRIN" ||
+      actor?.role === "HOD" ||
+      actor?.role === "principal" ||
+      actor?.role === "trustee" ||
+      actor?.is_clinic_nurse === true;
 
-    localStorage.setItem(storageKey, JSON.stringify(DEFAULT_HEALTH_RECORDS));
-    return DEFAULT_HEALTH_RECORDS;
+    if (!isMedicalAdmin && (actor?.role === "NTS" || actor?.role === "staff")) {
+      return records.map((r) => ({
+        ...r,
+        confidential_medical_notes: "[REDACTED - Clinic Nurse Authorization Required]",
+      }));
+    }
+
+    return records;
   } catch {
-    return DEFAULT_HEALTH_RECORDS;
+    return [];
   }
 }
 
@@ -229,7 +245,9 @@ export async function saveHealthRecord(schoolId, recordData, actor) {
     } else {
       updated = [recordToSave, ...records];
     }
-    localStorage.setItem(storageKey, JSON.stringify(updated));
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+    }
   } catch (err) {
     console.warn("[HealthService] Local storage save notice:", err);
   }
@@ -266,13 +284,27 @@ export async function fetchClinicVisits(schoolId, actor) {
 
   const storageKey = `erp_clinic_visits_${schoolId}`;
   try {
-    const saved = localStorage.getItem(storageKey);
-    if (saved) return JSON.parse(saved);
+    const saved = typeof localStorage !== "undefined" ? localStorage.getItem(storageKey) : null;
+    const visits = saved ? JSON.parse(saved) : [];
 
-    localStorage.setItem(storageKey, JSON.stringify(DEFAULT_CLINIC_VISITS));
-    return DEFAULT_CLINIC_VISITS;
+    // Least-privilege clinic access: Redact diagnostic notes for non-medical personnel
+    const isMedicalAdmin =
+      actor?.role === "PRIN" ||
+      actor?.role === "HOD" ||
+      actor?.role === "principal" ||
+      actor?.role === "trustee" ||
+      actor?.is_clinic_nurse === true;
+
+    if (!isMedicalAdmin && (actor?.role === "NTS" || actor?.role === "staff")) {
+      return visits.map((v) => ({
+        ...v,
+        confidential_clinical_notes: "[REDACTED - Clinic Nurse Authorization Required]",
+      }));
+    }
+
+    return visits;
   } catch {
-    return DEFAULT_CLINIC_VISITS;
+    return [];
   }
 }
 
@@ -302,7 +334,9 @@ export async function recordClinicVisit(schoolId, visitData, actor) {
   const storageKey = `erp_clinic_visits_${schoolId}`;
   try {
     const visits = await fetchClinicVisits(schoolId, actor);
-    localStorage.setItem(storageKey, JSON.stringify([newVisit, ...visits]));
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(storageKey, JSON.stringify([newVisit, ...visits]));
+    }
   } catch (err) {
     console.warn("[HealthService] Local storage save visit notice:", err);
   }
@@ -358,7 +392,9 @@ export async function fetchMedicalAccessLogs(schoolId) {
 
   const storageKey = `erp_medical_access_logs_${schoolId}`;
   try {
-    const local = JSON.parse(localStorage.getItem(storageKey) || "[]");
+    const local = JSON.parse(
+      (typeof localStorage !== "undefined" ? localStorage.getItem(storageKey) : null) || "[]"
+    );
     return local;
   } catch {
     return [];
