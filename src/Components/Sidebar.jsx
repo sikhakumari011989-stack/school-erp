@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import BrandLogo from "./BrandLogo";
@@ -62,103 +62,82 @@ export default function Sidebar() {
     return "student";
   })();
 
-  // Dynamic Navigation Links strictly partitioned by Role
+  // Streamlined Navigation strictly centered on 10 Core School Areas
   const getLinks = () => {
     if (roleType === "principal") {
       return [
-        { name: "Executive Hub", path: "/principal/dashboard", icon: "🏛️" },
-        { name: "Task Delegation", path: "/principal/dashboard?tab=tasks", icon: "⚡" },
-        { name: "Staff Leaves", path: "/principal/dashboard?tab=leaves", icon: "🏖️" },
-        { name: "Asset Registry", path: "/principal/dashboard?tab=assets", icon: "📦" },
-        { name: "Student Conduct", path: "/principal/dashboard?tab=behavior", icon: "⚖️" },
-        { name: "Grievance Inbox", path: "/principal/dashboard?tab=grievances", icon: "📩" },
-        { name: "Meeting Agenda", path: "/principal/dashboard?tab=scheduler", icon: "📅" },
-        { name: "Alumni Network", path: "/principal/dashboard?tab=alumni", icon: "🎓" },
-        { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
-        { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
-        { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
-        { name: "Document Intelligence", path: "/admin/documents", icon: "📄" },
-        { name: "Transport Fleet", path: "/admin/transport", icon: "🚌" },
-        { name: "Accreditation Center", path: "/admin/accreditation", icon: "🏆" },
-        { name: "Health & Clinic Vault", path: "/admin/health", icon: "🩺" },
-        { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
-        { name: "Expense Tracker", path: "/accountant/expenses", icon: "🧾" },
-        { name: "Academic Calendar", path: "/admin/calendar", icon: "📅" },
+        { name: "School Overview", path: "/principal/dashboard", icon: "🏛️" },
+        { name: "Students & Admissions", path: "/admin/admissions", icon: "🎯" },
+        { name: "Attendance & Calendar", path: "/admin/calendar", icon: "📅" },
+        { name: "Fee Collection & Dues", path: "/accountant/dashboard", icon: "💰" },
+        { name: "Examinations & Marks", path: "/teacher/analytics", icon: "📊" },
+        { name: "Staff & Leaves", path: "/principal/dashboard?tab=leaves", icon: "👨‍🏫" },
+        { name: "Announcements & Notices", path: "/admin/broadcasts", icon: "📢" },
+        { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
+        { name: "Certificates", path: "/admin/certificates", icon: "📜" },
+        { name: "Administration & Audit", path: "/admin/dashboard", icon: "⚙️" },
       ];
     } else if (roleType === "trustee") {
       return [
-        { name: "Trustee Executive", path: "/trustee/dashboard", icon: "📈" },
-        { name: "Principal Command", path: "/principal/dashboard", icon: "🏛️" },
-        { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
-        { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
-        { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
-        { name: "Document Intelligence", path: "/admin/documents", icon: "📄" },
-        { name: "Transport Fleet", path: "/admin/transport", icon: "🚌" },
-        { name: "Accreditation Center", path: "/admin/accreditation", icon: "🏆" },
-        { name: "Health & Clinic Vault", path: "/admin/health", icon: "🩺" },
-        { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
-        { name: "Expense Tracker", path: "/accountant/expenses", icon: "🧾" },
-        { name: "Treasury Ledger", path: "/accountant/dashboard", icon: "💰" },
-        { name: "Academic Calendar", path: "/admin/calendar", icon: "📅" },
+        { name: "Trustee Overview", path: "/trustee/dashboard", icon: "📈" },
+        { name: "School Operations", path: "/principal/dashboard", icon: "🏛️" },
+        { name: "Fee Treasury & Dues", path: "/accountant/dashboard", icon: "💰" },
+        { name: "Academic Performance", path: "/teacher/analytics", icon: "📊" },
+        { name: "School Calendar", path: "/admin/calendar", icon: "📅" },
+        { name: "Announcements", path: "/admin/broadcasts", icon: "📢" },
+        { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
       ];
     } else if (roleType === "accountant") {
       return [
-        { name: "Treasury Dashboard", path: "/accountant/dashboard", icon: "💰" },
-        { name: "Staff Payroll & Payslips", path: "/accountant/payroll", icon: "💵" },
+        { name: "Fee Treasury & Receipts", path: "/accountant/dashboard", icon: "💰" },
+        { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
         { name: "Expense Ledger", path: "/accountant/expenses", icon: "🧾" },
-        { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
-        { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
+        { name: "Admissions & Dues", path: "/admin/admissions", icon: "🎯" },
+        { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
       ];
     } else if (roleType === "teacher") {
       return [
-        { name: "Faculty Dashboard", path: "/teacher/dashboard", icon: "👨‍🏫" },
-        { name: "Staff Messenger", path: "/teacher/messages", icon: "💬" },
-        { name: "Timed Online Exams", path: "/teacher/exams", icon: "📝" },
-        { name: "Classroom Batches", path: "/teacher/classes", icon: "🏫" },
-        { name: "Attendance Register", path: "/teacher/attendance", icon: "✅" },
-        { name: "Homework & Quizzes", path: "/teacher/homework", icon: "📚" },
-        { name: "Analytics & Marks", path: "/teacher/analytics", icon: "📊" },
-        { name: "Curriculum Planner", path: "/teacher/planner", icon: "📝" },
+        { name: "Teacher Overview", path: "/teacher/dashboard", icon: "👨‍🏫" },
+        { name: "Mark Attendance", path: "/teacher/attendance", icon: "✅" },
+        { name: "Class Test Marks", path: "/teacher/class-tests", icon: "📝" },
+        { name: "My Classes & Students", path: "/teacher/classes", icon: "🏫" },
+        { name: "Exam Marks & Results", path: "/teacher/analytics", icon: "📊" },
+        { name: "Homework & Tasks", path: "/teacher/homework", icon: "📚" },
+        { name: "Timetable & Planner", path: "/teacher/planner", icon: "🗓️" },
+        { name: "Staff Messages", path: "/teacher/messages", icon: "💬" },
       ];
     } else if (roleType === "staff") {
       return [
-        { name: "Operations Command", path: "/staff/dashboard", icon: "🛠️" },
-        { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
-        { name: "Document Intelligence", path: "/admin/documents", icon: "📄" },
-        { name: "Transport Fleet", path: "/admin/transport", icon: "🚌" },
-        { name: "Accreditation Center", path: "/admin/accreditation", icon: "🏆" },
-        { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
+        { name: "Operations Overview", path: "/staff/dashboard", icon: "🛠️" },
+        { name: "Student Directory", path: "/admin/admissions", icon: "🎯" },
+        { name: "Campus Attendance", path: "/teacher/attendance", icon: "✅" },
+        { name: "Announcements", path: "/admin/broadcasts", icon: "📢" },
+        { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
       ];
     } else if (roleType === "admin") {
       return [
         { name: "Super Admin Hub", path: "/admin/dashboard", icon: "🛡️" },
         { name: "Principal Suite", path: "/principal/dashboard", icon: "🏛️" },
         { name: "Trustee Suite", path: "/trustee/dashboard", icon: "📈" },
-        { name: "Treasury Suite", path: "/accountant/dashboard", icon: "💰" },
-        { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
-        { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
+        { name: "Fee Treasury", path: "/accountant/dashboard", icon: "💰" },
+        { name: "School Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
-        { name: "Document Intelligence", path: "/admin/documents", icon: "📄" },
-        { name: "Transport Fleet", path: "/admin/transport", icon: "🚌" },
-        { name: "Accreditation Center", path: "/admin/accreditation", icon: "🏆" },
-        { name: "Health & Clinic Vault", path: "/admin/health", icon: "🩺" },
-        { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
-        { name: "Expense Tracker", path: "/accountant/expenses", icon: "🧾" },
-        { name: "Online Exams (CBT)", path: "/teacher/exams", icon: "📝" },
-        { name: "Academic Calendar", path: "/admin/calendar", icon: "📅" },
+        { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
+        { name: "Certificates", path: "/admin/certificates", icon: "📜" },
+        { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
       ];
     } else {
       // Default: Student / Parent
       return [
-        { name: "Student Dashboard", path: "/student/dashboard", icon: "🎓" },
-        { name: "Online Tests (CBT)", path: "/student/exams", icon: "📝" },
-        { name: "Homework & Tasks", path: "/student/homework", icon: "📚" },
-        { name: "Fee Vault & Receipts", path: "/student/fees", icon: "💳" },
+        { name: "Student Overview", path: "/student/dashboard", icon: "🎓" },
+        { name: "My Marks", path: "/student/marks", icon: "📊" },
+        { name: "Attendance & Calendar", path: "/student/calendar", icon: "📅" },
+        { name: "Fee Dues & Receipts", path: "/student/fees", icon: "💳" },
         { name: "Pay Online", path: "/student/pay", icon: "⚡" },
-        { name: "LMS & Courseware", path: "/student/lms", icon: "📖" },
-        { name: "Certificates Vault", path: "/student/certificates", icon: "📜" },
-        { name: "Campus Calendar", path: "/student/calendar", icon: "📅" },
-        { name: "Conduct & Discipline", path: "/student/conduct", icon: "⚖️" },
+        { name: "Exams & Results", path: "/student/exams", icon: "📝" },
+        { name: "Homework & LMS", path: "/student/homework", icon: "📚" },
+        { name: "My Certificates", path: "/student/certificates", icon: "📜" },
+        { name: "Conduct & Announcements", path: "/student/conduct", icon: "⚖️" },
       ];
     }
   };
@@ -175,22 +154,29 @@ export default function Sidebar() {
     if (roleType === "student") {
       return [
         { name: "Home", path: "/student/dashboard", icon: "🎓" },
-        { name: "Tasks", path: "/student/homework", icon: "📚" },
-        { name: "Pay", path: "/student/pay", icon: "⚡" },
-        { name: "LMS", path: "/student/lms", icon: "📖" },
+        { name: "Attendance", path: "/student/calendar", icon: "📅" },
+        { name: "Fees", path: "/student/fees", icon: "💳" },
+        { name: "Exams", path: "/student/exams", icon: "📝" },
       ];
     } else if (roleType === "teacher") {
       return [
         { name: "Home", path: "/teacher/dashboard", icon: "👨‍🏫" },
         { name: "Attendance", path: "/teacher/attendance", icon: "✅" },
-        { name: "Tasks", path: "/teacher/homework", icon: "📚" },
-        { name: "Chat", path: "/teacher/messages", icon: "💬" },
+        { name: "Marks", path: "/teacher/analytics", icon: "📊" },
+        { name: "Classes", path: "/teacher/classes", icon: "🏫" },
+      ];
+    } else if (roleType === "accountant") {
+      return [
+        { name: "Treasury", path: "/accountant/dashboard", icon: "💰" },
+        { name: "Payroll", path: "/accountant/payroll", icon: "💵" },
+        { name: "Expenses", path: "/accountant/expenses", icon: "🧾" },
+        { name: "Chat", path: "/admin/messages", icon: "💬" },
       ];
     } else if (roleType === "principal") {
       return [
-        { name: "Command", path: "/principal/dashboard", icon: "🏛️" },
-        { name: "Chat", path: "/admin/messages", icon: "💬" },
-        { name: "Broadcasts", path: "/admin/broadcasts", icon: "📢" },
+        { name: "Overview", path: "/principal/dashboard", icon: "🏛️" },
+        { name: "Students", path: "/admin/admissions", icon: "🎯" },
+        { name: "Treasury", path: "/accountant/dashboard", icon: "💰" },
         { name: "Calendar", path: "/admin/calendar", icon: "📅" },
       ];
     } else {

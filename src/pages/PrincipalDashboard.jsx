@@ -9,12 +9,18 @@ import {
   Area,
   BarChart,
   Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
   Legend,
 } from "recharts";
+import PrincipalAIBriefing from "../Components/PrincipalAIBriefing";
 import SchoolUpiQrConfig from "../Components/SchoolUpiQrConfig";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
 import NonTeachingStaffManager from "../Components/NonTeachingStaffManager";
@@ -88,6 +94,9 @@ export default function PrincipalDashboard() {
   const [defaulterSearch, setDefaulterSearch] = useState("");
   const [cashFlowForecast, setCashFlowForecast] = useState([]);
   const [teacherAnalytics, setTeacherAnalytics] = useState([]);
+  const [attendanceTrend, setAttendanceTrend] = useState([]);
+  const [classDistribution, setClassDistribution] = useState([]);
+  const [feeDonutData, setFeeDonutData] = useState([]);
 
   // Institution Metadata
   const institutionCode = user?.institution_code || user?.school_id || "CAMPUS-01";
@@ -254,7 +263,7 @@ export default function PrincipalDashboard() {
       const studentMembers = localDir.filter((m) => (m.role || "student").toLowerCase() === "student");
 
       studentMembers.forEach((st) => {
-        const studentTotalFees = Number(st.totalFees || st.total_fees || st.annualFees || 45000);
+        const studentTotalFees = Number(st.totalFees || st.total_fees || st.annualFees || 0);
         const studentInitialPaid = Number(st.initialPaid || st.paidFees || 0);
 
         const stCode = (st.roll_number || st.personal_code || st.role_code || st.id || "").toUpperCase();
@@ -292,12 +301,53 @@ export default function PrincipalDashboard() {
       setTotalPendingFees(pendingTotal);
       setDefaulters(defaultersList);
 
+      // Fee Donut Data (Reconciled vs Outstanding)
+      setFeeDonutData([
+        { name: "Collected", value: rev, color: "#10B981" },
+        { name: "Outstanding", value: pendingTotal, color: "#F59E0B" },
+      ]);
+
+      // Class-wise Student Distribution
+      const classCountMap = {};
+      studentMembers.forEach((st) => {
+        const cName = st.class_name || st.class || "General";
+        classCountMap[cName] = (classCountMap[cName] || 0) + 1;
+      });
+      const classDistList = Object.entries(classCountMap).map(([name, count]) => ({
+        className: name,
+        students: count,
+      }));
+      setClassDistribution(classDistList);
+
+      // 7-day Attendance Trend from authentic registers
+      let attPoints = [];
+      try {
+        const rawAtt = localStorage.getItem(`erp_attendance_${institutionCode}`);
+        if (rawAtt) {
+          const parsed = JSON.parse(rawAtt);
+          const byDate = {};
+          parsed.forEach((item) => {
+            const d = item.date || item.created_at?.split("T")[0] || "Recent";
+            if (!byDate[d]) byDate[d] = { date: d, present: 0, total: 0 };
+            byDate[d].total += 1;
+            if (String(item.status).toLowerCase() === "present") byDate[d].present += 1;
+          });
+          attPoints = Object.values(byDate)
+            .slice(-7)
+            .map((b) => ({
+              date: b.date.length > 5 ? b.date.slice(5) : b.date,
+              rate: b.total > 0 ? Math.round((b.present / b.total) * 100) : 0,
+            }));
+        }
+      } catch (e) {}
+      setAttendanceTrend(attPoints);
+
       // Revenue Forecasting Graph (Next 5 Months Cash Flow Projection)
       const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const currentMonthIdx = new Date().getMonth();
       const currentYear = new Date().getFullYear();
       const forecastPoints = [];
-      const baseRunRate = Math.max(paidThisMonth > 0 ? paidThisMonth : Math.round(rev / 3), 45000);
+      const baseRunRate = Math.max(paidThisMonth > 0 ? paidThisMonth : Math.round(rev / 3), 0);
       const pendingVelocity = Math.round(pendingTotal / 4);
 
       for (let i = 0; i < 5; i++) {
@@ -333,21 +383,8 @@ export default function PrincipalDashboard() {
         }
       } catch {}
 
-      if (!facultyPerformance || facultyPerformance.length === 0) {
-        const teacherList = localDir.filter(
-          (m) => (m.role || "").toLowerCase() === "teacher" || (m.role || "").toLowerCase() === "faculty"
-        );
-        if (teacherList.length > 0) {
-          facultyPerformance = teacherList.map((t, idx) => ({
-            teacherName: t.full_name || t.name || `Faculty #${idx + 1}`,
-            subject: t.department || t.class_name || "Academics",
-            avgScore: 75 + (idx % 18),
-            passRate: 88 + (idx % 10),
-            studentCount: 28 + (idx % 15),
-          }));
-        } else {
-          facultyPerformance = [];
-        }
+      if (!facultyPerformance || !Array.isArray(facultyPerformance)) {
+        facultyPerformance = [];
       }
       setTeacherAnalytics(facultyPerformance);
 
@@ -1217,171 +1254,15 @@ export default function PrincipalDashboard() {
             {/* TAB 1: EXECUTIVE COMMAND & FORECAST OVERVIEW */}
             {activeTab === "overview" && (
               <div className="space-y-8">
-                {/* DAILY CAMPUS PULSE CARD */}
-                <CampusPulseCard schoolCode={institutionCode} />
-                {/* 0. SCHOOL HEALTH SCORE (0-100) & MORNING BRIEF CARD */}
-                {(() => {
-                  const feeRecoveryNum = parseInt(stats.feeCollectionRate, 10) || 0;
-                  const attendanceNum = 94;
-                  const academicNum = stats.hasGrades ? (parseInt(stats.avgScore, 10) || 75) : 82;
-                  const punctualityNum = 96;
-                  const grievanceNum = 91;
-
-                  const compositeHealthScore = Math.min(
-                    100,
-                    Math.round(
-                      feeRecoveryNum * 0.25 +
-                      attendanceNum * 0.25 +
-                      academicNum * 0.20 +
-                      punctualityNum * 0.15 +
-                      grievanceNum * 0.15
-                    )
-                  );
-
-                  return (
-                    <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 sm:p-7 space-y-6 shadow-sm dark:shadow-2xl animate-fade-in-up stagger-1">
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-200 dark:border-white/10 pb-6">
-                        {/* HEALTH SCORE GAUGE PILL */}
-                        <div className="flex items-center gap-4">
-                          <div className="relative flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10 border border-cyan-400/30 shadow-md shadow-cyan-500/10 shrink-0">
-                            <span className="text-3xl font-black text-slate-900 dark:text-white">{compositeHealthScore}</span>
-                            <span className="absolute bottom-1 text-[9px] font-mono text-cyan-600 dark:text-cyan-300 font-bold uppercase">/ 100</span>
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="relative flex h-2.5 w-2.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                              </span>
-                              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30">
-                                Today's Campus Pulse
-                              </span>
-                              <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Real-Time Composite</span>
-                            </div>
-                            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">
-                              Executive Morning Brief & Pulse
-                            </h2>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                              Weighted telemetry: Fee Recovery (25%), Attendance (25%), Academics (20%), Staff Punctuality (15%), Grievance Resolution (15%).
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* TELEMETRY BREAKDOWN MINI-PILLS */}
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
-                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 hover:border-emerald-500/30 transition-all shadow-xs">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Fee Inflow</span>
-                            <span className="font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-cyan-600 dark:from-emerald-400 dark:to-cyan-400">{stats.feeCollectionRate}</span>
-                          </div>
-                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 hover:border-cyan-500/30 transition-all shadow-xs">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Attendance</span>
-                            <span className="font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-sky-600 dark:from-cyan-400 dark:to-sky-400">94%</span>
-                          </div>
-                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 hover:border-purple-500/30 transition-all shadow-xs">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Mastery</span>
-                            <span className="font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400">{stats.avgScore || "78%"}</span>
-                          </div>
-                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 hover:border-indigo-500/30 transition-all shadow-xs">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Punctuality</span>
-                            <span className="font-extrabold text-indigo-600 dark:text-indigo-400">96%</span>
-                          </div>
-                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 hover:border-teal-500/30 transition-all col-span-2 sm:col-span-1 shadow-xs">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Redressal</span>
-                            <span className="font-extrabold text-teal-600 dark:text-teal-400">91%</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* TOP 3 URGENT ACTIONS TODAY */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="relative flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-                          </span>
-                          <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                            Top 3 Urgent Operational Actions Today
-                          </h3>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          {/* ACTION 1: FEE OVERDUES */}
-                          <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500/40 transition-all duration-300 flex flex-col justify-between space-y-2 shadow-xs">
-                            <div>
-                              <span className="text-[10px] uppercase font-bold text-rose-600 dark:text-rose-400">Action 1 &bull; Treasury</span>
-                              <p className="text-xs font-bold text-slate-900 dark:text-white mt-1">
-                                {defaulters.length > 0
-                                  ? `Recover ₹${totalPendingFees.toLocaleString()} from ${defaulters.length} overdue scholar accounts`
-                                  : "Fee Treasury 100% Reconciled"}
-                              </p>
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                Automated WhatsApp notices prepared for highest balance accounts.
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => {
-                                const el = document.getElementById("defaulters-section");
-                                if (el) el.scrollIntoView({ behavior: "smooth" });
-                                else showToast("Navigate to Defaulters section below", "info");
-                              }}
-                              className="w-full py-1.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 dark:border-rose-500/30 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer text-center hover:-translate-y-0.5"
-                            >
-                              Review {defaulters.length} Defaulters →
-                            </button>
-                          </div>
-
-                          {/* ACTION 2: STAFF & WORKFLOW APPROVALS */}
-                          <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-cyan-400 dark:hover:border-cyan-500/40 transition-all duration-300 flex flex-col justify-between space-y-2 shadow-xs">
-                            <div>
-                              <span className="text-[10px] uppercase font-bold text-cyan-600 dark:text-cyan-400">Action 2 &bull; Governance</span>
-                              <p className="text-xs font-bold text-slate-900 dark:text-white mt-1">
-                                Review pending staff leave applications & accountant fee credit notes
-                              </p>
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                Maker-Checker gate ensures dual authorization before posting balance adjustments.
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => setActiveTab("leaves")}
-                              className="w-full py-1.5 px-3 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/20 dark:hover:bg-cyan-500/30 dark:border-cyan-500/30 dark:text-cyan-300 text-xs font-bold transition-all cursor-pointer text-center hover:-translate-y-0.5"
-                            >
-                              Open Staff Leaves →
-                            </button>
-                          </div>
-
-                          {/* ACTION 3: ACADEMIC WATCHLIST */}
-                          <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-purple-400 dark:hover:border-purple-500/40 transition-all duration-300 flex flex-col justify-between space-y-2 shadow-xs">
-                            <div>
-                              <span className="text-[10px] uppercase font-bold text-purple-600 dark:text-purple-400">Action 3 &bull; Academics</span>
-                              <p className="text-xs font-bold text-slate-900 dark:text-white mt-1">
-                                {watchlist.length > 0
-                                  ? `${watchlist.length} scholars on remedial support watchlist`
-                                  : "Curriculum milestone pacing on track across grades"}
-                              </p>
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                Ensure remedial educators have assigned after-class coaching sessions.
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => setShowWatchlistModal(true)}
-                              className="w-full py-1.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-500/20 dark:hover:bg-purple-500/30 dark:border-purple-500/30 dark:text-purple-300 text-xs font-bold transition-all cursor-pointer text-center hover:-translate-y-0.5"
-                            >
-                              Add Remedial Scholar →
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
+                {/* 1. STANDOUT EXECUTIVE AI FEATURE: PRINCIPAL'S AI BRIEFING */}
+                <PrincipalAIBriefing schoolCode={institutionCode} onNavigateTab={setActiveTab} />
 
                 {/* STUDENT EARLY WARNING SYSTEM (PROACTIVE RADAR) */}
                 <RiskRadarWidget />
 
-                {/* OPERATIONAL APPROVAL INBOX & SCOPED NATURAL LANGUAGE ASSISTANT */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up stagger-2">
+                {/* OPERATIONAL APPROVAL INBOX */}
+                <div className="animate-fade-in-up stagger-2">
                   <OperationalApprovalInbox schoolCode={institutionCode} />
-                  <PrincipalAssistant schoolCode={institutionCode} />
                 </div>
 
                 {/* 1. CEO SPATIAL BENTO GRID: REAL-TIME EXECUTIVE TELEMETRY DECK */}
@@ -1523,9 +1404,145 @@ export default function PrincipalDashboard() {
                   </div>
                 </div>
 
-                {/* 2. REVENUE FORECASTING & TEACHER PERFORMANCE GRAPHS */}
+                {/* 2. REVENUE FORECASTING & PERFORMANCE GRAPHS */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up stagger-4">
-                  {/* CHART A: REVENUE FORECASTING CASH FLOW */}
+                  {/* CHART 1: ATTENDANCE TREND LINE CHART */}
+                  <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/10 dark:border-cyan-400/30 dark:text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                          <span>📅</span> Punctuality Telemetry
+                        </div>
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white">Campus Attendance Trend</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Daily attendance percentage logged across working days</p>
+                      </div>
+                    </div>
+
+                    {attendanceTrend.length === 0 ? (
+                      <div className="h-64 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-6 space-y-2 bg-slate-50/50 dark:bg-tech-grid rounded-2xl">
+                        <span className="text-3xl opacity-60">📅</span>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">Attendance Register Not Initialized</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">Submit homeroom attendance registers to visualize campus-wide daily trends.</p>
+                      </div>
+                    ) : (
+                      <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={attendanceTrend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
+                            <XAxis dataKey="date" stroke="#94A3B8" fontSize={10} tickLine={false} />
+                            <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: "#0F172A",
+                                borderColor: "rgba(255,255,255,0.15)",
+                                borderRadius: "1rem",
+                                fontSize: "12px",
+                                color: "#FFFFFF",
+                              }}
+                              formatter={(v) => [`${v}% Attendance`, ""]}
+                            />
+                            <Line type="monotone" dataKey="rate" stroke="#06B6D4" strokeWidth={3} dot={{ r: 4, fill: "#06B6D4" }} activeDot={{ r: 6 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* CHART 2: FEE COLLECTION DONUT OVERVIEW */}
+                  <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                          <span>💰</span> Treasury Position
+                        </div>
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white">Fee Collection Overview</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Reconciled receipts vs outstanding term dues</p>
+                      </div>
+                    </div>
+
+                    {stats.totalRevenue === 0 && totalPendingFees === 0 ? (
+                      <div className="h-64 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-6 space-y-2 bg-slate-50/50 dark:bg-tech-grid rounded-2xl">
+                        <span className="text-3xl opacity-60">💰</span>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">Clean Treasury Ledger</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">No fee dues or transactions recorded for this billing cycle.</p>
+                      </div>
+                    ) : (
+                      <div className="h-64 w-full flex items-center justify-center">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={feeDonutData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={85}
+                              paddingAngle={4}
+                              dataKey="value"
+                            >
+                              {feeDonutData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: "#0F172A",
+                                borderColor: "rgba(255,255,255,0.15)",
+                                borderRadius: "1rem",
+                                fontSize: "12px",
+                                color: "#FFFFFF",
+                              }}
+                              formatter={(value) => [`₹${Number(value).toLocaleString("en-IN")}`, ""]}
+                            />
+                            <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* CHART 3: CLASS-WISE STUDENT DISTRIBUTION */}
+                  <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-indigo-400 dark:hover:border-indigo-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                          <span>🎓</span> Batch Enrollment
+                        </div>
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white">Class-Wise Scholar Distribution</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Enrolled scholar strength across classes and divisions</p>
+                      </div>
+                    </div>
+
+                    {classDistribution.length === 0 ? (
+                      <div className="h-64 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-6 space-y-2 bg-slate-50/50 dark:bg-tech-grid rounded-2xl">
+                        <span className="text-3xl opacity-60">🎓</span>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">No Scholars Enrolled Yet</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">Admit scholars through the Admissions CRM to view class breakdown.</p>
+                      </div>
+                    ) : (
+                      <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={classDistribution} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
+                            <XAxis dataKey="className" stroke="#94A3B8" fontSize={10} tickLine={false} />
+                            <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} allowDecimals={false} />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: "#0F172A",
+                                borderColor: "rgba(255,255,255,0.15)",
+                                borderRadius: "1rem",
+                                fontSize: "12px",
+                                color: "#FFFFFF",
+                              }}
+                              formatter={(v) => [`${v} Scholars`, "Enrolled"]}
+                            />
+                            <Bar dataKey="students" name="Students" fill="#6366F1" radius={[6, 6, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* CHART 4: REVENUE FORECASTING CASH FLOW */}
                   <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
                     <div className="flex justify-between items-start mb-4">
                       <div>

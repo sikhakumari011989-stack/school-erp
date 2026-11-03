@@ -3,11 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 import NoticeBanner from "../Components/NoticeBanner";
 import CampusPulseCard from "../Components/CampusPulseCard";
 import AttendanceStreak from "../Components/AttendanceStreak";
 import RecentTestScores from "../Components/RecentTestScores";
 import { generateReportCardPDF } from "../utils/pdfGenerator";
+import { getStudentPublishedMarks } from "../utils/classTestMarksService";
 
 export default function StudentDashboard() {
   const { user } = useContext(AppContext) || {};
@@ -22,16 +32,17 @@ export default function StudentDashboard() {
   // State metrics
   const [loading, setLoading] = useState(true);
   const [publishedFees, setPublishedFees] = useState([]);
+  const [subjectScores, setSubjectScores] = useState([]);
   const [metrics, setMetrics] = useState({
-    attendancePercentage: 94,
-    totalClasses: 32,
-    attendedClasses: 30,
-    streakDays: 14,
-    pendingHomeworkCount: 2,
+    attendancePercentage: 0,
+    totalClasses: 0,
+    attendedClasses: 0,
+    streakDays: 0,
+    pendingHomeworkCount: 0,
     feeStatus: "Up to date",
     pendingFeeAmount: 0,
-    conductScore: 98,
-    percentile: "96.4th",
+    conductScore: 100,
+    percentile: "N/A",
   });
 
   // Pomodoro Timer State
@@ -70,13 +81,33 @@ export default function StudentDashboard() {
           });
         }
 
-        const calculatedPercent = totalClasses > 0 ? Math.round((attended / totalClasses) * 100) : 95;
+        const calculatedPercent = totalClasses > 0 ? Math.round((attended / totalClasses) * 100) : 0;
         const hwCount = hwRes.data?.length ?? 0;
 
         // Strict Data Isolation: Current Authenticated Student Identity Matcher
         const currentRoll = String(user?.personal_code || user?.roll_number || user?.id || "").trim().toUpperCase();
         const currentEmail = String(user?.email || "").trim().toLowerCase();
         const currentName = String(user?.name || user?.full_name || "").trim().toLowerCase();
+
+        // Calculate student test evaluation scores from verified published marks
+        let myScores = [];
+        try {
+          const publishedData = await getStudentPublishedMarks({
+            schoolId,
+            studentId: user?.id,
+            studentRoll,
+          });
+          myScores = publishedData.map((t) => ({
+            subject: t.subject || "General",
+            score: t.max_score > 0 ? Math.round((t.marks_obtained / t.max_score) * 100) : 0,
+            marksObtained: t.marks_obtained,
+            maxScore: t.max_score,
+            classHighest: t.class_highest,
+          }));
+        } catch {
+          // Non-blocking
+        }
+        setSubjectScores(myScores);
 
         const matchStudent = (rec) => {
           if (!rec) return false;
@@ -562,56 +593,53 @@ export default function StudentDashboard() {
           </div>
 
           {/* BENTO CARD 5: MASTERY TRANSCRIPT & PERCENTILE VAULT */}
-          <div className="bg-slate-900/40 backdrop-blur-2xl border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between animate-fade-in-up stagger-5">
+          <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-xl flex flex-col justify-between animate-fade-in-up stagger-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
                 <span className="text-xl">📊</span>
                 <div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider">Mastery Transcript</h3>
-                  <p className="text-[11px] text-slate-400">Subject Percentile Analytics</p>
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Mastery Evaluation</h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Subject Marks & Performance</p>
                 </div>
               </div>
-              <span className="bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 text-[10px] font-black uppercase px-2.5 py-1 rounded-full">
-                {metrics.percentile} Percentile
+              <span className="bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/15 dark:text-cyan-400 dark:border-cyan-500/30 text-[10px] font-black uppercase px-2.5 py-1 rounded-full">
+                {subjectScores.length > 0 ? `${subjectScores.length} Evaluated` : "Awaiting Tests"}
               </span>
             </div>
 
-            {/* Subject Mastery Progress Bars */}
-            <div className="space-y-2.5 my-1">
-              <div>
-                <div className="flex justify-between text-[11px] font-bold text-slate-300 mb-1">
-                  <span>Mathematics</span>
-                  <span className="text-cyan-400 font-mono">98%</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full" style={{ width: "98%" }}></div>
-                </div>
+            {/* Subject Mastery Bar Chart or Clean Empty State */}
+            {subjectScores.length === 0 ? (
+              <div className="h-44 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-4 space-y-1 bg-slate-50/50 dark:bg-tech-grid rounded-2xl my-2">
+                <span className="text-2xl opacity-60">📊</span>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">No Evaluation Marks Yet</p>
+                <p className="text-[11px] text-slate-500 max-w-xs">Complete term exams or quizzes to view your subject mastery bars.</p>
               </div>
-
-              <div>
-                <div className="flex justify-between text-[11px] font-bold text-slate-300 mb-1">
-                  <span>Computer Science</span>
-                  <span className="text-emerald-400 font-mono">99%</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full" style={{ width: "99%" }}></div>
-                </div>
+            ) : (
+              <div className="h-44 w-full my-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={subjectScores} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
+                    <XAxis dataKey="subject" stroke="#94A3B8" fontSize={10} tickLine={false} />
+                    <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#0F172A",
+                        borderColor: "rgba(255,255,255,0.15)",
+                        borderRadius: "1rem",
+                        fontSize: "12px",
+                        color: "#FFFFFF",
+                      }}
+                      formatter={(v) => [`${v}%`, "Score"]}
+                    />
+                    <Bar dataKey="score" name="Score %" fill="#06B6D4" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-
-              <div>
-                <div className="flex justify-between text-[11px] font-bold text-slate-300 mb-1">
-                  <span>Physics</span>
-                  <span className="text-purple-400 font-mono">94%</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full" style={{ width: "94%" }}></div>
-                </div>
-              </div>
-            </div>
+            )}
 
             <button
               onClick={handleDownloadTranscript}
-              className="w-full mt-3 py-2.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-white/10 text-cyan-300 hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              className="w-full mt-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 dark:bg-slate-950/80 dark:hover:bg-slate-900 dark:border-white/10 dark:text-cyan-300 dark:hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
               <span>📜 Download Certified Transcript (PDF)</span>
             </button>

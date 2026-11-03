@@ -4,6 +4,24 @@ import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { StatSkeleton, TableSkeleton } from "../Components/Skeleton";
 import { logSecurityAction, AUDIT_ACTIONS } from "../utils/auditLogger";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+} from "recharts";
+import PrincipalAIBriefing from "../Components/PrincipalAIBriefing";
 import NoticeBanner from "../Components/NoticeBanner";
 import CampusPulseCard from "../Components/CampusPulseCard";
 import { getNotices, publishNotice, deleteNotice } from "../utils/noticeService";
@@ -31,6 +49,9 @@ export default function TrusteeDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [attendanceTrend, setAttendanceTrend] = useState([]);
+  const [classDistribution, setClassDistribution] = useState([]);
+  const [feeDonutData, setFeeDonutData] = useState([]);
   const [financialStats, setFinancialStats] = useState({
     totalRevenue: 0,
     totalTransactions: 0,
@@ -108,12 +129,15 @@ export default function TrusteeDashboard() {
       const allRecords = Array.from(mergedMap.values());
       let revenue = 0;
       let paid = 0;
+      let pendingTotal = 0;
       allRecords.forEach((item) => {
         const amount = Number(item.amount) || 0;
         const isPaid = (item.status || "").toLowerCase() === "paid";
         if (isPaid) {
           revenue += amount;
           paid += 1;
+        } else {
+          pendingTotal += amount;
         }
       });
 
@@ -126,6 +150,11 @@ export default function TrusteeDashboard() {
         paidTransactions: paid,
         collectionRate: rate,
       });
+
+      setFeeDonutData([
+        { name: "Collected", value: revenue, color: "#10B981" },
+        { name: "Outstanding", value: pendingTotal, color: "#F59E0B" },
+      ]);
     } catch (e) {
       console.warn("Financial stats calculation notice:", e);
     }
@@ -233,6 +262,43 @@ export default function TrusteeDashboard() {
 
       const finalMembers = Array.from(mergedMap.values());
       setStudents(finalMembers);
+
+      // Class-wise student distribution
+      const cMap = {};
+      finalMembers.forEach((m) => {
+        if (detectRoleFromId(m.roll_number || m.personal_code || m.role_code, m.role) === "student") {
+          const cName = m.class_name || m.class || "General";
+          cMap[cName] = (cMap[cName] || 0) + 1;
+        }
+      });
+      const cDist = Object.entries(cMap).map(([name, count]) => ({
+        className: name,
+        students: count,
+      }));
+      setClassDistribution(cDist);
+
+      // 7-day Attendance Trend from authentic registers
+      let attPoints = [];
+      try {
+        const rawAtt = localStorage.getItem(`erp_attendance_${institutionCode}`);
+        if (rawAtt) {
+          const parsed = JSON.parse(rawAtt);
+          const byDate = {};
+          parsed.forEach((item) => {
+            const d = item.date || item.created_at?.split("T")[0] || "Recent";
+            if (!byDate[d]) byDate[d] = { date: d, present: 0, total: 0 };
+            byDate[d].total += 1;
+            if (String(item.status).toLowerCase() === "present") byDate[d].present += 1;
+          });
+          attPoints = Object.values(byDate)
+            .slice(-7)
+            .map((b) => ({
+              date: b.date.length > 5 ? b.date.slice(5) : b.date,
+              rate: b.total > 0 ? Math.round((b.present / b.total) * 100) : 0,
+            }));
+        }
+      } catch (e) {}
+      setAttendanceTrend(attPoints);
     } catch (err) {
       console.error("Error fetching students:", err);
       setError(err.message || "Failed to fetch student records.");
@@ -677,6 +743,9 @@ export default function TrusteeDashboard() {
 
         {activeTab === "overview" ? (
           <div className="space-y-8">
+            {/* STANDOUT EXECUTIVE AI FEATURE: PRINCIPAL'S AI BRIEFING */}
+            <PrincipalAIBriefing schoolCode={institutionCode} onNavigateTab={setActiveTab} />
+
             {/* STUDENT EARLY WARNING SYSTEM (PROACTIVE RADAR) */}
             <RiskRadarWidget />
 
@@ -790,6 +859,145 @@ export default function TrusteeDashboard() {
                 </div>
               );
             })()}
+
+            {/* TRUSTEE DATA VISUALIZATIONS & METRIC GRAPHS */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up stagger-2">
+              {/* CHART 1: ATTENDANCE TREND LINE CHART */}
+              <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/10 dark:border-cyan-400/30 dark:text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                      <span>📅</span> Attendance Pacing
+                    </div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">Campus Attendance Trend</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Daily attendance % across working days</p>
+                  </div>
+                </div>
+
+                {attendanceTrend.length === 0 ? (
+                  <div className="h-56 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-6 space-y-2 bg-slate-50/50 dark:bg-tech-grid rounded-2xl">
+                    <span className="text-2xl opacity-60">📅</span>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">No Attendance Recorded</p>
+                    <p className="text-[11px] text-slate-500 max-w-xs">Attendance register records will plot trend lines here.</p>
+                  </div>
+                ) : (
+                  <div className="h-56 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={attendanceTrend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
+                        <XAxis dataKey="date" stroke="#94A3B8" fontSize={10} tickLine={false} />
+                        <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#0F172A",
+                            borderColor: "rgba(255,255,255,0.15)",
+                            borderRadius: "1rem",
+                            fontSize: "12px",
+                            color: "#FFFFFF",
+                          }}
+                          formatter={(v) => [`${v}% Attendance`, ""]}
+                        />
+                        <Line type="monotone" dataKey="rate" stroke="#06B6D4" strokeWidth={3} dot={{ r: 4, fill: "#06B6D4" }} activeDot={{ r: 6 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+
+              {/* CHART 2: FEE TREASURY DONUT CHART */}
+              <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                      <span>💰</span> Treasury Dues
+                    </div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">Fee Recovery Overview</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Collected revenue vs outstanding arrears</p>
+                  </div>
+                </div>
+
+                {financialStats.totalRevenue === 0 && financialStats.totalTransactions === 0 ? (
+                  <div className="h-56 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-6 space-y-2 bg-slate-50/50 dark:bg-tech-grid rounded-2xl">
+                    <span className="text-2xl opacity-60">💰</span>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Clean Treasury Ledger</p>
+                    <p className="text-[11px] text-slate-500 max-w-xs">No transactions recorded for this billing cycle.</p>
+                  </div>
+                ) : (
+                  <div className="h-56 w-full flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={feeDonutData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={75}
+                          paddingAngle={4}
+                          dataKey="value"
+                        >
+                          {feeDonutData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#0F172A",
+                            borderColor: "rgba(255,255,255,0.15)",
+                            borderRadius: "1rem",
+                            fontSize: "12px",
+                            color: "#FFFFFF",
+                          }}
+                          formatter={(value) => [`₹${Number(value).toLocaleString("en-IN")}`, ""]}
+                        />
+                        <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "6px" }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+
+              {/* CHART 3: CLASS-WISE SCHOLAR STRENGTH */}
+              <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-indigo-400 dark:hover:border-indigo-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                      <span>🎓</span> Strength
+                    </div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">Class-Wise Distribution</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Enrolled scholar strength by class</p>
+                  </div>
+                </div>
+
+                {classDistribution.length === 0 ? (
+                  <div className="h-56 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-6 space-y-2 bg-slate-50/50 dark:bg-tech-grid rounded-2xl">
+                    <span className="text-2xl opacity-60">🎓</span>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">No Scholars Enrolled</p>
+                    <p className="text-[11px] text-slate-500 max-w-xs">Admit scholars to view distribution across classes.</p>
+                  </div>
+                ) : (
+                  <div className="h-56 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={classDistribution} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
+                        <XAxis dataKey="className" stroke="#94A3B8" fontSize={10} tickLine={false} />
+                        <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} allowDecimals={false} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#0F172A",
+                            borderColor: "rgba(255,255,255,0.15)",
+                            borderRadius: "1rem",
+                            fontSize: "12px",
+                            color: "#FFFFFF",
+                          }}
+                          formatter={(v) => [`${v} Scholars`, "Enrolled"]}
+                        />
+                        <Bar dataKey="students" name="Students" fill="#6366F1" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* TRUSTEE AUDIT CARD */}
             <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-purple-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-8 shadow-sm dark:shadow-2xl animate-fade-in-up stagger-2">

@@ -6,7 +6,22 @@ import { supabase } from "../supabaseClient";
 import { StatSkeleton, TableSkeleton } from "../Components/Skeleton";
 import { generateFeeInvoicePDF } from "../utils/pdfGenerator";
 import { notifyFeePaymentConfirmed } from "../utils/notifications";
-import { Eye, CheckCircle2, XCircle, AlertCircle, FileText, Image as ImageIcon, RotateCcw } from "lucide-react";
+import { Eye, CheckCircle2, XCircle, Image as ImageIcon, RotateCcw } from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+} from "recharts";
 import FeeRiskRadar from "../Components/FeeRiskRadar";
 import BankReconciliationWorkbench from "../Components/BankReconciliationWorkbench";
 
@@ -21,6 +36,9 @@ export default function AccountantDashboard() {
     totalPaidCount: 0,
     pendingVerificationCount: 0,
   });
+  const [monthlyTrend, setMonthlyTrend] = useState([]);
+  const [feeCategoryData, setFeeCategoryData] = useState([]);
+  const [paymentStatusData, setPaymentStatusData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
@@ -76,7 +94,7 @@ export default function AccountantDashboard() {
       window.dispatchEvent(new Event("erp-fee-reversals-updated"));
       showToast("Reversal request routed to Principal's Operational Approval Inbox (Maker-Checker enforced).", "success");
       setReversalTarget(null);
-    } catch (err) {
+    } catch {
       showToast("Failed to submit reversal request.", "error");
     } finally {
       setSubmittingReversal(false);
@@ -185,6 +203,64 @@ export default function AccountantDashboard() {
         totalPaidCount: paidCount,
         pendingVerificationCount,
       });
+
+      // 1. Monthly Collection Trend
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const monthsMap = {};
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        monthsMap[mKey] = {
+          month: `${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(-2)}`,
+          collected: 0,
+          due: 0,
+        };
+      }
+
+      localRecords.forEach((item) => {
+        const dStr = item.date || item.created_at || "";
+        const mPrefix = dStr.slice(0, 7);
+        const amt = Number(item.amount) || 0;
+        const isPaid = (item.status || "").toLowerCase() === "paid";
+        if (monthsMap[mPrefix]) {
+          if (isPaid) monthsMap[mPrefix].collected += amt;
+          else monthsMap[mPrefix].due += amt;
+        }
+      });
+      setMonthlyTrend(Object.values(monthsMap));
+
+      // 2. Fee Category / Mode Distribution
+      const modeMap = {};
+      localRecords.forEach((item) => {
+        const rawMode = item.payment_mode || "Cash / Cheque";
+        let cleanMode = "Cash / Cheque";
+        if (rawMode.toLowerCase().includes("upi")) cleanMode = "School UPI QR";
+        else if (rawMode.toLowerCase().includes("razorpay") || rawMode.toLowerCase().includes("online")) cleanMode = "Online Gateway";
+        else if (rawMode.toLowerCase().includes("bank") || rawMode.toLowerCase().includes("transfer") || rawMode.toLowerCase().includes("neft")) cleanMode = "Bank Transfer";
+        modeMap[cleanMode] = (modeMap[cleanMode] || 0) + (Number(item.amount) || 0);
+      });
+      const modeColors = ["#10B981", "#06B6D4", "#8B5CF6", "#F59E0B"];
+      const catList = Object.entries(modeMap).map(([k, v], idx) => ({
+        name: k,
+        value: v,
+        color: modeColors[idx % modeColors.length],
+      }));
+      setFeeCategoryData(catList);
+
+      // 3. Payment Status Breakdown
+      const stCount = { Paid: 0, Pending: 0, Verification: 0 };
+      localRecords.forEach((item) => {
+        const st = (item.status || "").toLowerCase();
+        if (st === "paid") stCount.Paid += 1;
+        else if (st === "pending_verification") stCount.Verification += 1;
+        else stCount.Pending += 1;
+      });
+      setPaymentStatusData([
+        { status: "Paid", count: stCount.Paid, fill: "#10B981" },
+        { status: "Pending", count: stCount.Pending, fill: "#F59E0B" },
+        { status: "Awaiting UPI", count: stCount.Verification, fill: "#06B6D4" },
+      ]);
     } catch (err) {
       console.error("Error fetching financial ledger:", err);
       setLedger(localRecords);
@@ -211,6 +287,64 @@ export default function AccountantDashboard() {
         totalPaidCount: paidCount,
         pendingVerificationCount,
       });
+
+      // 1. Monthly Collection Trend
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const monthsMap = {};
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        monthsMap[mKey] = {
+          month: `${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(-2)}`,
+          collected: 0,
+          due: 0,
+        };
+      }
+
+      localRecords.forEach((item) => {
+        const dStr = item.date || item.created_at || "";
+        const mPrefix = dStr.slice(0, 7);
+        const amt = Number(item.amount) || 0;
+        const isPaid = (item.status || "").toLowerCase() === "paid";
+        if (monthsMap[mPrefix]) {
+          if (isPaid) monthsMap[mPrefix].collected += amt;
+          else monthsMap[mPrefix].due += amt;
+        }
+      });
+      setMonthlyTrend(Object.values(monthsMap));
+
+      // 2. Fee Category / Mode Distribution
+      const modeMap = {};
+      localRecords.forEach((item) => {
+        const rawMode = item.payment_mode || "Cash / Cheque";
+        let cleanMode = "Cash / Cheque";
+        if (rawMode.toLowerCase().includes("upi")) cleanMode = "School UPI QR";
+        else if (rawMode.toLowerCase().includes("razorpay") || rawMode.toLowerCase().includes("online")) cleanMode = "Online Gateway";
+        else if (rawMode.toLowerCase().includes("bank") || rawMode.toLowerCase().includes("transfer") || rawMode.toLowerCase().includes("neft")) cleanMode = "Bank Transfer";
+        modeMap[cleanMode] = (modeMap[cleanMode] || 0) + (Number(item.amount) || 0);
+      });
+      const modeColors = ["#10B981", "#06B6D4", "#8B5CF6", "#F59E0B"];
+      const catList = Object.entries(modeMap).map(([k, v], idx) => ({
+        name: k,
+        value: v,
+        color: modeColors[idx % modeColors.length],
+      }));
+      setFeeCategoryData(catList);
+
+      // 3. Payment Status Breakdown
+      const stCount = { Paid: 0, Pending: 0, Verification: 0 };
+      localRecords.forEach((item) => {
+        const st = (item.status || "").toLowerCase();
+        if (st === "paid") stCount.Paid += 1;
+        else if (st === "pending_verification") stCount.Verification += 1;
+        else stCount.Pending += 1;
+      });
+      setPaymentStatusData([
+        { status: "Paid", count: stCount.Paid, fill: "#10B981" },
+        { status: "Pending", count: stCount.Pending, fill: "#F59E0B" },
+        { status: "Awaiting UPI", count: stCount.Verification, fill: "#06B6D4" },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -672,6 +806,210 @@ export default function AccountantDashboard() {
             </button>
           </div>
         )}
+
+        {/* FINANCIAL DATA VISUALIZATIONS & ANALYTICS */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 animate-fade-in-up stagger-2">
+          {/* CHART 1: COLLECTED VS OUTSTANDING (DONUT) */}
+          <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                  <span>💰</span> Recovery Ratio
+                </div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">Fees Collected vs Outstanding</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Cleared fee revenue compared with active student arrears</p>
+              </div>
+            </div>
+
+            {stats.totalRevenue === 0 && stats.pendingDues === 0 ? (
+              <div className="h-56 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-6 space-y-2 bg-slate-50/50 dark:bg-tech-grid rounded-2xl">
+                <span className="text-2xl opacity-60">💰</span>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">Clean Financial Ledger</p>
+                <p className="text-[11px] text-slate-500 max-w-xs">No collections or pending dues recorded for this billing cycle.</p>
+              </div>
+            ) : (
+              <div className="h-56 w-full flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: "Collected Fees", value: stats.totalRevenue, color: "#10B981" },
+                        { name: "Outstanding Dues", value: stats.pendingDues, color: "#F59E0B" },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={75}
+                      paddingAngle={4}
+                      dataKey="value"
+                    >
+                      <Cell fill="#10B981" />
+                      <Cell fill="#F59E0B" />
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#0F172A",
+                        borderColor: "rgba(255,255,255,0.15)",
+                        borderRadius: "1rem",
+                        fontSize: "12px",
+                        color: "#FFFFFF",
+                      }}
+                      formatter={(value) => [`₹${Number(value).toLocaleString("en-IN")}`, ""]}
+                    />
+                    <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "6px" }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          {/* CHART 2: MONTHLY COLLECTION VELOCITY TREND */}
+          <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/10 dark:border-cyan-400/30 dark:text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                  <span>📈</span> Monthly Velocity
+                </div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">Monthly Fee Inflow Trend</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Historical and current month fee settlement inflows</p>
+              </div>
+            </div>
+
+            {monthlyTrend.length === 0 || monthlyTrend.every((m) => m.collected === 0 && m.due === 0) ? (
+              <div className="h-56 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-6 space-y-2 bg-slate-50/50 dark:bg-tech-grid rounded-2xl">
+                <span className="text-2xl opacity-60">📈</span>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">No Monthly Activity Recorded</p>
+                <p className="text-[11px] text-slate-500 max-w-xs">Log fee payments across monthly cycles to plot seasonal trends.</p>
+              </div>
+            ) : (
+              <div className="h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={monthlyTrend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="accCashGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
+                    <XAxis dataKey="month" stroke="#94A3B8" fontSize={10} tickLine={false} />
+                    <YAxis
+                      stroke="#94A3B8"
+                      fontSize={10}
+                      tickLine={false}
+                      tickFormatter={(v) => `₹${v >= 1000 ? `${Math.round(v / 1000)}k` : v}`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#0F172A",
+                        borderColor: "rgba(255,255,255,0.15)",
+                        borderRadius: "1rem",
+                        fontSize: "12px",
+                        color: "#FFFFFF",
+                      }}
+                      formatter={(value) => [`₹${Number(value).toLocaleString("en-IN")}`, ""]}
+                    />
+                    <Area type="monotone" dataKey="collected" name="Collected Inflow" stroke="#10B981" strokeWidth={2.5} fill="url(#accCashGrad)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          {/* CHART 3: PAYMENT MODE DISTRIBUTION */}
+          <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-purple-400 dark:hover:border-purple-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-500/10 dark:border-purple-500/30 dark:text-purple-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                  <span>💳</span> Channel Breakdown
+                </div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">Fee Settlement Channels</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Payment distribution across Cash, UPI QR, and Online gateways</p>
+              </div>
+            </div>
+
+            {feeCategoryData.length === 0 ? (
+              <div className="h-56 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-6 space-y-2 bg-slate-50/50 dark:bg-tech-grid rounded-2xl">
+                <span className="text-2xl opacity-60">💳</span>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">No Channel Records</p>
+                <p className="text-[11px] text-slate-500 max-w-xs">Payments will be mapped across settlement channels.</p>
+              </div>
+            ) : (
+              <div className="h-56 w-full flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={feeCategoryData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={70}
+                      paddingAngle={4}
+                      dataKey="value"
+                    >
+                      {feeCategoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#0F172A",
+                        borderColor: "rgba(255,255,255,0.15)",
+                        borderRadius: "1rem",
+                        fontSize: "12px",
+                        color: "#FFFFFF",
+                      }}
+                      formatter={(value) => [`₹${Number(value).toLocaleString("en-IN")}`, ""]}
+                    />
+                    <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "6px" }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          {/* CHART 4: PAYMENT STATUS BREAKDOWN */}
+          <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-indigo-400 dark:hover:border-indigo-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                  <span>📊</span> Invoice Status
+                </div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">Payment Status Roster</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Total transaction counts by clearance stage</p>
+              </div>
+            </div>
+
+            {ledger.length === 0 ? (
+              <div className="h-56 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-6 space-y-2 bg-slate-50/50 dark:bg-tech-grid rounded-2xl">
+                <span className="text-2xl opacity-60">📊</span>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">No Invoices Available</p>
+                <p className="text-[11px] text-slate-500 max-w-xs">Invoices and receipts will appear in this status chart.</p>
+              </div>
+            ) : (
+              <div className="h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={paymentStatusData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
+                    <XAxis dataKey="status" stroke="#94A3B8" fontSize={10} tickLine={false} />
+                    <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} allowDecimals={false} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#0F172A",
+                        borderColor: "rgba(255,255,255,0.15)",
+                        borderRadius: "1rem",
+                        fontSize: "12px",
+                        color: "#FFFFFF",
+                      }}
+                      formatter={(v) => [`${v} Transactions`, "Count"]}
+                    />
+                    <Bar dataKey="count" name="Transactions" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in-up stagger-2">
           {/* LEFT: MANUAL FEE ENTRY FORM */}

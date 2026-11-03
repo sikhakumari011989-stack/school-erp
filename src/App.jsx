@@ -21,7 +21,9 @@ import TeacherAttendance from "./pages/TeacherAttendance";
 import TeacherClasses from "./pages/TeacherClasses";
 import TeacherAnalytics from "./pages/TeacherAnalytics";
 import TeacherPlanner from "./pages/TeacherPlanner";
+import TeacherClassTests from "./pages/TeacherClassTests";
 import StudentDashboard from "./pages/StudentDashboard";
+import StudentMarks from "./pages/StudentMarks";
 import StudentHomework from "./pages/StudentHomework";
 import StudentLMS from "./pages/StudentLMS";
 import CertificateGenerator from "./pages/CertificateGenerator";
@@ -53,7 +55,6 @@ import ExpenseManagerPage from "./pages/ExpenseManager";
 import OfflineBanner from "./Components/OfflineBanner";
 import ErrorBoundary from "./Components/ErrorBoundary";
 import CommandPalette from "./Components/CommandPalette";
-import AIPrincipalAssistantChat from "./Components/AIPrincipalAssistantChat";
 import { SentryErrorBoundary, initSentry } from "./telemetry/sentry";
 
 // Initialize Sentry Telemetry for production observability
@@ -189,9 +190,6 @@ const AppLayout = ({ children }) => {
 
       {/* UNIVERSAL GLOBAL COMMAND PALETTE (Ctrl + K) */}
       <CommandPalette />
-
-      {/* FLOATING AI PRINCIPAL ASSISTANT COPILOT */}
-      {!isPublicPage && <AIPrincipalAssistantChat />}
     </div>
   );
 };
@@ -406,6 +404,14 @@ export default function App() {
               }
             />
             <Route
+              path="/teacher/class-tests"
+              element={
+                <ProtectedRoute allowedRoles={["teacher", "admin", "trustee", "principal"]}>
+                  <TeacherClassTests />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/teacher/messages"
               element={
                 <ProtectedRoute allowedRoles={["teacher", "admin", "trustee", "principal", "accountant", "staff"]}>
@@ -420,6 +426,14 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={["student", "admin"]}>
                   <StudentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/marks"
+              element={
+                <ProtectedRoute allowedRoles={["student", "admin"]}>
+                  <StudentMarks />
                 </ProtectedRoute>
               }
             />
@@ -464,9 +478,17 @@ export default function App() {
               }
             />
             <Route
+              path="/admin/certificates"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "staff"]}>
+                  <CertificateGenerator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/student/certificates"
               element={
-                <ProtectedRoute allowedRoles={["student", "admin"]}>
+                <ProtectedRoute allowedRoles={["student", "admin", "principal", "trustee"]}>
                   <CertificateGenerator />
                 </ProtectedRoute>
               }

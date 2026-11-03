@@ -1,212 +1,241 @@
-import React, { useState, useEffect, useContext, useRef } from "react";
+import React, { useState, useEffect, useContext, useRef, useCallback } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
-import { supabase } from "../supabaseClient";
-import { resolveSchoolUuid } from "../utils/supabaseHelpers";
 import {
-  FileText,
-  CheckCircle2,
+  fetchStudentsForClass,
+  createClassTest,
+  saveClassTestScores,
+  getClassTestsForTeacher,
+  getScoresForTest,
+} from "../utils/classTestMarksService";
+import {
   AlertCircle,
   X,
-  Sparkles,
   BookOpen,
-  Calendar,
   Layers,
-  Award,
-  TrendingUp,
-  Percent,
   Save,
-  RotateCcw,
+  Check,
+  Send,
+  Plus,
+  UserX,
+  UserCheck,
+  ChevronRight,
 } from "lucide-react";
 
-const STANDARD_SUBJECTS = [
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "English Literature",
-  "Computer Science",
-  "Social Studies",
-  "Environmental Science",
-  "Economics",
-  "Accountancy",
-];
-
-const STANDARD_BATCHES = [
-  "Class 10-ICSE",
-  "Class 10-A",
-  "Class 10-B",
-  "Class 9-A",
-  "Class 9-B",
-  "Class 8-A",
-];
-
-export default function ClassTestEntry({ isOpen, onClose, onTestSaved }) {
+export default function ClassTestEntry({ isOpen = true, onClose, onTestSaved, isStandalone = false }) {
   const { user } = useContext(AppContext) || {};
   const { showToast } = useToast();
 
   const schoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
 
-  // Test Metadata
-  const [selectedBatch, setSelectedBatch] = useState("Class 10-ICSE");
+  // Tab State: 'entry' (New/Edit Test) vs 'history' (Previously Entered Tests)
+  const [activeTab, setActiveTab] = useState("entry");
+
+  // Assigned Classes & Subjects resolution
+  const [assignedClasses, setAssignedClasses] = useState(["Class 10-A", "Class 10-B", "Class 9-A"]);
+  const [assignedSubjects] = useState([
+    "Mathematics",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "English Literature",
+    "Computer Science",
+    "Social Studies",
+  ]);
+
+  // Test Header Form
+  const [selectedClass, setSelectedClass] = useState("Class 10-A");
+  const [selectedSection] = useState("A");
   const [subject, setSubject] = useState("Mathematics");
-  const [testTitle, setTestTitle] = useState("Unit Assessment 1");
+  const [testTitle, setTestTitle] = useState("Mathematics Unit Test 1");
   const [testDate, setTestDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [maxScore, setMaxScore] = useState(20);
   const [passingScore, setPassingScore] = useState(8);
 
-  // Student list & marks
+  // Active Test ID if editing an existing test
+  const [editingTestId, setEditingTestId] = useState(null);
+  const [testStatus, setTestStatus] = useState("draft");
+
+  // Roster & Marks
   const [students, setStudents] = useState([]);
-  const [scores, setScores] = useState({}); // { [studentId]: { marks: number, isAbsent: boolean, remarks: string } }
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [scores, setScores] = useState({}); // { [studentId]: { marks: number | string, isAbsent: boolean, remarks: string, rollNumber: string, name: string } }
+  const [loadingRoster, setLoadingRoster] = useState(false);
+  const [savingState, setSavingState] = useState("idle"); // 'idle' | 'saving' | 'saved' | 'error'
 
-  const inputRefs = useRef({});
+  // History Tab State
+  const [historyTests, setHistoryTests] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyFilterClass, setHistoryFilterClass] = useState("ALL");
 
-  // When maxScore changes, auto-adjust passing score to 40% if not manually set
+  // Confirmation Modal for Publishing
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+
+  // Ref array for keyboard navigation (Roll No. input jumps)
+  const inputRefs = useRef([]);
+
+  // Resolve faculty assigned classes & subjects
+  useEffect(() => {
+    const classesSet = new Set();
+    if (user?.assigned_classes) {
+      const arr = Array.isArray(user.assigned_classes)
+        ? user.assigned_classes
+        : String(user.assigned_classes).split(",");
+      arr.forEach((c) => c.trim() && classesSet.add(c.trim()));
+    }
+    if (user?.class_name && user.class_name !== "Faculty") {
+      classesSet.add(user.class_name.trim());
+    }
+
+    // Try reading classes from local directory
+    try {
+      const raw = localStorage.getItem(`erp_directory_${schoolId}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        parsed.forEach((item) => {
+          if (item.class_name && (item.role || "").toLowerCase() === "student") {
+            classesSet.add(item.class_name.trim());
+          }
+        });
+      }
+    } catch {}
+
+    const resolved = Array.from(classesSet);
+    if (resolved.length > 0) {
+      setAssignedClasses(resolved);
+      if (!resolved.includes(selectedClass)) {
+        setSelectedClass(resolved[0]);
+      }
+    }
+
+    if (user?.subject) {
+      setSubject(user.subject);
+    }
+  }, [user, schoolId]);
+
+  // Load student roster when class changes or when creating a new test
+  const loadRoster = useCallback(async () => {
+    setLoadingRoster(true);
+    setSavingState("idle");
+    try {
+      const roster = await fetchStudentsForClass(schoolId, selectedClass);
+      setStudents(roster);
+
+      // If we are editing an existing test, load its saved scores
+      if (editingTestId) {
+        const existingScores = await getScoresForTest(schoolId, editingTestId);
+        const map = {};
+        roster.forEach((s) => {
+          const found = existingScores.find((sc) => String(sc.student_id) === String(s.id) || String(sc.roll_number) === String(s.roll_number));
+          if (found) {
+            map[s.id] = {
+              marks: found.is_absent ? "" : found.marks_obtained,
+              isAbsent: Boolean(found.is_absent),
+              remarks: found.remarks || "",
+              rollNumber: s.roll_number,
+              name: s.name,
+            };
+          } else {
+            map[s.id] = {
+              marks: "",
+              isAbsent: false,
+              remarks: "",
+              rollNumber: s.roll_number,
+              name: s.name,
+            };
+          }
+        });
+        setScores(map);
+      } else {
+        // New test: initialize clean empty inputs (No mock random marks)
+        const initial = {};
+        roster.forEach((s) => {
+          initial[s.id] = {
+            marks: "",
+            isAbsent: false,
+            remarks: "",
+            rollNumber: s.roll_number,
+            name: s.name,
+          };
+        });
+        setScores(initial);
+      }
+    } catch (err) {
+      console.error("[ClassTestEntry] Error loading student roster:", err);
+      showToast("Unable to load student roster for selected class.", "error");
+    } finally {
+      setLoadingRoster(false);
+    }
+  }, [schoolId, selectedClass, editingTestId, showToast]);
+
+  useEffect(() => {
+    if (isOpen || isStandalone) {
+      loadRoster();
+    }
+  }, [isOpen, isStandalone, loadRoster]);
+
+  // Load history tests
+  const loadHistory = useCallback(async () => {
+    setLoadingHistory(true);
+    try {
+      const list = await getClassTestsForTeacher({
+        schoolId,
+        actor: user,
+      });
+      setHistoryTests(list);
+    } catch (err) {
+      console.error("[ClassTestEntry] Error loading test history:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [schoolId, user]);
+
+  useEffect(() => {
+    if (activeTab === "history") {
+      loadHistory();
+    }
+  }, [activeTab, loadHistory]);
+
+  // Max score change handler
   const handleMaxScoreChange = (val) => {
     const num = Math.max(1, Number(val) || 20);
     setMaxScore(num);
     setPassingScore(Math.round(num * 0.4));
   };
 
-  // 1. Load Students for selected batch
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const loadBatchRoster = async () => {
-      setLoading(true);
-      try {
-        let roster = [];
-
-        // Check local storage directory
-        try {
-          const raw = localStorage.getItem(`erp_directory_${schoolId}`);
-          if (raw) {
-            const all = JSON.parse(raw);
-            const filtered = all.filter((m) => {
-              const isStudent = (m.role || "student").toLowerCase() === "student";
-              const matchesBatch = !m.class_name || m.class_name === selectedBatch || selectedBatch.includes(m.class_name);
-              return isStudent && matchesBatch;
-            });
-            if (filtered.length > 0) roster = filtered;
-          }
-        } catch {}
-
-        // Fallback to Supabase students table
-        if (roster.length === 0 && supabase) {
-          try {
-            const { data } = await supabase
-              .from("students")
-              .select("id, name, roll_number, class_name")
-              .eq("school_id", schoolId)
-              .limit(30);
-            if (data && data.length > 0) roster = data;
-          } catch (e) {}
-        }
-
-        // Standard fallback if roster is empty
-        if (roster.length === 0) {
-          roster = [
-            { id: "s1", name: "Aarav Sharma", roll_number: "STU-101", class_name: selectedBatch },
-            { id: "s2", name: "Diya Patel", roll_number: "STU-102", class_name: selectedBatch },
-            { id: "s3", name: "Rohan Deshmukh", roll_number: "STU-103", class_name: selectedBatch },
-            { id: "s4", name: "Ananya Iyer", roll_number: "STU-104", class_name: selectedBatch },
-            { id: "s5", name: "Kabir Khan", roll_number: "STU-105", class_name: selectedBatch },
-            { id: "s6", name: "Pooja Hegde", roll_number: "STU-106", class_name: selectedBatch },
-            { id: "s7", name: "Tanmay Joshi", roll_number: "STU-107", class_name: selectedBatch },
-            { id: "s8", name: "Sneha Nair", roll_number: "STU-108", class_name: selectedBatch },
-          ];
-        }
-
-        setStudents(roster);
-
-        // Initialize default scores
-        const initial = {};
-        roster.forEach((s) => {
-          const defaultMark = Math.min(maxScore, Math.round(maxScore * (0.7 + Math.random() * 0.25)));
-          initial[s.id] = {
-            marks: defaultMark,
-            isAbsent: false,
-            remarks: "Good",
-          };
-        });
-        setScores(initial);
-      } catch (err) {
-        console.error("Error loading roster:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadBatchRoster();
-  }, [isOpen, selectedBatch, schoolId, maxScore]);
-
-  // Update a student's score
-  const handleScoreChange = (studentId, value) => {
-    let num = value === "" ? "" : Number(value);
-    if (num !== "" && (isNaN(num) || num < 0)) num = 0;
-    if (num !== "" && num > maxScore) num = maxScore;
-
-    setScores((prev) => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        marks: num,
-        isAbsent: false,
-      },
-    }));
-  };
-
-  // Toggle student absent
-  const handleToggleAbsent = (studentId) => {
+  // Student marks input change
+  const handleScoreChange = (studentId, rawValue) => {
+    setSavingState("idle");
     setScores((prev) => {
       const current = prev[studentId] || {};
-      const newAbsent = !current.isAbsent;
       return {
         ...prev,
         [studentId]: {
           ...current,
-          isAbsent: newAbsent,
-          marks: newAbsent ? 0 : Math.round(maxScore * 0.75),
+          marks: rawValue,
+          isAbsent: false,
         },
       };
     });
   };
 
-  // Quick fill buttons
-  const setAllFullMarks = () => {
-    const updated = {};
-    students.forEach((s) => {
-      updated[s.id] = { marks: maxScore, isAbsent: false, remarks: "Excellent" };
+  // Toggle student absent status
+  const handleToggleAbsent = (studentId) => {
+    setSavingState("idle");
+    setScores((prev) => {
+      const current = prev[studentId] || {};
+      const nextAbsent = !current.isAbsent;
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          isAbsent: nextAbsent,
+          marks: nextAbsent ? "" : current.marks,
+        },
+      };
     });
-    setScores(updated);
-    showToast(`Set all students to full marks (${maxScore}/${maxScore})`, "info");
   };
 
-  const setAllPassingMarks = () => {
-    const updated = {};
-    students.forEach((s) => {
-      updated[s.id] = { marks: passingScore, isAbsent: false, remarks: "Satisfactory" };
-    });
-    setScores(updated);
-    showToast(`Set all students to passing threshold (${passingScore}/${maxScore})`, "info");
-  };
-
-  // Real-time Telemetry Calculations
-  const presentScores = Object.entries(scores)
-    .filter(([_, data]) => !data.isAbsent && data.marks !== "" && !isNaN(data.marks))
-    .map(([_, data]) => Number(data.marks));
-
-  const totalPresent = presentScores.length;
-  const classAvg = totalPresent > 0 ? (presentScores.reduce((a, b) => a + b, 0) / totalPresent).toFixed(1) : 0;
-  const avgPercent = maxScore > 0 ? ((classAvg / maxScore) * 100).toFixed(1) : 0;
-  const highestScore = totalPresent > 0 ? Math.max(...presentScores) : 0;
-  const lowestScore = totalPresent > 0 ? Math.min(...presentScores) : 0;
-  const passCount = presentScores.filter((m) => m >= passingScore).length;
-  const passRate = totalPresent > 0 ? Math.round((passCount / totalPresent) * 100) : 100;
-
-  // Rapid Enter / Down Arrow key jump to next student
+  // Keyboard Navigation: Enter or Down Arrow jumps to next row, Up Arrow jumps to previous
   const handleKeyDown = (e, index) => {
     if (e.key === "Enter" || e.key === "ArrowDown") {
       e.preventDefault();
@@ -225,395 +254,708 @@ export default function ClassTestEntry({ isOpen, onClose, onTestSaved }) {
     }
   };
 
-  // Publish Test Scores
-  const handlePublishResults = async (e) => {
-    e.preventDefault();
-
+  // Save Marks (Draft or Published)
+  const handleSaveMarks = async (publish = false) => {
     if (!testTitle.trim()) {
-      showToast("Please enter a test title.", "error");
+      showToast("Please enter a test title (e.g. 'Mathematics Unit Test 1').", "error");
       return;
     }
 
-    setSaving(true);
-    const testId = `test_${Date.now()}`;
-
-    const testPayload = {
-      id: testId,
-      school_id: schoolId,
-      class_id: selectedBatch,
-      subject,
-      title: testTitle.trim(),
-      test_date: testDate,
-      max_score: maxScore,
-      passing_score: passingScore,
-      created_by: user?.name || "Faculty",
-      created_at: new Date().toISOString(),
-    };
-
-    const formattedScores = students.map((s) => {
-      const entry = scores[s.id] || { marks: 0, isAbsent: false, remarks: "" };
-      return {
-        id: `score_${testId}_${s.id}`,
-        test_id: testId,
-        school_id: schoolId,
-        student_id: s.id,
-        student_name: s.name || s.full_name,
-        roll_number: s.roll_number || s.personal_code || s.id,
-        marks_obtained: entry.isAbsent ? 0 : Number(entry.marks) || 0,
-        max_score: maxScore,
-        is_absent: entry.isAbsent,
-        remarks: entry.remarks || (entry.marks >= passingScore ? "Passed" : "Needs Improvement"),
-        subject,
-        test_title: testTitle.trim(),
-        test_date: testDate,
-        class_id: selectedBatch,
-      };
-    });
+    setSavingState("saving");
 
     try {
-      // 1. Sync to Supabase class_tests & test_scores tables
-      if (supabase) {
-        try {
-          const schoolUuid = await resolveSchoolUuid(schoolId);
-          const { error: testErr } = await supabase.from("class_tests").insert([
-            {
-              school_id: schoolUuid,
-              class_id: selectedBatch,
-              subject,
-              title: testTitle.trim(),
-              test_date: testDate,
-              max_score: maxScore,
-              passing_score: passingScore,
-              created_by: user?.name || "Faculty",
-            },
-          ]);
+      // 1. Ensure test record exists or create one
+      let targetTestId = editingTestId;
 
-          if (!testErr) {
-            await supabase.from("test_scores").insert(
-              formattedScores.map((sc) => ({
-                school_id: schoolUuid,
-                test_id: testId,
-                student_id: sc.student_id,
-                student_name: sc.student_name,
-                roll_number: sc.roll_number,
-                marks_obtained: sc.marks_obtained,
-                max_score: sc.max_score,
-                is_absent: sc.is_absent,
-                remarks: sc.remarks,
-              }))
-            );
-          }
-        } catch (dbErr) {
-          console.warn("Supabase test publish notice, preserving local ledger:", dbErr);
-        }
+      if (!targetTestId) {
+        const created = await createClassTest({
+          schoolId,
+          classId: selectedClass,
+          section: selectedSection,
+          subject,
+          title: testTitle.trim(),
+          testDate,
+          maxScore,
+          passingScore,
+          actor: user,
+        });
+        targetTestId = created.id;
+        setEditingTestId(created.id);
       }
 
-      // 2. Persist to Local Storage Cache for instantaneous student/parent availability
-      try {
-        const existingTestsRaw = localStorage.getItem(`erp_class_tests_${schoolId}`) || "[]";
-        const existingTests = JSON.parse(existingTestsRaw);
-        localStorage.setItem(`erp_class_tests_${schoolId}`, JSON.stringify([testPayload, ...existingTests]));
+      // 2. Prepare score list
+      const scorePayload = students.map((s) => {
+        const sc = scores[s.id] || {};
+        return {
+          student_id: s.id,
+          student_name: s.name,
+          roll_number: s.roll_number,
+          marks_obtained: sc.isAbsent ? 0 : sc.marks,
+          is_absent: Boolean(sc.isAbsent),
+          remarks: sc.remarks || (sc.isAbsent ? "Absent" : "Completed"),
+        };
+      });
 
-        const existingScoresRaw = localStorage.getItem(`erp_test_scores_${schoolId}`) || "[]";
-        const existingScores = JSON.parse(existingScoresRaw);
-        localStorage.setItem(`erp_test_scores_${schoolId}`, JSON.stringify([...formattedScores, ...existingScores]));
-      } catch (e) {
-        console.warn("Storage sync notice:", e);
+      // 3. Save scores with validation
+      const result = await saveClassTestScores({
+        schoolId,
+        testId: targetTestId,
+        scoresList: scorePayload,
+        actor: user,
+        publish,
+      });
+
+      setTestStatus(result.status);
+      setSavingState("saved");
+      setShowPublishConfirm(false);
+
+      if (publish) {
+        showToast(`Test marks published! Class highest: ${result.highestScore}/${maxScore}. Students can now view their marks.`, "success");
+      } else {
+        showToast("Marks saved securely as Draft. You can publish whenever ready.", "info");
       }
 
-      // 3. Dispatch reactive update event
-      window.dispatchEvent(new Event("erp-tests-updated"));
-
-      showToast(
-        `Successfully published marks for ${students.length} scholars in ${selectedBatch} (${subject})!`,
-        "success"
-      );
-
-      if (typeof onTestSaved === "function") {
-        onTestSaved(testPayload);
+      if (onTestSaved) {
+        onTestSaved(result);
       }
-
-      onClose();
     } catch (err) {
-      console.error("Error publishing test marks:", err);
-      showToast("Error saving test results. Please try again.", "error");
-    } finally {
-      setSaving(false);
+      console.error("[ClassTestEntry] Save error:", err);
+      setSavingState("error");
+      showToast(err.message || "Failed to save test marks. Please verify input.", "error");
     }
   };
 
-  if (!isOpen) return null;
+  // Reset form to create another test
+  const handleResetForNewTest = () => {
+    setEditingTestId(null);
+    setTestStatus("draft");
+    setTestTitle(`${subject} Unit Test`);
+    setTestDate(new Date().toISOString().split("T")[0]);
+    setMaxScore(20);
+    setPassingScore(8);
+    setSavingState("idle");
+    loadRoster();
+    setActiveTab("entry");
+  };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl relative my-auto animate-scale-in max-h-[92vh] flex flex-col">
-        {/* MODAL HEADER */}
-        <div className="flex justify-between items-start pb-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="p-1.5 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
-                <FileText className="w-4 h-4" />
-              </span>
-              <span className="text-[11px] font-black uppercase tracking-widest text-cyan-600 dark:text-cyan-400">
-                Faculty Evaluation Suite
-              </span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-300">
-                Rapid Grid Entry
-              </span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-              Record Class Assessment Marks
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Input test scores and instantly publish performance telemetry to student/parent portals.
-            </p>
-          </div>
+  // Open existing test to edit
+  const handleEditExistingTest = (test) => {
+    setEditingTestId(test.id);
+    setSelectedClass(test.class_id);
+    setSubject(test.subject);
+    setTestTitle(test.title);
+    setTestDate(test.test_date);
+    setMaxScore(Number(test.max_score) || 20);
+    setPassingScore(Number(test.passing_score) || 8);
+    setTestStatus(test.status || "draft");
+    setActiveTab("entry");
+  };
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center cursor-pointer transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+  if (!isOpen && !isStandalone) return null;
 
-        {/* METADATA CONFIGURATION ROW */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 py-4 shrink-0 border-b border-slate-100 dark:border-slate-800/80">
-          {/* Batch */}
-          <div className="col-span-2 sm:col-span-1">
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Class Batch
-            </label>
-            <select
-              value={selectedBatch}
-              onChange={(e) => setSelectedBatch(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold rounded-xl px-2.5 py-2 focus:outline-none focus:border-cyan-400"
-            >
-              {STANDARD_BATCHES.map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
-          </div>
+  // Real-time calculation metrics
+  const scoreEntries = Object.values(scores);
+  const presentEntries = scoreEntries.filter((s) => !s.isAbsent && s.marks !== "" && !isNaN(Number(s.marks)));
+  const presentCount = presentEntries.length;
+  const absentCount = scoreEntries.filter((s) => s.isAbsent).length;
+  const highestCalculated = presentCount > 0 ? Math.max(...presentEntries.map((s) => Number(s.marks))) : 0;
 
-          {/* Subject */}
-          <div className="col-span-2 sm:col-span-1">
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Subject
-            </label>
-            <select
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold rounded-xl px-2.5 py-2 focus:outline-none focus:border-cyan-400"
-            >
-              {STANDARD_SUBJECTS.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Test Title */}
-          <div className="col-span-2 sm:col-span-2 md:col-span-2">
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Assessment Title
-            </label>
-            <input
-              type="text"
-              required
-              value={testTitle}
-              onChange={(e) => setTestTitle(e.target.value)}
-              placeholder="e.g. Unit 2: Linear Equations"
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-400"
-            />
-          </div>
-
-          {/* Max Score */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Max Score
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="500"
-              value={maxScore}
-              onChange={(e) => handleMaxScoreChange(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-400"
-            />
-          </div>
-
-          {/* Passing Score */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Pass Mark
-            </label>
-            <input
-              type="number"
-              min="1"
-              max={maxScore}
-              value={passingScore}
-              onChange={(e) => setPassingScore(Number(e.target.value))}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-400"
-            />
-          </div>
-        </div>
-
-        {/* LIVE CLASS STATS SUMMARY BAR */}
-        <div className="flex items-center justify-between flex-wrap gap-2 py-3 px-4 my-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-white/5 shrink-0">
-          <div className="flex items-center gap-4 text-xs font-semibold text-slate-600 dark:text-slate-300 flex-wrap">
-            <span>
-              Avg: <strong className="text-cyan-600 dark:text-cyan-400 font-bold">{classAvg} / {maxScore} ({avgPercent}%)</strong>
+  const content = (
+    <div className="space-y-6">
+      {/* HEADER & TAB TOGGLE */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+              <BookOpen className="w-4 h-4" />
             </span>
-            <span>
-              High: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{highestScore}</strong>
+            <span className="text-xs font-black uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
+              Faculty Grading Portal
             </span>
-            <span>
-              Low: <strong className="text-amber-600 dark:text-amber-400 font-bold">{lowestScore}</strong>
-            </span>
-            <span>
-              Pass Rate: <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{passRate}% ({passCount}/{totalPresent})</strong>
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={setAllFullMarks}
-              className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer"
-            >
-              All Full Marks
-            </button>
-            <button
-              type="button"
-              onClick={setAllPassingMarks}
-              className="text-[10px] font-bold px-2 py-1 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer"
-            >
-              All Passing
-            </button>
-          </div>
-        </div>
-
-        {/* RAPID-ENTRY STUDENT MARKS GRID (SCROLLABLE) */}
-        <div className="flex-1 overflow-y-auto pr-1 space-y-2 min-h-[220px]">
-          {students.map((student, idx) => {
-            const entry = scores[student.id] || { marks: 0, isAbsent: false };
-            const isPassing = !entry.isAbsent && entry.marks >= passingScore;
-            const pct = maxScore > 0 ? Math.round((Number(entry.marks) / maxScore) * 100) : 0;
-
-            return (
-              <div
-                key={student.id}
-                className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                  entry.isAbsent
-                    ? "bg-slate-100/60 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 opacity-60"
-                    : isPassing
-                    ? "bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-cyan-400/40"
-                    : "bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40"
+            {editingTestId && (
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                  testStatus === "published"
+                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-400"
+                    : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-400"
                 }`}
               >
-                {/* Student Info */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="w-6 text-center text-xs font-mono font-bold text-slate-400 shrink-0">
-                    {idx + 1}
-                  </span>
-                  <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center shrink-0">
-                    {(student.name || "S").charAt(0)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
-                      {student.name || student.full_name}
-                    </p>
-                    <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate">
-                      {student.roll_number || student.personal_code || student.id}
-                    </p>
-                  </div>
-                </div>
+                {testStatus}
+              </span>
+            )}
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            Class Test Marks
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Record, validate, and publish unit assessments and class test scores for your assigned students.
+          </p>
+        </div>
 
-                {/* Score Input & Controls */}
-                <div className="flex items-center gap-3 shrink-0">
-                  {/* Absent Toggle */}
-                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={entry.isAbsent}
-                      onChange={() => handleToggleAbsent(student.id)}
-                      className="rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
-                    />
-                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                      Absent
-                    </span>
-                  </label>
+        {/* Tab Switcher & Modal Close */}
+        <div className="flex items-center gap-2">
+          <div className="flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setActiveTab("entry")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "entry"
+                  ? "bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              {editingTestId ? "Edit Test" : "New Marks Entry"}
+            </button>
+            <button
+              onClick={() => setActiveTab("history")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "history"
+                  ? "bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              Test History
+            </button>
+          </div>
 
-                  {/* Marks Input with Enter/Tab jumps */}
-                  <div className="relative flex items-center">
-                    <input
-                      ref={(el) => (inputRefs.current[idx] = el)}
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      max={maxScore}
-                      disabled={entry.isAbsent}
-                      value={entry.isAbsent ? "" : entry.marks}
-                      onChange={(e) => handleScoreChange(student.id, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(e, idx)}
-                      placeholder="0"
-                      className="w-20 text-center font-mono font-bold text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-2 text-slate-900 dark:text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 disabled:opacity-40"
-                    />
-                    <span className="text-[11px] font-bold text-slate-400 ml-1.5 w-8">
-                      /{maxScore}
-                    </span>
-                  </div>
+          {!isStandalone && onClose && (
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+      </div>
 
-                  {/* Percentage Pill */}
-                  <div className="w-14 text-right">
-                    {entry.isAbsent ? (
-                      <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">
-                        ABSENT
-                      </span>
-                    ) : (
-                      <span
-                        className={`text-xs font-mono font-extrabold ${
-                          isPassing ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+      {/* ==================================================================== */}
+      {/* TAB 1: MARKS ENTRY INTERFACE                                        */}
+      {/* ==================================================================== */}
+      {activeTab === "entry" && (
+        <div className="space-y-6">
+          {/* TEST CONFIGURATION GRID */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                <Layers className="w-3.5 h-3.5 text-cyan-500" />
+                <span>1. Test Details & Metadata</span>
+              </h3>
+              {editingTestId && (
+                <button
+                  onClick={handleResetForNewTest}
+                  className="text-xs text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Create New Test</span>
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Class Selector */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                  Assigned Class
+                </label>
+                <select
+                  value={selectedClass}
+                  onChange={(e) => {
+                    setSelectedClass(e.target.value);
+                    setEditingTestId(null);
+                  }}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
+                >
+                  {assignedClasses.map((cls) => (
+                    <option key={cls} value={cls}>
+                      {cls}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Subject Selector */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                  Subject
+                </label>
+                <select
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
+                >
+                  {assignedSubjects.map((sub) => (
+                    <option key={sub} value={sub}>
+                      {sub}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Test Date */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                  Test Date
+                </label>
+                <input
+                  type="date"
+                  value={testDate}
+                  onChange={(e) => setTestDate(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
+                />
+              </div>
+
+              {/* Maximum Marks */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                  Maximum Marks
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="200"
+                    value={maxScore}
+                    onChange={(e) => handleMaxScoreChange(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                  <div className="flex gap-1">
+                    {[20, 50, 100].map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => handleMaxScoreChange(val)}
+                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold border cursor-pointer ${
+                          maxScore === val
+                            ? "bg-cyan-500 text-white border-cyan-500"
+                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
                         }`}
                       >
-                        {pct}%
-                      </span>
-                    )}
+                        {val}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
 
-        {/* MODAL FOOTER */}
-        <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0 mt-3">
-          <p className="text-[11px] text-slate-400">
-            Press <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-mono border">Tab</kbd> or <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-mono border">Enter</kbd> to rapidly jump to the next scholar.
-          </p>
+            {/* Test Title Input */}
+            <div>
+              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                Test Title
+              </label>
+              <input
+                type="text"
+                value={testTitle}
+                onChange={(e) => setTestTitle(e.target.value)}
+                placeholder="e.g. Mathematics Unit Test 1 (Quadratic Equations)"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 placeholder-slate-400"
+              />
+            </div>
+          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handlePublishResults}
-              disabled={saving || students.length === 0}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
-            >
-              <Save className="w-4 h-4" />
-              <span>{saving ? "Publishing Results..." : `Publish Marks for ${students.length} Scholars`}</span>
-            </button>
+          {/* TELEMETRY SUMMARY RIBBON */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                Total Scholars
+              </span>
+              <span className="text-lg font-black text-slate-900 dark:text-white">{students.length}</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                Evaluated / Present
+              </span>
+              <span className="text-lg font-black text-cyan-600 dark:text-cyan-400">{presentCount}</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                Marked Absent
+              </span>
+              <span className="text-lg font-black text-amber-600 dark:text-amber-400">{absentCount}</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                Class Highest Marks
+              </span>
+              <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                {highestCalculated} / {maxScore}
+              </span>
+            </div>
+          </div>
+
+          {/* MARKS ENTRY TABLE */}
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900/60 shadow-xs">
+            <div className="p-3.5 sm:p-4 bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                  2. Student Evaluation Register
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Use Up/Down arrows or Enter to navigate between student score inputs.
+                </p>
+              </div>
+              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+                Max Ceiling: {maxScore} pts
+              </span>
+            </div>
+
+            {loadingRoster ? (
+              <div className="p-8 text-center space-y-3">
+                <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Loading student roster for {selectedClass}...</p>
+              </div>
+            ) : students.length === 0 ? (
+              <div className="p-8 text-center space-y-2">
+                <AlertCircle className="w-8 h-8 text-amber-500 mx-auto opacity-60" />
+                <p className="text-xs font-bold text-slate-900 dark:text-white">No Enrolled Students Found</p>
+                <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                  No scholars are registered under {selectedClass}. Please verify the class admissions register.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead className="sticky top-0 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 uppercase text-[10px] font-black tracking-wider z-10 border-b border-slate-200 dark:border-slate-800">
+                    <tr>
+                      <th className="py-2.5 px-4 w-24">Roll No.</th>
+                      <th className="py-2.5 px-4">Student Name</th>
+                      <th className="py-2.5 px-4 w-44">Marks ({maxScore})</th>
+                      <th className="py-2.5 px-4 w-32 text-center">Attendance</th>
+                      <th className="py-2.5 px-4 w-28 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
+                    {students.map((student, idx) => {
+                      const studentScore = scores[student.id] || { marks: "", isAbsent: false };
+                      const val = studentScore.marks;
+                      const numVal = Number(val);
+                      const isOverCeiling = val !== "" && !isNaN(numVal) && numVal > maxScore;
+                      const isNegative = val !== "" && !isNaN(numVal) && numVal < 0;
+                      const hasError = isOverCeiling || isNegative;
+                      const isPassed = !studentScore.isAbsent && val !== "" && !isNaN(numVal) && numVal >= passingScore;
+
+                      return (
+                        <tr
+                          key={student.id}
+                          className={`transition-colors ${
+                            studentScore.isAbsent
+                              ? "bg-slate-50/50 dark:bg-slate-950/20 opacity-75"
+                              : "hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+                          }`}
+                        >
+                          <td className="py-2 px-4 font-mono font-bold text-slate-700 dark:text-slate-300">
+                            {student.roll_number || `0${idx + 1}`}
+                          </td>
+                          <td className="py-2 px-4 text-slate-900 dark:text-white font-semibold">
+                            {student.name}
+                          </td>
+                          <td className="py-2 px-4">
+                            {studentScore.isAbsent ? (
+                              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-400 text-xs font-bold font-mono">
+                                <UserX className="w-3.5 h-3.5" />
+                                <span>ABSENT</span>
+                              </div>
+                            ) : (
+                              <div className="relative">
+                                <input
+                                  ref={(el) => (inputRefs.current[idx] = el)}
+                                  type="number"
+                                  min="0"
+                                  max={maxScore}
+                                  step="0.5"
+                                  placeholder="0.0"
+                                  value={val}
+                                  onChange={(e) => handleScoreChange(student.id, e.target.value)}
+                                  onKeyDown={(e) => handleKeyDown(e, idx)}
+                                  className={`w-28 bg-white dark:bg-slate-950 border rounded-xl px-3 py-1.5 text-xs font-bold font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 transition-all ${
+                                    hasError
+                                      ? "border-rose-500 focus:ring-rose-500 bg-rose-50/40 text-rose-600"
+                                      : "border-slate-200 dark:border-slate-700 focus:ring-cyan-500"
+                                  }`}
+                                />
+                                {hasError && (
+                                  <span className="block text-[10px] text-rose-500 font-semibold mt-0.5">
+                                    {isOverCeiling ? `Max is ${maxScore}` : "Cannot be < 0"}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-2 px-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAbsent(student.id)}
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                                studentScore.isAbsent
+                                  ? "bg-amber-500 text-white shadow-xs"
+                                  : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300"
+                              }`}
+                            >
+                              {studentScore.isAbsent ? (
+                                <>
+                                  <UserCheck className="w-3 h-3" />
+                                  <span>Mark Present</span>
+                                </>
+                              ) : (
+                                <>
+                                  <UserX className="w-3 h-3" />
+                                  <span>Mark Absent</span>
+                                </>
+                              )}
+                            </button>
+                          </td>
+                          <td className="py-2 px-4 text-right">
+                            {studentScore.isAbsent ? (
+                              <span className="text-[10px] font-bold text-amber-500 uppercase">Excluded</span>
+                            ) : val === "" ? (
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">Pending</span>
+                            ) : isPassed ? (
+                              <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">
+                                Pass ({Math.round((numVal / maxScore) * 100)}%)
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-extrabold text-rose-500">
+                                Retake ({Math.round((numVal / maxScore) * 100)}%)
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* ACTION TOOLBAR & CONFIRMATION */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-2 text-xs">
+              {savingState === "saving" && (
+                <span className="inline-flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400 font-bold">
+                  <div className="w-3.5 h-3.5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span>Saving marks to institutional records...</span>
+                </span>
+              )}
+              {savingState === "saved" && (
+                <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                  <Check className="w-4 h-4" />
+                  <span>Marks saved securely.</span>
+                </span>
+              )}
+              {savingState === "error" && (
+                <span className="inline-flex items-center gap-1.5 text-rose-500 font-bold">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Error saving marks. Check inputs.</span>
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {/* SAVE AS DRAFT */}
+              <button
+                type="button"
+                disabled={savingState === "saving" || students.length === 0}
+                onClick={() => handleSaveMarks(false)}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save as Draft</span>
+              </button>
+
+              {/* PUBLISH RESULTS (TRIGGERS CONFIRMATION) */}
+              <button
+                type="button"
+                disabled={savingState === "saving" || students.length === 0}
+                onClick={() => setShowPublishConfirm(true)}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md shadow-cyan-500/20 disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" />
+                <span>Publish Marks</span>
+              </button>
+            </div>
           </div>
         </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* TAB 2: PREVIOUSLY ENTERED TESTS & HISTORY                            */}
+      {/* ==================================================================== */}
+      {activeTab === "history" && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                Institutional Test Ledger
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                View previously created class tests, review publication status, or edit draft marks.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-slate-500">Filter Class:</span>
+              <select
+                value={historyFilterClass}
+                onChange={(e) => setHistoryFilterClass(e.target.value)}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-900 dark:text-white cursor-pointer"
+              >
+                <option value="ALL">All Classes</option>
+                {assignedClasses.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {loadingHistory ? (
+            <div className="p-8 text-center space-y-3">
+              <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Loading test records...</p>
+            </div>
+          ) : historyTests.length === 0 ? (
+            <div className="p-8 rounded-2xl border border-slate-200 dark:border-slate-800 text-center space-y-2 bg-slate-50/50 dark:bg-slate-950/40">
+              <BookOpen className="w-8 h-8 text-slate-400 mx-auto" />
+              <p className="text-xs font-bold text-slate-900 dark:text-white">No Class Tests Recorded Yet</p>
+              <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                You have not entered any class tests yet. Click "New Marks Entry" to start recording marks.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {historyTests
+                .filter((t) => historyFilterClass === "ALL" || t.class_id === historyFilterClass)
+                .map((test) => {
+                  const isPub = test.status === "published";
+                  return (
+                    <div
+                      key={test.id}
+                      className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 hover:border-cyan-500/40 transition-all flex flex-col justify-between space-y-3 shadow-xs"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                            {test.class_id} • {test.subject}
+                          </span>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                              isPub
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
+                            }`}
+                          >
+                            {isPub ? "Published" : "Draft"}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+                          {test.title}
+                        </h4>
+                        <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-mono">
+                          <span>📅 {test.test_date}</span>
+                          <span>Max: {test.max_score} pts</span>
+                          {test.highest_score !== null && (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                              🏆 Class High: {test.highest_score}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-400">
+                          {isPub ? `Published by ${test.published_by || "Faculty"}` : "Unpublished Draft"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleEditExistingTest(test)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer"
+                        >
+                          <span>{isPub ? "View / Edit" : "Continue Entry"}</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* CONFIRMATION MODAL: PUBLISH MARKS                                   */}
+      {/* ==================================================================== */}
+      {showPublishConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
+              <Send className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-slate-900 dark:text-white">
+                Publish Marks for {testTitle}?
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                Publishing makes results immediately visible in students' private portals. Each student will be able to
+                view their own score and the class highest score. No peer marks or names will ever be shown.
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-[11px] space-y-1 font-mono">
+              <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                <span>Class & Subject:</span>
+                <span className="font-bold text-slate-900 dark:text-white">{selectedClass} ({subject})</span>
+              </div>
+              <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                <span>Total Evaluated:</span>
+                <span className="font-bold text-cyan-600 dark:text-cyan-400">{presentCount} scholars</span>
+              </div>
+              <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                <span>Class Highest:</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{highestCalculated} / {maxScore}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowPublishConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveMarks(true)}
+                className="flex-1 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md shadow-cyan-500/20"
+              >
+                Confirm & Publish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Standalone Full-Page Mode vs Modal Mode
+  if (isStandalone) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 transition-colors duration-200">
+        <div className="max-w-6xl mx-auto bg-white/90 dark:bg-slate-900/60 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-sm dark:shadow-2xl">
+          {content}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+      <div className="max-w-5xl w-full bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-2xl my-auto max-h-[92vh] overflow-y-auto">
+        {content}
       </div>
     </div>
   );
 }
-
