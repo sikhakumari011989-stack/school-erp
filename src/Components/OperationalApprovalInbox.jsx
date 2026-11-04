@@ -7,6 +7,7 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
   const { showToast } = useToast();
   const [approvalItems, setApprovalItems] = useState([]);
   const [filterType, setFilterType] = useState("all");
+  const [processingId, setProcessingId] = useState(null);
 
   const cleanSchool = schoolCode.toUpperCase();
 
@@ -27,7 +28,7 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
     };
   }, [cleanSchool]);
 
-  const loadApprovalItems = () => {
+  const loadApprovalItems = async () => {
     const combined = [];
 
     // 1. Pending Staff Leaves
@@ -52,20 +53,57 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
 
     // 2. Accountant Fee Reversal Requests (Maker-Checker)
     try {
+      if (supabase) {
+        try {
+          const { data: dbReversals, error: dbRevErr } = await supabase
+            .from("fee_reversal_requests")
+            .select("*, fee_ledger ( student_name, class_name )")
+            .eq("school_id", cleanSchool)
+            .eq("status", "pending_approval")
+            .order("created_at", { ascending: false });
+
+          if (!dbRevErr && Array.isArray(dbReversals)) {
+            dbReversals.forEach((r) => {
+              combined.push({
+                id: r.id,
+                category: "REVERSAL",
+                title: `Fee Reversal / Credit Note: ₹${Number(r.amount).toLocaleString()}`,
+                subtitle: `Student: ${r.fee_ledger?.student_name || "Enrolled Scholar"} • Reason: ${r.reason}`,
+                requestedBy: r.requester_name || "Accountant",
+                role: r.requester_role || "Accountant",
+                timestamp: r.created_at ? new Date(r.created_at).toLocaleDateString() : "Recent",
+                original: {
+                  ...r,
+                  receiptId: r.entry_id,
+                  studentName: r.fee_ledger?.student_name,
+                  className: r.fee_ledger?.class_name,
+                },
+                isDbRecord: true,
+              });
+            });
+          }
+        } catch (revQueryErr) {
+          console.warn("[ApprovalInbox] Supabase reversal query notice:", revQueryErr);
+        }
+      }
+
+      // Merge local storage for offline tolerance (avoid duplicates)
+      const existingDbIds = new Set(combined.map((c) => c.id));
       const reversalsRaw = localStorage.getItem(`erp_fee_reversals_${cleanSchool}`);
       const reversals = reversalsRaw ? JSON.parse(reversalsRaw) : [];
       reversals
-        .filter((r) => (r.status || "").toLowerCase() === "pending_approval")
+        .filter((r) => (r.status || "").toLowerCase() === "pending_approval" && !existingDbIds.has(r.id))
         .forEach((r) => {
           combined.push({
             id: r.id,
             category: "REVERSAL",
             title: `Fee Reversal / Credit Note: ₹${Number(r.amount).toLocaleString()}`,
-            subtitle: `Student: ${r.studentName} (${r.rollNumber}) • Reason: ${r.reason}`,
-            requestedBy: r.makerName || "Accountant (ACC-01)",
+            subtitle: `Student: ${r.studentName} (${r.rollNumber || "ID"}) • Reason: ${r.reason}`,
+            requestedBy: r.makerName || "Accountant",
             role: "Accountant",
             timestamp: r.requestedAt || "Recent",
             original: r,
+            isDbRecord: false,
           });
         });
     } catch {}
@@ -94,6 +132,8 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
   };
 
   const handleApprove = async (item) => {
+    if (processingId) return;
+    setProcessingId(item.id);
     try {
       if (item.category === "LEAVE") {
         const leavesRaw = localStorage.getItem(`erp_staff_leaves_${cleanSchool}`);
@@ -103,58 +143,60 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
         window.dispatchEvent(new Event("erp-staff-leaves-updated"));
         showToast(`Approved leave application for ${item.requestedBy}`, "success");
       } else if (item.category === "REVERSAL") {
-        // Maker-Checker Fee Reversal Approval with Pessimistic Row Lock & Idempotent RPC
-        const targetEntryId = item.original.receiptId || item.id;
-        const idempotencyKey = `REV-${targetEntryId}`;
-        let rpcSuccess = false;
+        // Maker-Checker Fee Reversal Approval with Database Pessimistic Row Lock
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!supabase) {
+          showToast("Database connection unavailable. Reversal requires server-side pessimistic lock.", "error");
+          return;
+        }
 
-        if (supabase) {
-          try {
-            const { data, error } = await supabase.rpc("reverse_fee_entry", {
-              p_entry_id: String(targetEntryId),
-              p_reversal_reason: item.original.reason || "Maker-Checker Principal Approval",
-              p_authorized_by: "Principal",
-              p_idempotency_key: idempotencyKey,
-            });
-
-            if (error) {
-              console.warn("Pessimistic lock RPC notice:", error.message);
-            } else if (data && !data.success) {
-              showToast(`Concurrency Warning: ${data.error || "Fee entry already locked/reversed."}`, "error");
-              return;
-            } else if (data && data.success) {
-              rpcSuccess = true;
-            }
-          } catch (rpcErr) {
-            console.warn("RPC reverse_fee_entry execution fallback:", rpcErr);
+        let rpcRes = null;
+        if (item.isDbRecord && uuidRegex.test(String(item.id))) {
+          // Dedicated Maker-Checker Approval RPC (PostgreSQL verifies caller is NOT the maker)
+          rpcRes = await supabase.rpc("approve_fee_reversal", {
+            p_request_id: item.id,
+            p_notes: item.original.reason || "Maker-Checker Principal Approval",
+          });
+        } else {
+          // Direct Entry Reversal RPC (PostgreSQL verifies caller has executive role & derives approver from auth.uid())
+          const targetEntryId = item.original.receiptId || item.id;
+          if (!targetEntryId || !uuidRegex.test(String(targetEntryId))) {
+            showToast("Reversal rejected: Invalid transaction reference UUID. Cannot apply server row-lock.", "error");
+            return;
           }
+
+          rpcRes = await supabase.rpc("reverse_fee_entry", {
+            p_entry_id: String(targetEntryId),
+            p_reason: item.original.reason || "Maker-Checker Principal Approval",
+            p_idempotency_key: `REV-${targetEntryId}`,
+          });
+        }
+
+        const { data, error } = rpcRes || {};
+
+        if (error) {
+          console.error("Pessimistic lock RPC error:", error);
+          showToast(`Reversal failed: ${error.message || "Database rejected reversal"}`, "error");
+          return;
+        }
+
+        if (!data || !data.success) {
+          const errMsg = data?.error || data?.message || "Fee entry already reversed or locked.";
+          showToast(`Reversal rejected: ${errMsg}`, "error");
+          return;
         }
 
         const revRaw = localStorage.getItem(`erp_fee_reversals_${cleanSchool}`);
         const reversals = revRaw ? JSON.parse(revRaw) : [];
-        const updatedRev = reversals.map((r) => (r.id === item.id ? { ...r, status: "Approved", approvedAt: new Date().toISOString() } : r));
+        const updatedRev = reversals.map((r) =>
+          r.id === item.id ? { ...r, status: "Approved", approvedAt: new Date().toISOString() } : r
+        );
         localStorage.setItem(`erp_fee_reversals_${cleanSchool}`, JSON.stringify(updatedRev));
-
-        // Create linked Credit Note entry in fee ledger
-        const ledgerKey = `erp_fee_ledger_${cleanSchool}`;
-        const currentLedger = JSON.parse(localStorage.getItem(ledgerKey) || "[]");
-        const creditNote = {
-          id: `CN-${Date.now()}`,
-          student_name: item.original.studentName,
-          class_name: item.original.className || "Class",
-          amount: -Math.abs(Number(item.original.amount)),
-          status: "paid",
-          payment_mode: `Credit Note / Reversal (Auth: Principal)`,
-          date: new Date().toISOString().split("T")[0],
-          school_id: cleanSchool,
-          reversal_ref: item.original.id,
-          receipt_tag: "CREDIT_NOTE",
-        };
-        localStorage.setItem(ledgerKey, JSON.stringify([creditNote, ...currentLedger]));
-        window.dispatchEvent(new Event("erp-fee-ledger-updated"));
         window.dispatchEvent(new Event("erp-fee-reversals-updated"));
+        window.dispatchEvent(new Event("erp-fee-ledger-updated"));
+
         showToast(
-          `Reversal approved! Pessimistic row-lock applied & Credit Note of ₹${Number(item.original.amount).toLocaleString()} generated.`,
+          `Reversal approved! Database pessimistic row-lock executed & Credit Note generated in fee ledger.`,
           "success"
         );
       } else if (item.category === "CERTIFICATE") {
@@ -170,10 +212,12 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
     } catch (err) {
       console.error("Approval error:", err);
       showToast("Error processing approval", "error");
+    } finally {
+      setProcessingId(null);
     }
   };
 
-  const handleReject = (item) => {
+  const handleReject = async (item) => {
     try {
       if (item.category === "LEAVE") {
         const leavesRaw = localStorage.getItem(`erp_staff_leaves_${cleanSchool}`);
@@ -182,6 +226,16 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
         localStorage.setItem(`erp_staff_leaves_${cleanSchool}`, JSON.stringify(updated));
         window.dispatchEvent(new Event("erp-staff-leaves-updated"));
       } else if (item.category === "REVERSAL") {
+        if (supabase && item.isDbRecord) {
+          try {
+            await supabase.rpc("reject_fee_reversal", {
+              p_request_id: item.id,
+              p_rejection_reason: "Rejected by Principal",
+            });
+          } catch (rejErr) {
+            console.warn("[ApprovalInbox] Reject RPC notice:", rejErr);
+          }
+        }
         const revRaw = localStorage.getItem(`erp_fee_reversals_${cleanSchool}`);
         const reversals = revRaw ? JSON.parse(revRaw) : [];
         const updated = reversals.map((r) => (r.id === item.id ? { ...r, status: "Rejected" } : r));
@@ -286,14 +340,26 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
               <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                 <button
                   onClick={() => handleApprove(item)}
-                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black transition-all cursor-pointer flex items-center gap-1 shadow-md shadow-emerald-900/30 hover:-translate-y-0.5"
+                  disabled={Boolean(processingId)}
+                  className={`px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-black transition-all flex items-center gap-1 shadow-md shadow-emerald-900/30 ${
+                    processingId === item.id
+                      ? "opacity-50 cursor-wait"
+                      : processingId
+                      ? "opacity-40 cursor-not-allowed"
+                      : "hover:from-emerald-500 hover:to-teal-500 cursor-pointer hover:-translate-y-0.5"
+                  }`}
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Approve</span>
+                  <span>{processingId === item.id ? "Processing..." : "Approve"}</span>
                 </button>
                 <button
                   onClick={() => handleReject(item)}
-                  className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-600/20 dark:hover:bg-rose-600/30 dark:border-rose-500/40 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 hover:-translate-y-0.5"
+                  disabled={Boolean(processingId)}
+                  className={`px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-600/20 dark:border-rose-500/40 dark:text-rose-300 text-xs font-bold transition-all flex items-center gap-1 ${
+                    processingId
+                      ? "opacity-40 cursor-not-allowed"
+                      : "hover:bg-rose-100 dark:hover:bg-rose-600/30 cursor-pointer hover:-translate-y-0.5"
+                  }`}
                 >
                   <XCircle className="w-3.5 h-3.5" />
                   <span>Reject</span>

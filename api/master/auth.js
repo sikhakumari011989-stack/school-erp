@@ -1,22 +1,32 @@
 import crypto from "crypto";
 
-const MASTER_KEY =
-  process.env.MASTER_SETUP_KEY ||
-  process.env.MASTER_ADMIN_PASSKEY ||
-  "ASK&1412";
+export function getMasterKey() {
+  return (
+    process.env.MASTER_SETUP_KEY ||
+    process.env.MASTER_ADMIN_PASSKEY ||
+    (process.env.NODE_ENV === "test" ? "TEST_MASTER_KEY_2026" : null)
+  );
+}
 
-const TOKEN_SECRET =
-  process.env.MASTER_TOKEN_SECRET ||
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  "academic-os-master-provisioning-secret-2026";
+export function getTokenSecret() {
+  return (
+    process.env.MASTER_TOKEN_SECRET ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    (process.env.NODE_ENV === "test" ? "test-master-provisioning-secret-2026" : null)
+  );
+}
 
 /**
  * Creates an HMAC-signed session token for the Master Setup Gateway
  */
 export function signMasterToken(expiryMs = 4 * 60 * 60 * 1000) {
+  const secret = getTokenSecret();
+  if (!secret) {
+    throw new Error("Master token secret is unconfigured. Cannot sign tokens.");
+  }
   const expiresAt = Date.now() + expiryMs;
   const payload = JSON.stringify({ role: "master_operator", exp: expiresAt });
-  const hmac = crypto.createHmac("sha256", TOKEN_SECRET).update(payload).digest("hex");
+  const hmac = crypto.createHmac("sha256", secret).update(payload).digest("hex");
   return Buffer.from(JSON.stringify({ p: payload, s: hmac })).toString("base64");
 }
 
@@ -25,10 +35,12 @@ export function signMasterToken(expiryMs = 4 * 60 * 60 * 1000) {
  */
 export function verifyMasterToken(token) {
   if (!token) return false;
+  const secret = getTokenSecret();
+  if (!secret) return false;
   try {
     const raw = Buffer.from(token, "base64").toString("utf-8");
     const { p, s } = JSON.parse(raw);
-    const expectedHmac = crypto.createHmac("sha256", TOKEN_SECRET).update(p).digest("hex");
+    const expectedHmac = crypto.createHmac("sha256", secret).update(p).digest("hex");
     if (s !== expectedHmac) return false;
     const data = JSON.parse(p);
     return data.exp > Date.now();
@@ -52,6 +64,22 @@ export default async function handler(req, res) {
   }
 
   try {
+    const masterKey = getMasterKey();
+    if (!masterKey) {
+      return res.status(500).json({
+        success: false,
+        error: "Master setup passkey is not configured on the server. Access disabled.",
+      });
+    }
+
+    const tokenSecret = getTokenSecret();
+    if (!tokenSecret) {
+      return res.status(500).json({
+        success: false,
+        error: "Master token secret is not configured on the server. Access disabled.",
+      });
+    }
+
     const { passkey } = req.body || {};
     if (!passkey || typeof passkey !== "string") {
       return res.status(400).json({ success: false, error: "Master passkey is required." });
@@ -59,7 +87,7 @@ export default async function handler(req, res) {
 
     // Constant-time comparison to prevent timing attacks
     const inputBuf = Buffer.from(passkey.trim());
-    const expectedBuf = Buffer.from(MASTER_KEY.trim());
+    const expectedBuf = Buffer.from(masterKey.trim());
 
     const isMatch =
       inputBuf.length === expectedBuf.length &&

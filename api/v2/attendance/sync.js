@@ -87,22 +87,34 @@ export default async function handler(req, res) {
       }
     }
 
-    const schoolId = (
+    const rawSchoolId =
       req.headers["x-school-id"] ||
       req.body?.school_id ||
-      req.body?.schoolId ||
-      "CAMPUS-01"
-    ).toUpperCase();
+      req.body?.schoolId;
 
-    const deviceSerial = (
+    if (!rawSchoolId || typeof rawSchoolId !== "string" || !rawSchoolId.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing mandatory institution identifier: x-school-id header or school_id parameter required.",
+      });
+    }
+    const schoolId = rawSchoolId.trim().toUpperCase();
+
+    const rawDeviceSerial =
       req.headers["x-device-serial"] ||
       req.headers["x-device-id"] ||
       req.body?.device_serial ||
       req.body?.deviceSerial ||
       req.body?.device_id ||
-      req.body?.deviceId ||
-      "ESSL-SN-99824"
-    ).toUpperCase();
+      req.body?.deviceId;
+
+    if (!rawDeviceSerial || typeof rawDeviceSerial !== "string" || !rawDeviceSerial.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing mandatory terminal identifier: x-device-serial header or device_serial parameter required.",
+      });
+    }
+    const deviceSerial = rawDeviceSerial.trim().toUpperCase();
 
     // Supabase Client Setup for Device Authorization and Sync
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -133,6 +145,15 @@ export default async function handler(req, res) {
               error: `Biometric terminal ${deviceSerial} is deactivated. Contact campus administrator.`,
             });
           }
+
+          // Enforce strict tenant isolation between hardware registration and target institution
+          if (deviceRecord.school_id && deviceRecord.school_id.toUpperCase() !== schoolId) {
+            return res.status(403).json({
+              success: false,
+              error: `Tenant mismatch: Terminal ${deviceSerial} is registered to institution ${deviceRecord.school_id}, cannot inject punches into ${schoolId}.`,
+            });
+          }
+
           if (deviceRecord.hmac_secret) {
             deviceHmacSecret = deviceRecord.hmac_secret;
           }
@@ -142,12 +163,18 @@ export default async function handler(req, res) {
       }
     }
 
-    // Resilient fallback to environment or default secret for bootstrap / test terminals
+    // Fallback to configured environment variable only (never hardcoded shared secrets)
     if (!deviceHmacSecret) {
       deviceHmacSecret =
         process.env.BIOMETRIC_DEVICE_SECRET ||
-        process.env.BIOMETRIC_SECRET ||
-        "biometric_hw_shared_secret_2026";
+        process.env.BIOMETRIC_SECRET;
+    }
+
+    if (!deviceHmacSecret) {
+      return res.status(401).json({
+        success: false,
+        error: `Biometric terminal ${deviceSerial} is not provisioned or lacks an active HMAC secret. Access denied.`,
+      });
     }
 
     // 5. Verify Device Signature using device-specific secret
@@ -156,38 +183,43 @@ export default async function handler(req, res) {
       req.body?.signature ||
       req.body?.x_device_signature;
 
-    if (deviceSignature) {
-      const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
-      const computedHmacWithTimestamp = crypto
-        .createHmac("sha256", deviceHmacSecret)
-        .update(rawTimestamp ? `${rawTimestamp}.${rawBody}` : rawBody)
-        .digest("hex");
-      const computedHmacRaw = crypto
-        .createHmac("sha256", deviceHmacSecret)
-        .update(rawBody)
-        .digest("hex");
+    if (!deviceSignature) {
+      return res.status(401).json({
+        success: false,
+        error: "Missing device signature: Biometric punch streams require HMAC-SHA256 authorization (x-device-signature).",
+      });
+    }
 
-      let validSig = false;
-      try {
-        const sigBuffer = Buffer.from(String(deviceSignature).trim(), "hex");
-        const expBuffer1 = Buffer.from(computedHmacWithTimestamp, "hex");
-        const expBuffer2 = Buffer.from(computedHmacRaw, "hex");
+    const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+    const computedHmacWithTimestamp = crypto
+      .createHmac("sha256", deviceHmacSecret)
+      .update(rawTimestamp ? `${rawTimestamp}.${rawBody}` : rawBody)
+      .digest("hex");
+    const computedHmacRaw = crypto
+      .createHmac("sha256", deviceHmacSecret)
+      .update(rawBody)
+      .digest("hex");
 
-        if (sigBuffer.length === expBuffer1.length && crypto.timingSafeEqual(sigBuffer, expBuffer1)) {
-          validSig = true;
-        } else if (sigBuffer.length === expBuffer2.length && crypto.timingSafeEqual(sigBuffer, expBuffer2)) {
-          validSig = true;
-        }
-      } catch {
-        validSig = false;
+    let validSig = false;
+    try {
+      const sigBuffer = Buffer.from(String(deviceSignature).trim(), "hex");
+      const expBuffer1 = Buffer.from(computedHmacWithTimestamp, "hex");
+      const expBuffer2 = Buffer.from(computedHmacRaw, "hex");
+
+      if (sigBuffer.length === expBuffer1.length && crypto.timingSafeEqual(sigBuffer, expBuffer1)) {
+        validSig = true;
+      } else if (sigBuffer.length === expBuffer2.length && crypto.timingSafeEqual(sigBuffer, expBuffer2)) {
+        validSig = true;
       }
+    } catch {
+      validSig = false;
+    }
 
-      if (!validSig) {
-        return res.status(401).json({
-          success: false,
-          error: `Biometric Hardware Security Error: Per-device HMAC-SHA256 signature verification failed for device ${deviceSerial}.`,
-        });
-      }
+    if (!validSig) {
+      return res.status(401).json({
+        success: false,
+        error: `Biometric Hardware Security Error: Per-device HMAC-SHA256 signature verification failed for device ${deviceSerial}.`,
+      });
     }
 
     const punches = Array.isArray(req.body?.punches)

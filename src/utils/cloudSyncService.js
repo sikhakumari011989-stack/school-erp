@@ -326,248 +326,56 @@ export async function verifyCloudLogin({ institutionCode, personalCode, password
   const cleanPersonal = (personalCode || "").trim().toUpperCase();
   const inputPass = (password || "").trim();
 
-  // If Supabase is available and device is online, perform cloud verification first
-  if (supabase && typeof navigator !== "undefined" && navigator.onLine !== false) {
+  if (!cleanInst || !cleanPersonal || !inputPass) {
+    return {
+      success: false,
+      error: "Institution code, personal ID, and password are required.",
+    };
+  }
+
+  // Live Supabase Auth verification is authoritative. Hardcoded/default credentials are prohibited.
+  if (supabase) {
     try {
-      // Step A: Find the school in Supabase cloud (schools table)
-      let cloudSchool = null;
-      try {
-        const { data: schoolRes } = await supabase
-          .from("schools")
-          .select("*")
-          .ilike("code", cleanInst)
-          .maybeSingle();
+      const candidates = [
+        buildStandardErpEmail(cleanInst, cleanPersonal),
+        `${cleanInst.toLowerCase().replace(/[^a-z0-9]/g, "")}.${cleanPersonal.toLowerCase().replace(/[^a-z0-9]/g, "")}@gmail.com`,
+      ];
 
-        if (schoolRes) {
-          cloudSchool = schoolRes;
-        }
-      } catch (e) {
-        console.warn("[CloudSync] Supabase schools lookup error:", e);
-      }
+      for (const candidateEmail of candidates) {
+        const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+          email: candidateEmail,
+          password: inputPass,
+        });
 
+        if (!authErr && authData?.user) {
+          const authUser = authData.user;
+          const appMeta = authUser.app_metadata || {};
+          const userMeta = authUser.user_metadata || {};
 
-      if (cloudSchool) {
-        const schoolUuid = cloudSchool.id;
-        let matchedMember = null;
-
-        // Check 1: Cloud-synchronized directory package inside school record
-        if (cloudSchool.address && cloudSchool.address.startsWith("{")) {
-          try {
-            const parsed = JSON.parse(cloudSchool.address);
-            if (Array.isArray(parsed.directory)) {
-              const found = parsed.directory.find(
-                (m) =>
-                  String(m.role_code || m.roll_number || m.personal_code || "").toUpperCase() === cleanPersonal
-              );
-              if (found) {
-                matchedMember = {
-                  ...found,
-                  role: detectRoleFromId(cleanPersonal, found.role),
-                };
-              }
-
-              // Also normalize and sync cloud directory down to mobile device's local storage cache
-              const normalizedDir = parsed.directory.map((m) => {
-                const code = String(m.role_code || m.roll_number || m.personal_code || "").toUpperCase();
-                return {
-                  ...m,
-                  role: detectRoleFromId(code, m.role),
-                };
-              });
-              localStorage.setItem(`erp_directory_${cleanInst}`, JSON.stringify(normalizedDir));
-            }
-          } catch (e) {}
-        }
-
-        // Check 2: Query Supabase profiles table
-        if (!matchedMember) {
-          try {
-            let profQuery = supabase
-              .from("profiles")
-              .select("*")
-              .ilike("role_code", cleanPersonal);
-
-            if (schoolUuid) {
-              profQuery = profQuery.eq("school_id", schoolUuid);
-            }
-
-            const { data: profs } = await profQuery.limit(1);
-            if (profs && profs.length > 0) {
-              const p = profs[0];
-              matchedMember = {
-                id: p.id,
-                name: p.full_name || cleanPersonal,
-                full_name: p.full_name || cleanPersonal,
-                role: detectRoleFromId(cleanPersonal, p.role),
-                role_code: p.role_code || cleanPersonal,
-                personal_code: p.role_code || cleanPersonal,
-                school_id: cleanInst,
-                institution_code: cleanInst,
-                institution_name: cloudSchool.name || cleanInst,
-                default_password: "password123",
-              };
-            }
-          } catch (e) {}
-        }
-
-        // Check 3: Query Supabase students table
-        if (!matchedMember) {
-          try {
-            let stuQuery = supabase
-              .from("students")
-              .select("*")
-              .ilike("roll_number", cleanPersonal);
-
-            if (schoolUuid) {
-              stuQuery = stuQuery.eq("school_id", schoolUuid);
-            }
-
-            const { data: stus } = await stuQuery.limit(1);
-            if (stus && stus.length > 0) {
-              const s = stus[0];
-              matchedMember = {
-                id: s.id,
-                name: s.name || cleanPersonal,
-                full_name: s.name || cleanPersonal,
-                role: "student",
-                role_code: s.roll_number || cleanPersonal,
-                roll_number: s.roll_number || cleanPersonal,
-                personal_code: s.roll_number || cleanPersonal,
-                school_id: cleanInst,
-                institution_code: cleanInst,
-                institution_name: cloudSchool.name || cleanInst,
-                default_password: "password123",
-              };
-            }
-          } catch (e) {}
-        }
-
-        // Check 4: Query Supabase teachers table
-        if (!matchedMember) {
-          try {
-            let tchQuery = supabase
-              .from("teachers")
-              .select("*");
-
-            if (schoolUuid) {
-              tchQuery = tchQuery.eq("school_id", schoolUuid);
-            }
-
-            const { data: tchs } = await tchQuery.limit(20);
-            if (tchs && tchs.length > 0) {
-              const t = tchs.find(
-                (tch) =>
-                  String(tch.name || "").toUpperCase() === cleanPersonal ||
-                  String(tch.email || "").toUpperCase().includes(cleanPersonal)
-              );
-              if (t) {
-                matchedMember = {
-                  id: t.id,
-                  name: t.name,
-                  full_name: t.name,
-                  role: "teacher",
-                  role_code: cleanPersonal,
-                  personal_code: cleanPersonal,
-                  school_id: cleanInst,
-                  institution_code: cleanInst,
-                  institution_name: cloudSchool.name || cleanInst,
-                  subject: t.subject || "Faculty",
-                  default_password: "password123",
-                };
-              }
-            }
-          } catch (e) {}
-        }
-
-        // If matched from cloud, verify credentials
-        if (matchedMember) {
-          const expectedPassword = matchedMember.default_password || "password123";
-          if (
-            inputPass === expectedPassword ||
-            inputPass === "password123" ||
-            inputPass === "password" ||
-            inputPass === "admin123"
-          ) {
-            const userSession = {
-              ...matchedMember,
+          return {
+            success: true,
+            user: {
+              id: authUser.id,
+              email: authUser.email,
+              name: userMeta.full_name || userMeta.name || cleanPersonal,
+              role: appMeta.role || "STU",
+              role_code: appMeta.role_code || cleanPersonal,
               school_id: cleanInst,
               institution_code: cleanInst,
-              institution_name: cloudSchool.name || cleanInst,
-              email: matchedMember.email || buildStandardErpEmail(cleanInst, cleanPersonal),
-            };
-
-            // Cache into mobile local storage directory
-            try {
-              const rawLocal = localStorage.getItem(`erp_directory_${cleanInst}`) || "[]";
-              const localDir = JSON.parse(rawLocal);
-              if (!localDir.some((m) => (m.role_code || m.roll_number || "").toUpperCase() === cleanPersonal)) {
-                localStorage.setItem(`erp_directory_${cleanInst}`, JSON.stringify([userSession, ...localDir]));
-              }
-            } catch (e) {}
-
-            return {
-              success: true,
-              user: userSession,
-              source: "supabase_cloud",
-            };
-          } else {
-            return {
-              success: false,
-              error: "Incorrect security password for this institutional account. Please check your credentials.",
-            };
-          }
+              authUid: authUser.id,
+            },
+            source: "supabase_auth",
+          };
         }
       }
-    } catch (cloudErr) {
-      console.warn("[CloudSync] Cloud verification error, falling back to local cache:", cloudErr);
+    } catch (e) {
+      console.warn("[CloudSync] Live credential verification error:", e);
     }
   }
 
-  // Step 4: Fallback to local storage (for offline access or offline demo mode)
-  try {
-    const rawLocal = localStorage.getItem(`erp_directory_${cleanInst}`) || "[]";
-    const localDir = JSON.parse(rawLocal);
-    const matchedLocal = localDir.find(
-      (m) =>
-        String(m.role_code || m.roll_number || m.personal_code || "").toUpperCase() === cleanPersonal ||
-        String(m.email || "").toLowerCase() === buildStandardErpEmail(cleanInst, cleanPersonal).toLowerCase()
-    );
-
-    if (matchedLocal) {
-      const resolvedRole = detectRoleFromId(cleanPersonal, matchedLocal.role);
-      const expectedPassword = matchedLocal.default_password || "password123";
-      if (
-        inputPass === expectedPassword ||
-        inputPass === "password123" ||
-        inputPass === "password" ||
-        inputPass === "admin123"
-      ) {
-        return {
-          success: true,
-          user: {
-            ...matchedLocal,
-            role: resolvedRole,
-            school_id: cleanInst,
-            institution_code: cleanInst,
-            institution_name: cleanInst,
-          },
-          source: "local_cache",
-        };
-      } else {
-        return {
-          success: false,
-          error: "Incorrect security password for this institutional account. Please check your credentials.",
-        };
-      }
-    }
-  } catch (localErr) {
-    console.warn("[CloudSync] Local cache error:", localErr);
-  }
-
-  // If no authentic account matches
   return {
     success: false,
-    error: `No institutional account found matching ID "${cleanPersonal}" for campus "${cleanInst}". Please verify your credentials or contact your administrator.`,
+    error: "Authentication failed. Invalid institutional credentials in Supabase Auth.",
   };
 }
 

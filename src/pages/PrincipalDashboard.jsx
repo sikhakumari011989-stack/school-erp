@@ -47,7 +47,6 @@ import MeetingScheduler from "../Components/MeetingScheduler";
 import AlumniDB from "../Components/AlumniDB";
 import OnboardingWizard from "../Components/OnboardingWizard";
 import AcademicRolloverModal from "../Components/AcademicRolloverModal";
-import PrincipalAssistant from "../Components/PrincipalAssistant";
 import OperationalApprovalInbox from "../Components/OperationalApprovalInbox";
 import RiskRadarWidget from "../Components/RiskRadarWidget";
 import { getNotices, publishNotice, deleteNotice } from "../utils/noticeService";

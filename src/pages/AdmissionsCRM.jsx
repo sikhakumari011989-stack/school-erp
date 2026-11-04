@@ -55,34 +55,7 @@ const CLASSES = [
   "IIT-JEE Crash Course", "NEET Repeater Batch", "Foundation Batch"
 ];
 
-const DEFAULT_LEADS = [
-  {
-    id: "lead_101",
-    name: "Aarav Sharma",
-    parent_name: "Rajesh Sharma",
-    phone: "+91 98201 44512",
-    email: "rajesh.sharma@gmail.com",
-    target_class: "Class 10",
-    source: "Campus Walk-in",
-    follow_up_date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
-    notes: "Interested in ICSE board syllabus and weekly mock tests.",
-    stage: "new",
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "lead_102",
-    name: "Ananya Patel",
-    parent_name: "Sanjay Patel",
-    phone: "+91 98765 21098",
-    email: "sanjay.patel@outlook.com",
-    target_class: "Class 11 - Science",
-    source: "Referral / Word-of-Mouth",
-    follow_up_date: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
-    notes: "Wants information on NEET medical coaching track.",
-    stage: "followup",
-    created_at: new Date().toISOString(),
-  },
-];
+const DEFAULT_LEADS = [];
 
 export default function AdmissionsCRM() {
   const { user, tenant } = useContext(AppContext) || {};

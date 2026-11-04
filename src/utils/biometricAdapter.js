@@ -37,22 +37,20 @@ export async function syncBiometricPunches({
   const activeDeviceSerial = (deviceSerial || deviceId || "ESSL-SN-99824").toUpperCase();
   const currentTimestamp = new Date().toISOString();
 
-  const formattedPunches = (punches.length > 0 ? punches : [
-    {
-      user_id: "STU-101",
+  if (!punches || punches.length === 0) {
+    return {
+      success: true,
+      status: "no_op",
+      device_serial: activeDeviceSerial,
+      school_id: cleanSchool,
+      processed_count: 0,
+      deduplicated_count: 0,
       timestamp: currentTimestamp,
-      punch_type: "CHECK_IN",
-      verification_mode: "FINGERPRINT",
-      vendor_event_id: `EVT_STU101_${Date.now()}`,
-    },
-    {
-      user_id: "TCH-201",
-      timestamp: currentTimestamp,
-      punch_type: "CHECK_IN",
-      verification_mode: "FACIAL_RECOGNITION",
-      vendor_event_id: `EVT_TCH201_${Date.now()}`,
-    },
-  ]).map((p, idx) => ({
+      message: "No punches to sync.",
+    };
+  }
+
+  const formattedPunches = punches.map((p, idx) => ({
     ...p,
     vendor_event_id:
       p.vendor_event_id ||

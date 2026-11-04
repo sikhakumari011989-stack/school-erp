@@ -64,36 +64,10 @@ export default function JoinSchool() {
     fetchSchools();
   }, [location.search]);
 
-  // Dynamic code placeholder depending on selected role
-  const getPersonalCodeHint = () => {
-    switch (formData.role) {
-      case "teacher":
-        return "e.g., TCH-05 or MATH-FAC";
-      case "accountant":
-        return "e.g., ACC-02";
-      case "principal":
-      case "trustee":
-        return "e.g., HOD-02 or PRIN-02";
-      case "student":
-      default:
-        return "e.g., STU-1025 or ROLL-2026";
-    }
-  };
+  // Personal code placeholder for student enrollment
+  const getPersonalCodeHint = () => "e.g., STU-1025 or ROLL-2026";
 
-  const dashboardFor = (role) => {
-    switch (role?.toLowerCase()) {
-      case "teacher":
-        return "/teacher/dashboard";
-      case "accountant":
-        return "/accountant/dashboard";
-      case "trustee":
-      case "principal":
-        return "/trustee/dashboard";
-      case "student":
-      default:
-        return "/student/dashboard";
-    }
-  };
+  const dashboardFor = () => "/student/dashboard";
 
   const handleJoin = async (e) => {
     e.preventDefault();
@@ -110,35 +84,46 @@ export default function JoinSchool() {
       // 1. Resolve school UUID
       const schoolUuid = await resolveSchoolUuid(cleanInstCode);
 
-      // 2. Register live Supabase Auth account
-      let authUser = null;
-      try {
-        const { data: authData, error: authErr } = await supabase.auth.signUp({
-          email: formData.email.trim(),
-          password: formData.password,
-          options: {
-            data: {
-              full_name: formData.fullName.trim(),
-              role: formData.role,
-              role_code: cleanPersonalCode,
-              institution_code: cleanInstCode,
-            },
-          },
-        });
-        if (!authErr && authData?.user) {
-          authUser = authData.user;
-        }
-      } catch (authException) {
-        console.warn("Supabase auth signup notice:", authException);
+      // 2. Register live Supabase Auth account (strictly student role)
+      if (!supabase) {
+        showToast("Database connection unavailable. Cannot enroll without Supabase Auth.", "error");
+        setLoading(false);
+        return;
       }
 
-      // 3. Insert or update profile row in Supabase
+      const { data: authData, error: authErr } = await supabase.auth.signUp({
+        email: formData.email.trim(),
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName.trim(),
+            role: "student",
+            role_code: cleanPersonalCode,
+            institution_code: cleanInstCode,
+          },
+        },
+      });
+
+      if (authErr) {
+        showToast(`Registration failed: ${authErr.message}`, "error");
+        setLoading(false);
+        return;
+      }
+
+      const authUser = authData?.user;
+      if (!authUser) {
+        showToast("Registration incomplete: No user returned from authentication service.", "error");
+        setLoading(false);
+        return;
+      }
+
+      // 3. Insert student profile row in Supabase
       try {
         await supabase.from("profiles").insert([
           {
-            id: authUser?.id || undefined,
+            id: authUser.id,
             full_name: formData.fullName.trim(),
-            role: formData.role,
+            role: "student",
             role_code: cleanPersonalCode,
             school_id: schoolUuid,
           },
@@ -147,93 +132,47 @@ export default function JoinSchool() {
         console.warn("Profile table insert notice:", profErr);
       }
 
-      // 4. If student, also provision student directory record
-      if (formData.role === "student") {
-        try {
-          await supabase.from("students").insert([
-            {
-              name: formData.fullName.trim(),
-              school_id: cleanInstCode,
-              email: formData.email.trim(),
-            },
-          ]);
-        } catch (stuErr) {
-          console.warn("Student record sync notice:", stuErr);
-        }
+      // 4. Provision student directory record
+      try {
+        await supabase.from("students").insert([
+          {
+            name: formData.fullName.trim(),
+            school_id: cleanInstCode,
+            email: formData.email.trim(),
+          },
+        ]);
+      } catch (stuErr) {
+        console.warn("Student record sync notice:", stuErr);
       }
 
-      // 5. Construct authenticated user session with standardized email
+      // 5. Construct authenticated user session
       const matchedSchool = schools.find((s) => s.code === cleanInstCode);
-      const mappedEmail = buildStandardErpEmail(cleanInstCode, cleanPersonalCode);
       const userSession = {
-        id: authUser?.id || `user-${Date.now()}`,
+        id: authUser.id,
         name: formData.fullName.trim(),
-        email: mappedEmail,
-        role: formData.role,
+        email: formData.email.trim(),
+        role: "STU",
         role_code: cleanPersonalCode,
         school_id: schoolUuid,
         institution_code: cleanInstCode,
         institution_name: matchedSchool?.name || "Tuition Campus Partner",
       };
 
-      // Sync member to local tenant directory for zero-latency login
-      try {
-        const existingDir = JSON.parse(
-          localStorage.getItem(`erp_directory_${cleanInstCode}`) || "[]"
-        );
-        existingDir.unshift({
-          full_name: formData.fullName.trim(),
-          role: formData.role,
-          role_code: cleanPersonalCode,
-          roll_number: cleanPersonalCode,
-          school_id: cleanInstCode,
-          email: mappedEmail,
-        });
-        localStorage.setItem(`erp_directory_${cleanInstCode}`, JSON.stringify(existingDir));
-      } catch (dirErr) {
-        console.warn("Local directory cache update notice:", dirErr);
-      }
-
       // 6. Security Audit Log
       logSecurityAction({
         action: AUDIT_ACTIONS.STUDENT_ADMITTED,
         entityType: "USER_JOINED",
         entityId: cleanPersonalCode,
-        details: `Self-service member join: ${formData.fullName} enrolled as ${formData.role.toUpperCase()} under ${cleanInstCode}`,
+        details: `Student self-enrollment: ${formData.fullName} enrolled as STUDENT under ${cleanInstCode}`,
         user: userSession,
         schoolId: schoolUuid,
       });
 
-      // 7. Auto-sign into application
-      if (typeof login === "function") {
-        login(userSession);
-      } else {
-        localStorage.setItem("erp_demo_session", JSON.stringify(userSession));
-      }
-
-      showToast(`Welcome to ${cleanInstCode}, ${formData.fullName}!`, "success");
-      navigate(dashboardFor(formData.role));
+      showToast(`Enrollment successful! Welcome to ${cleanInstCode}, ${formData.fullName}!`, "success");
+      navigate("/student/dashboard");
     } catch (err) {
       console.error("Error joining institution:", err);
-      showToast("Joined with local credentials.", "info");
-
-      const fallbackSession = {
-        id: `user-${Date.now()}`,
-        name: formData.fullName.trim(),
-        email: formData.email.trim(),
-        role: formData.role,
-        role_code: cleanPersonalCode,
-        institution_code: cleanInstCode,
-        institution_name: "Tuition Campus Partner",
-      };
-
-      if (typeof login === "function") {
-        login(fallbackSession);
-      } else {
-        localStorage.setItem("erp_demo_session", JSON.stringify(fallbackSession));
-      }
-
-      navigate(dashboardFor(formData.role));
+      showToast(err.message || "Enrollment failed. Please contact your school administrator.", "error");
     } finally {
       setLoading(false);
     }
@@ -287,33 +226,26 @@ export default function JoinSchool() {
               </div>
             </div>
 
-            {/* ROLE SELECTION */}
+            {/* ROLE DISPLAY & SECURITY NOTICE */}
             <div>
               <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-widest mb-1.5 ml-1">
-                Your Institutional Role *
+                Enrollment Track *
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { key: "student", label: "Student", icon: "🎓" },
-                  { key: "teacher", label: "Teacher", icon: "👨‍🏫" },
-                  { key: "accountant", label: "Accountant", icon: "💰" },
-                  { key: "trustee", label: "Principal", icon: "🏛️" },
-                ].map((r) => (
-                  <button
-                    key={r.key}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, role: r.key })}
-                    className={`py-2.5 px-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      formData.role === r.key
-                        ? "bg-purple-600/30 text-white border-purple-500 shadow-md shadow-purple-600/20"
-                        : "bg-slate-950/40 text-slate-400 border-slate-800 hover:border-slate-700"
-                    }`}
-                  >
-                    <span>{r.icon}</span>
-                    <span>{r.label}</span>
-                  </button>
-                ))}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-purple-600/15 border border-purple-500/40 text-purple-200">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🎓</span>
+                  <div>
+                    <p className="text-xs font-black text-white">Student / Scholar Portal</p>
+                    <p className="text-[10px] text-purple-300">Self-service registration enabled for students & parents</p>
+                  </div>
+                </div>
+                <span className="text-[10px] uppercase font-mono font-bold bg-purple-500/30 px-2 py-0.5 rounded-full border border-purple-400/40">
+                  Role: STU
+                </span>
               </div>
+              <p className="text-[11px] text-slate-400 mt-1.5 ml-1 leading-relaxed">
+                <span className="text-amber-400 font-bold">Staff / Faculty Notice:</span> Teacher, Accountant, and Principal accounts are provisioned directly by School Administration or the Master Setup Gateway.
+              </p>
             </div>
 
             {/* PERSONAL CODE (TIER 2) */}

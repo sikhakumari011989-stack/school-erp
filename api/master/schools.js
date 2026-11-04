@@ -3,13 +3,10 @@ import { verifyMasterToken } from "./auth.js";
 
 function getSupabaseClient() {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const serviceKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.VITE_SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_ANON_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceKey) {
-    throw new Error("Missing Supabase configuration.");
+    throw new Error("Missing Supabase configuration: SUPABASE_SERVICE_ROLE_KEY is required for master provisioning operations.");
   }
 
   return createClient(supabaseUrl, serviceKey, {
@@ -30,14 +27,13 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // 1. Authorize Master Operator Token
+  // 1. Authorize Master Operator Token unconditionally in all environments
   const authHeader = req.headers.authorization || req.headers["x-master-token"];
   const bearerToken = authHeader?.startsWith("Bearer ")
     ? authHeader.slice(7)
     : authHeader;
 
-  const isDev = process.env.NODE_ENV !== "production";
-  if (!isDev && !verifyMasterToken(bearerToken)) {
+  if (!verifyMasterToken(bearerToken)) {
     return res.status(401).json({
       success: false,
       error: "Unauthorized: Valid Master Session Token required.",

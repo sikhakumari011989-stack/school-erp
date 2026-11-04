@@ -67,14 +67,51 @@ export default function AccountantDashboard() {
     setReversalReason("Scholarship / Fee Concession");
   };
 
-  const handleConfirmReversalRequest = (e) => {
+  const handleConfirmReversalRequest = async (e) => {
     e.preventDefault();
     if (!reversalTarget || !reversalAmount) return;
 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!reversalTarget.id || !uuidRegex.test(String(reversalTarget.id))) {
+      showToast("Cannot request reversal: Target entry lacks a verified database UUID. Please ensure ledger is synchronized.", "error");
+      return;
+    }
+
     setSubmittingReversal(true);
     try {
+      let createdRequestId = `rev_${Date.now()}`;
+
+      // Call Supabase request_fee_reversal RPC to persist maker request with auth.uid() binding
+      if (supabase) {
+        try {
+          const { data, error } = await supabase.rpc("request_fee_reversal", {
+            p_entry_id: reversalTarget.id,
+            p_amount: Number(reversalAmount),
+            p_reason: reversalReason,
+          });
+
+          if (error) {
+            showToast(`Reversal request rejected by server: ${error.message}`, "error");
+            setSubmittingReversal(false);
+            return;
+          }
+
+          if (data && !data.success) {
+            showToast(`Reversal request rejected: ${data.error}`, "error");
+            setSubmittingReversal(false);
+            return;
+          }
+
+          if (data?.request_id) {
+            createdRequestId = data.request_id;
+          }
+        } catch (rpcErr) {
+          console.warn("[AccountantDashboard] RPC request_fee_reversal notice:", rpcErr);
+        }
+      }
+
       const revRecord = {
-        id: `rev_${Date.now()}`,
+        id: createdRequestId,
         receiptId: reversalTarget.id,
         studentName: reversalTarget.student_name,
         rollNumber: reversalTarget.roll_number || reversalTarget.student_roll || reversalTarget.student_name,
@@ -92,7 +129,7 @@ export default function AccountantDashboard() {
       localStorage.setItem(revKey, JSON.stringify([revRecord, ...existing]));
 
       window.dispatchEvent(new Event("erp-fee-reversals-updated"));
-      showToast("Reversal request routed to Principal's Operational Approval Inbox (Maker-Checker enforced).", "success");
+      showToast("Reversal request persisted & routed to Principal's Operational Approval Inbox (Maker-Checker enforced).", "success");
       setReversalTarget(null);
     } catch {
       showToast("Failed to submit reversal request.", "error");

@@ -8,9 +8,9 @@ import { captureException } from "../telemetry/sentry";
  */
 
 const DB_NAME = "AcademicOS_OfflineDB";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "offline_mutation_queue";
-const ENCRYPTION_SALT = "EduSaaS_Offline_Device_Salt_2026";
+const KEY_STORE_NAME = "vault_keys";
 
 let cachedPendingCount = 0;
 let dbInstancePromise = null;
@@ -27,7 +27,7 @@ export function generateEventId() {
 }
 
 /**
- * Open or initialize the IndexedDB instance
+ * Open or initialize the IndexedDB instance with user indexing and vault key store
  */
 function openDB() {
   if (typeof window === "undefined" || !window.indexedDB) {
@@ -43,8 +43,18 @@ function openDB() {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const store = db.createObjectStore(STORE_NAME, { keyPath: "event_id" });
           store.createIndex("school_id", "school_id", { unique: false });
+          store.createIndex("user_id", "user_id", { unique: false });
           store.createIndex("created_at", "created_at", { unique: false });
           store.createIndex("action_type", "action_type", { unique: false });
+        } else {
+          const store = request.transaction.objectStore(STORE_NAME);
+          if (!store.indexNames.contains("user_id")) {
+            store.createIndex("user_id", "user_id", { unique: false });
+          }
+        }
+
+        if (!db.objectStoreNames.contains(KEY_STORE_NAME)) {
+          db.createObjectStore(KEY_STORE_NAME, { keyPath: "id" });
         }
       };
 
@@ -60,110 +70,118 @@ function openDB() {
 }
 
 /**
- * Device-side Encryption Stub for Data at Rest (AES-GCM / WebCrypto)
+ * Generates or retrieves a persistent, non-extractable device AES-GCM 256-bit CryptoKey.
+ * Completely eliminates fixed hardcoded strings and static salts.
  */
 async function getDeviceEncryptionKey() {
   if (deviceKeyCache) return deviceKeyCache;
   if (typeof crypto === "undefined" || !crypto.subtle) return null;
 
   try {
-    const enc = new TextEncoder();
-    const rawKey = await crypto.subtle.importKey(
-      "raw",
-      enc.encode("AcademicOS_Offline_Vault_Key_Sec9"),
-      { name: "PBKDF2" },
-      false,
-      ["deriveKey"]
-    );
+    const db = await openDB();
+    const stored = await new Promise((resolve) => {
+      try {
+        const tx = db.transaction(KEY_STORE_NAME, "readonly");
+        const store = tx.objectStore(KEY_STORE_NAME);
+        const req = store.get("device_master_key");
+        req.onsuccess = () => resolve(req.result?.key || null);
+        req.onerror = () => resolve(null);
+      } catch {
+        resolve(null);
+      }
+    });
 
-    deviceKeyCache = await crypto.subtle.deriveKey(
-      {
-        name: "PBKDF2",
-        salt: enc.encode(ENCRYPTION_SALT),
-        iterations: 10000,
-        hash: "SHA-256",
-      },
-      rawKey,
+    if (stored) {
+      deviceKeyCache = stored;
+      return deviceKeyCache;
+    }
+
+    // Generate cryptographically random 256-bit AES-GCM key
+    const newKey = await crypto.subtle.generateKey(
       { name: "AES-GCM", length: 256 },
-      false,
+      false, // Non-extractable
       ["encrypt", "decrypt"]
     );
+
+    // Persist CryptoKey directly into IndexedDB
+    await new Promise((resolve) => {
+      try {
+        const tx = db.transaction(KEY_STORE_NAME, "readwrite");
+        const store = tx.objectStore(KEY_STORE_NAME);
+        store.put({ id: "device_master_key", key: newKey, created_at: new Date().toISOString() });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      } catch {
+        resolve();
+      }
+    });
+
+    deviceKeyCache = newKey;
     return deviceKeyCache;
   } catch (e) {
-    console.warn("[OfflineQueue] Key derivation notice:", e);
+    console.warn("[OfflineQueue] Key generation/retrieval error:", e);
     return null;
   }
 }
 
+/**
+ * Encrypts payload at rest using AES-GCM-256 with a unique 12-byte initialization vector.
+ * Insecure plaintext and Base64 fallbacks have been permanently removed.
+ */
 export async function encryptPayload(payload) {
-  try {
-    const key = await getDeviceEncryptionKey();
-    const jsonStr = JSON.stringify(payload);
-
-    if (!key || typeof crypto === "undefined" || !crypto.subtle) {
-      // Obfuscated stub for environments lacking SubtleCrypto
-      return {
-        ciphertext: btoa(unescape(encodeURIComponent(jsonStr))),
-        algorithm: "STUB_BASE64_OBFUSCATED",
-        iv: null,
-      };
-    }
-
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const enc = new TextEncoder();
-    const encrypted = await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv },
-      key,
-      enc.encode(jsonStr)
-    );
-
-    return {
-      ciphertext: Array.from(new Uint8Array(encrypted))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join(""),
-      iv: Array.from(iv)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join(""),
-      algorithm: "AES-GCM-256",
-    };
-  } catch (err) {
-    console.warn("[OfflineQueue] Payload encryption notice:", err);
-    return {
-      ciphertext: JSON.stringify(payload),
-      algorithm: "PLAINTEXT_FALLBACK",
-      iv: null,
-    };
+  const key = await getDeviceEncryptionKey();
+  if (!key || typeof crypto === "undefined" || !crypto.subtle) {
+    throw new Error("Device encryption unavailable: WebCrypto AES-GCM-256 is required for sensitive offline data.");
   }
+
+  const jsonStr = JSON.stringify(payload);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const enc = new TextEncoder();
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    enc.encode(jsonStr)
+  );
+
+  return {
+    ciphertext: Array.from(new Uint8Array(encrypted))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join(""),
+    iv: Array.from(iv)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join(""),
+    algorithm: "AES-GCM-256",
+  };
 }
 
+/**
+ * Decrypts AES-GCM-256 encrypted payload record.
+ */
 export async function decryptPayload(encryptedRecord) {
   if (!encryptedRecord) return null;
-  try {
-    if (encryptedRecord.algorithm === "AES-GCM-256" && encryptedRecord.iv) {
-      const key = await getDeviceEncryptionKey();
-      if (!key) throw new Error("Key unavailable");
-      const iv = new Uint8Array(
-        encryptedRecord.iv.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
-      );
-      const data = new Uint8Array(
-        encryptedRecord.ciphertext.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
-      );
-      const decrypted = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv },
-        key,
-        data
-      );
-      const dec = new TextDecoder();
-      return JSON.parse(dec.decode(decrypted));
-    } else if (encryptedRecord.algorithm === "STUB_BASE64_OBFUSCATED") {
-      return JSON.parse(decodeURIComponent(escape(atob(encryptedRecord.ciphertext))));
-    } else if (typeof encryptedRecord.ciphertext === "string") {
-      return JSON.parse(encryptedRecord.ciphertext);
-    }
-  } catch (err) {
-    console.warn("[OfflineQueue] Payload decryption notice:", err);
+  if (encryptedRecord.algorithm !== "AES-GCM-256" || !encryptedRecord.iv) {
+    // If payload is already raw object, return safely
+    if (typeof encryptedRecord === "object" && !encryptedRecord.ciphertext) return encryptedRecord;
+    throw new Error("Unrecognized encryption format or insecure payload rejected.");
   }
-  return encryptedRecord.payload || encryptedRecord;
+
+  const key = await getDeviceEncryptionKey();
+  if (!key) throw new Error("Decryption key unavailable on device.");
+
+  const iv = new Uint8Array(
+    encryptedRecord.iv.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
+  );
+  const data = new Uint8Array(
+    encryptedRecord.ciphertext.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
+  );
+
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    key,
+    data
+  );
+  const dec = new TextDecoder();
+  return JSON.parse(dec.decode(decrypted));
 }
 
 /**
@@ -250,6 +268,8 @@ export async function enqueueOfflineMutation({
   actionType = "attendance_mark",
   payload = {},
   eventId = null,
+  userId = null,
+  userEmail = null,
 }) {
   const cleanSchool = (schoolId || "CAMPUS-01").toUpperCase();
 
@@ -283,6 +303,8 @@ export async function enqueueOfflineMutation({
     const record = {
       event_id: finalEventId,
       school_id: cleanSchool,
+      user_id: userId || null,
+      user_email: userEmail || null,
       action_type: actionType,
       encrypted_payload: encryptedPayload,
       payload_algorithm: encryptedPayload.algorithm,
@@ -306,6 +328,7 @@ export async function enqueueOfflineMutation({
           detail: {
             pendingCount: cachedPendingCount,
             schoolId: cleanSchool,
+            userId: userId || null,
             latestEventId: finalEventId,
           },
         })
@@ -319,20 +342,38 @@ export async function enqueueOfflineMutation({
 }
 
 /**
- * Flushes all queued mutations from IndexedDB against Supabase
+ * Flushes queued mutations from IndexedDB strictly matching the active authenticated tenant and user.
+ * Prevents account-switch leaks and cross-tenant pollution.
  */
-export async function flushOfflineMutationQueue(schoolId = null) {
+export async function flushOfflineMutationQueue(activeSchoolId = null, activeUserId = null) {
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     return { flushed: 0, pending: cachedPendingCount };
   }
 
-  const queue = await getOfflineQueue();
-  if (queue.length === 0) {
+  const allItems = await getOfflineQueue();
+  if (allItems.length === 0) {
     cachedPendingCount = 0;
     return { flushed: 0, pending: 0 };
   }
 
-  console.info(`[OfflineQueue] Flushing ${queue.length} pending offline mutations from IndexedDB to cloud...`);
+  const cleanSchool = activeSchoolId ? activeSchoolId.toUpperCase().trim() : null;
+
+  // Strict tenant & user binding: Only flush items belonging to the active school and user
+  const queue = allItems.filter((item) => {
+    if (cleanSchool && item.school_id && item.school_id !== cleanSchool) {
+      return false; // Skip items from other schools
+    }
+    if (activeUserId && item.user_id && item.user_id !== activeUserId) {
+      return false; // Skip items from other authenticated users
+    }
+    return true;
+  });
+
+  if (queue.length === 0) {
+    return { flushed: 0, pending: allItems.length };
+  }
+
+  console.info(`[OfflineQueue] Flushing ${queue.length} tenant-authorized offline mutations to cloud...`);
 
   let flushedCount = 0;
   const db = await openDB();

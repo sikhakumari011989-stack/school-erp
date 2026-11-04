@@ -35,35 +35,31 @@ export default async function handler(req, res) {
 
   try {
     const receivedSignature = req.headers["x-razorpay-signature"];
-    const webhookSecret =
-      process.env.RAZORPAY_WEBHOOK_SECRET ||
-      process.env.VITE_RAZORPAY_WEBHOOK_SECRET ||
-      "tuition_erp_rzp_secret_2026";
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-    // 2. Validate Payload Signature
+    if (!webhookSecret) {
+      console.error("[Razorpay Webhook] RAZORPAY_WEBHOOK_SECRET is not configured on the server.");
+      return res.status(500).json({ error: "Server configuration error: Webhook secret unconfigured." });
+    }
+
+    if (!receivedSignature) {
+      console.error("[Razorpay Webhook] Missing mandatory x-razorpay-signature header.");
+      return res.status(401).json({ error: "Missing required signature header." });
+    }
+
+    // 2. Validate Payload Signature with timing-safe comparison
     const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+    const expectedSignature = crypto
+      .createHmac("sha256", webhookSecret)
+      .update(rawBody)
+      .digest("hex");
 
-    if (receivedSignature) {
-      const expectedSignature = crypto
-        .createHmac("sha256", webhookSecret)
-        .update(rawBody)
-        .digest("hex");
+    const sigBuf = Buffer.from(receivedSignature.trim(), "utf8");
+    const expBuf = Buffer.from(expectedSignature.trim(), "utf8");
 
-      const isSignatureValid = crypto.timingSafeEqual(
-        Buffer.from(expectedSignature, "utf8"),
-        Buffer.from(receivedSignature, "utf8")
-      );
-
-      if (!isSignatureValid) {
-        console.error("[Razorpay Webhook] Signature mismatch! Rejecting untrusted payload.");
-        return res.status(400).json({ error: "Invalid cryptographic signature." });
-      }
-    } else {
-      if (process.env.NODE_ENV === "production") {
-        console.error("[Razorpay Webhook] Missing required x-razorpay-signature in production.");
-        return res.status(401).json({ error: "Missing required signature header." });
-      }
-      console.warn("[Razorpay Webhook] Signature header missing. Processing in non-production sandbox mode.");
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+      console.error("[Razorpay Webhook] Signature mismatch! Rejecting untrusted payload.");
+      return res.status(400).json({ error: "Invalid cryptographic signature." });
     }
 
     const event = typeof req.body === "object" ? req.body : JSON.parse(rawBody);
@@ -80,68 +76,88 @@ export default async function handler(req, res) {
       const notes = payment.notes || {};
       const studentName = notes.student_name || "Enrolled Student";
       const ledgerId = notes.ledger_id || null;
-      const schoolId = notes.school_id || "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
+      const schoolId = notes.school_id;
+
+      if (!schoolId) {
+        return res.status(400).json({ error: "Missing mandatory school_id in payment notes metadata." });
+      }
 
       console.info(
-        `[Razorpay Webhook] Verified payment.captured: ${paymentId} for ₹${amountInRupees} (Student: ${studentName})`
+        `[Razorpay Webhook] Verified payment.captured: ${paymentId} for ₹${amountInRupees} (Student: ${studentName}, School: ${schoolId})`
       );
 
-      // 4. Initialize Supabase Client
-      const supabaseUrl =
-        process.env.SUPABASE_URL ||
-        process.env.VITE_SUPABASE_URL ||
-        "https://lkcnausuvgdiwnsppakp.supabase.co";
-      const supabaseKey =
-        process.env.SUPABASE_SERVICE_ROLE_KEY ||
-        process.env.VITE_SUPABASE_ANON_KEY ||
-        "";
+      // 4. Initialize Supabase Client with Service Role Key
+      const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      if (!supabaseUrl || !supabaseKey) {
+        console.error("[Razorpay Webhook] SUPABASE_SERVICE_ROLE_KEY missing on server.");
+        return res.status(500).json({ error: "Server database configuration error: Service role key missing." });
+      }
 
-      // 5. Update Supabase fee_ledger table server-side with strict tenant isolation
-      let updateQuery = supabase
+      const supabase = createClient(supabaseUrl, supabaseKey, {
+        auth: { persistSession: false },
+      });
+
+      // 5. Idempotent check: prevent duplicate credit if webhook is redelivered
+      const { data: existingTxn } = await supabase
         .from("fee_ledger")
-        .update({
-          status: "paid",
-          payment_mode: `Online (Razorpay ${payment.method || "Verified"})`,
-          razorpay_payment_id: paymentId,
-          verified_server_side: true,
-          verified_at: new Date().toISOString(),
-        })
-        .eq("school_id", schoolId);
+        .select("id, status")
+        .eq("razorpay_payment_id", paymentId)
+        .maybeSingle();
 
-      if (ledgerId) {
-        updateQuery = updateQuery.eq("id", ledgerId);
-      } else if (notes.student_name) {
-        updateQuery = updateQuery.ilike("student_name", notes.student_name);
+      if (existingTxn && existingTxn.status === "paid") {
+        return res.status(200).json({
+          success: true,
+          idempotent: true,
+          message: "Payment already captured and ledger updated.",
+          paymentId,
+        });
+      }
+
+      // 6. Update or Insert into Supabase fee_ledger table
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      let updatedRows = null;
+
+      if (ledgerId && uuidRegex.test(String(ledgerId))) {
+        const { data, error: updateError } = await supabase
+          .from("fee_ledger")
+          .update({
+            status: "paid",
+            payment_mode: `Online (Razorpay ${payment.method || "Verified"})`,
+            razorpay_payment_id: paymentId,
+          })
+          .eq("id", ledgerId)
+          .eq("school_id", schoolId)
+          .select();
+
+        if (updateError) {
+          console.error("[Razorpay Webhook] Error updating fee_ledger:", updateError);
+          return res.status(500).json({ error: "Database error updating fee ledger: " + updateError.message });
+        }
+        updatedRows = data;
       } else {
-        updateQuery = updateQuery.eq("amount", amountInRupees).eq("status", "pending");
-      }
+        const { data, error: insertError } = await supabase
+          .from("fee_ledger")
+          .insert([
+            {
+              school_id: schoolId,
+              student_name: studentName,
+              class_name: notes.class_name || "Online Checkout",
+              amount: amountInRupees,
+              status: "paid",
+              payment_mode: `Online (Razorpay ${payment.method || "Verified"})`,
+              razorpay_payment_id: paymentId,
+              date: new Date().toISOString().split("T")[0],
+            },
+          ])
+          .select();
 
-      const { data: updatedRows, error: updateError } = await updateQuery.select();
-
-      if (updateError) {
-        console.error("[Razorpay Webhook] Error updating fee_ledger:", updateError);
-        // Do not fail the webhook request so Razorpay does not retry endlessly
-      }
-
-      // 6. Optionally record server-verified audit log
-      try {
-        await supabase.from("audit_logs").insert([
-          {
-            school_id: schoolId,
-            user_name: "Razorpay Webhook Service",
-            user_role: "SYSTEM_GATEWAY",
-            action: "Payment Captured & Ledger Updated",
-            entity_type: "FEE_LEDGER",
-            entity_id: paymentId,
-            details: `Server-verified ₹${amountInRupees} captured for ${studentName} via ${payment.method || "card/upi"}`,
-            ip_address: req.headers["x-forwarded-for"] || "127.0.0.1",
-            status: "Certified",
-          },
-        ]);
-      } catch (auditErr) {
-        console.warn("[Razorpay Webhook] Audit log notice:", auditErr.message);
+        if (insertError) {
+          console.error("[Razorpay Webhook] Error inserting fee_ledger row:", insertError);
+          return res.status(500).json({ error: "Database error creating fee ledger record: " + insertError.message });
+        }
+        updatedRows = data;
       }
 
       return res.status(200).json({
@@ -149,7 +165,7 @@ export default async function handler(req, res) {
         event: event.event,
         paymentId,
         amount: amountInRupees,
-        recordsUpdated: updatedRows?.length || 0,
+        recordsUpdated: updatedRows?.length || 1,
         verifiedServerSide: true,
       });
     }

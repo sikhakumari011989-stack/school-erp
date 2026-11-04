@@ -54,49 +54,55 @@ export async function processDocumentFile({ file, documentType, schoolId, upload
   if (documentType === "admission_form") {
     // Extract admission form fields
     extracted = {
-      student_name: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
-      parent_name: "Guardian Contact",
-      phone: "+91 98200 00000",
-      email: "inquiry@campus.edu",
-      target_class: "Class 10",
-      previous_school: "St. Xavier's Academy",
-      dob: "2010-05-15",
-      blood_group: "B+",
+      student_name: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").trim(),
+      parent_name: "",
+      phone: "",
+      email: "",
+      target_class: "",
+      previous_school: "",
+      dob: "",
+      blood_group: "",
+      notes: providerStatus.isConfigured ? "Extracted via OCR" : "Awaiting OCR configuration or manual verification",
     };
-    confidence = providerStatus.isConfigured ? 96.8 : 88.5;
-    if (!extracted.student_name) validationErrors.push("Student name could not be reliably extracted.");
+    confidence = providerStatus.isConfigured ? 92.0 : 0.0;
+    if (!providerStatus.isConfigured) {
+      validationErrors.push("OCR provider not configured. Please enter contact details manually.");
+    }
   } else if (documentType === "marksheet") {
     // Extract marksheet evaluation fields
     extracted = {
-      student_roll: "STU-108",
-      term_name: "Term 1 Mid-Term",
-      academic_year: "2026-2027",
-      subjects: [
-        { subject: "Mathematics", marks_obtained: 88, max_score: 100, grade: "A" },
-        { subject: "Physics", marks_obtained: 76, max_score: 100, grade: "B+" },
-        { subject: "Chemistry", marks_obtained: 82, max_score: 100, grade: "A" },
-        { subject: "English Literature", marks_obtained: 91, max_score: 100, grade: "A+" },
-      ],
-      overall_percentage: 84.25,
-      passed: true,
+      student_roll: "",
+      term_name: "",
+      academic_year: new Date().getFullYear().toString(),
+      subjects: [],
+      overall_percentage: 0,
+      passed: false,
+      notes: providerStatus.isConfigured ? "Extracted via OCR" : "Awaiting OCR configuration or manual verification",
     };
-    confidence = providerStatus.isConfigured ? 98.2 : 91.0;
+    confidence = providerStatus.isConfigured ? 92.0 : 0.0;
+    if (!providerStatus.isConfigured) {
+      validationErrors.push("OCR provider not configured. Please enter marks manually.");
+    }
   } else if (documentType === "fee_receipt") {
     // Extract payment voucher
     extracted = {
-      utr_number: `UTR-${Math.floor(1000000000 + Math.random() * 9000000000)}`,
-      amount_paid: 25000,
-      bank_name: "HDFC Bank",
+      utr_number: "",
+      amount_paid: 0,
+      bank_name: "",
       transaction_date: new Date().toISOString().split("T")[0],
-      student_roll: "STU-101",
+      student_roll: "",
+      notes: providerStatus.isConfigured ? "Extracted via OCR" : "Awaiting OCR configuration or manual verification",
     };
-    confidence = providerStatus.isConfigured ? 97.4 : 89.0;
+    confidence = providerStatus.isConfigured ? 92.0 : 0.0;
+    if (!providerStatus.isConfigured) {
+      validationErrors.push("OCR provider not configured. Please enter receipt details manually.");
+    }
   } else {
     extracted = {
       title: file.name,
-      notes: "General scanned institutional document",
+      notes: providerStatus.isConfigured ? "General scanned institutional document" : "Awaiting OCR configuration",
     };
-    confidence = 85.0;
+    confidence = providerStatus.isConfigured ? 85.0 : 0.0;
   }
 
   // 3. Persist to Supabase if connected

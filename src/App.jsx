@@ -8,50 +8,55 @@ import ProtectedRoute from "./Components/ProtectedRoute";
 // Import Components & Pages
 import Sidebar from "./Components/Sidebar";
 import Login, { dashboardFor, inferRoleFromCode } from "./pages/Login";
-import SuperAdminDashboard from "./pages/SuperAdminDashboard";
-import PrincipalDashboard from "./pages/PrincipalDashboard";
-import AccountantDashboard from "./pages/AccountantDashboard";
-import TrusteeDashboard from "./pages/TrusteeDashboard";
-import StaffDashboard from "./pages/StaffDashboard";
-import AcademicCalendar from "./pages/AcademicCalendar";
 
-import TeacherDashboard from "./pages/TeacherDashboard";
-import TeacherHomework from "./pages/TeacherHomework";
-import TeacherAttendance from "./pages/TeacherAttendance";
-import TeacherClasses from "./pages/TeacherClasses";
-import TeacherAnalytics from "./pages/TeacherAnalytics";
-import TeacherPlanner from "./pages/TeacherPlanner";
-import TeacherClassTests from "./pages/TeacherClassTests";
-import StudentDashboard from "./pages/StudentDashboard";
-import StudentMarks from "./pages/StudentMarks";
-import StudentHomework from "./pages/StudentHomework";
-import StudentLMS from "./pages/StudentLMS";
-import CertificateGenerator from "./pages/CertificateGenerator";
-import StudentCalendar from "./pages/StudentCalendar";
-import StudentGallery from "./pages/StudentGallery";
-import StudentConduct from "./pages/StudentConduct";
-import StudentFees from "./pages/StudentFees";
-import StudentRazorpayCheckout from "./pages/StudentRazorpayCheckout";
-import TermsOfService from "./pages/TermsOfService";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import PricingPolicy from "./pages/PricingPolicy";
-import RefundPolicy from "./pages/RefundPolicy";
-import ContactUs from "./pages/ContactUs";
-import SystemDiagnosticPage from "./pages/SystemDiagnosticPage";
-import MasterSchoolSetup from "./pages/MasterSchoolSetup";
-import AdmissionsCRM from "./pages/AdmissionsCRM";
-import DocumentIntelligence from "./pages/DocumentIntelligence";
-import TransportManager from "./pages/TransportManager";
-import AccreditationCenter from "./pages/AccreditationCenter";
-import PublicCredentialVerify from "./pages/PublicCredentialVerify";
-import ClinicHealthVault from "./pages/ClinicHealthVault";
+// Lazy-loaded routes for optimal bundle chunking and performance
+const SuperAdminDashboard = React.lazy(() => import("./pages/SuperAdminDashboard"));
+const PrincipalDashboard = React.lazy(() => import("./pages/PrincipalDashboard"));
+const AccountantDashboard = React.lazy(() => import("./pages/AccountantDashboard"));
+const TrusteeDashboard = React.lazy(() => import("./pages/TrusteeDashboard"));
+const StaffDashboard = React.lazy(() => import("./pages/StaffDashboard"));
+const AcademicCalendar = React.lazy(() => import("./pages/AcademicCalendar"));
 
-import OnlineExams from "./pages/OnlineExams";
-import StudentExam from "./pages/StudentExam";
-import PayrollManager from "./pages/PayrollManager";
-import BroadcastManager from "./pages/BroadcastManager";
-import StaffMessenger from "./pages/StaffMessenger";
-import ExpenseManagerPage from "./pages/ExpenseManager";
+const TeacherDashboard = React.lazy(() => import("./pages/TeacherDashboard"));
+const TeacherHomework = React.lazy(() => import("./pages/TeacherHomework"));
+const TeacherAttendance = React.lazy(() => import("./pages/TeacherAttendance"));
+const TeacherClasses = React.lazy(() => import("./pages/TeacherClasses"));
+const TeacherAnalytics = React.lazy(() => import("./pages/TeacherAnalytics"));
+const TeacherPlanner = React.lazy(() => import("./pages/TeacherPlanner"));
+const TeacherClassTests = React.lazy(() => import("./pages/TeacherClassTests"));
+
+const StudentDashboard = React.lazy(() => import("./pages/StudentDashboard"));
+const StudentMarks = React.lazy(() => import("./pages/StudentMarks"));
+const StudentHomework = React.lazy(() => import("./pages/StudentHomework"));
+const StudentLMS = React.lazy(() => import("./pages/StudentLMS"));
+const CertificateGenerator = React.lazy(() => import("./pages/CertificateGenerator"));
+const StudentCalendar = React.lazy(() => import("./pages/StudentCalendar"));
+const StudentGallery = React.lazy(() => import("./pages/StudentGallery"));
+const StudentConduct = React.lazy(() => import("./pages/StudentConduct"));
+const StudentFees = React.lazy(() => import("./pages/StudentFees"));
+const StudentRazorpayCheckout = React.lazy(() => import("./pages/StudentRazorpayCheckout"));
+
+const TermsOfService = React.lazy(() => import("./pages/TermsOfService"));
+const PrivacyPolicy = React.lazy(() => import("./pages/PrivacyPolicy"));
+const PricingPolicy = React.lazy(() => import("./pages/PricingPolicy"));
+const RefundPolicy = React.lazy(() => import("./pages/RefundPolicy"));
+const ContactUs = React.lazy(() => import("./pages/ContactUs"));
+const SystemDiagnosticPage = React.lazy(() => import("./pages/SystemDiagnosticPage"));
+const MasterSchoolSetup = React.lazy(() => import("./pages/MasterSchoolSetup"));
+
+const AdmissionsCRM = React.lazy(() => import("./pages/AdmissionsCRM"));
+const DocumentIntelligence = React.lazy(() => import("./pages/DocumentIntelligence"));
+const TransportManager = React.lazy(() => import("./pages/TransportManager"));
+const AccreditationCenter = React.lazy(() => import("./pages/AccreditationCenter"));
+const PublicCredentialVerify = React.lazy(() => import("./pages/PublicCredentialVerify"));
+const ClinicHealthVault = React.lazy(() => import("./pages/ClinicHealthVault"));
+
+const OnlineExams = React.lazy(() => import("./pages/OnlineExams"));
+const StudentExam = React.lazy(() => import("./pages/StudentExam"));
+const PayrollManager = React.lazy(() => import("./pages/PayrollManager"));
+const BroadcastManager = React.lazy(() => import("./pages/BroadcastManager"));
+const StaffMessenger = React.lazy(() => import("./pages/StaffMessenger"));
+const ExpenseManagerPage = React.lazy(() => import("./pages/ExpenseManager"));
 import OfflineBanner from "./Components/OfflineBanner";
 import ErrorBoundary from "./Components/ErrorBoundary";
 import CommandPalette from "./Components/CommandPalette";
@@ -194,6 +199,13 @@ const AppLayout = ({ children }) => {
   );
 };
 
+const RouteLoadingFallback = () => (
+  <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 space-y-3">
+    <div className="w-8 h-8 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
+    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Loading Academic OS workspace...</span>
+  </div>
+);
+
 export default function App() {
   return (
     <SentryErrorBoundary>
@@ -202,7 +214,8 @@ export default function App() {
           <ToastProvider>
         <AppLayout>
           <ErrorBoundary>
-            <Routes>
+            <React.Suspense fallback={<RouteLoadingFallback />}>
+              <Routes>
               {/* ENTERPRISE PORTAL AUTHENTICATION & LEGAL ROUTES */}
               <Route path="/" element={<Login />} />
               <Route path="/login" element={<Login />} />
@@ -529,6 +542,7 @@ export default function App() {
             {/* FALLBACK CATCH-ALL */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+            </React.Suspense>
           </ErrorBoundary>
         </AppLayout>
       </ToastProvider>

@@ -140,7 +140,7 @@ export const AppProvider = ({ children }) => {
       try {
         const { data: profile, error } = await supabase
           .from("profiles")
-          .select("id, role, role_code, full_name, school_id, schools ( code, name )")
+          .select("id, role, role_code, full_name, school_id, status, is_active, schools ( code, name )")
           .eq("id", currentSession.user.id)
           .maybeSingle();
 
@@ -151,27 +151,64 @@ export const AppProvider = ({ children }) => {
         console.warn("Supabase profile read notice:", profErr);
       }
 
-      // Authoritative role: prioritize server app_metadata, then profiles table, then user_metadata
-      const authoritativeRole =
+      // 2. Fail closed on missing profile or unassociated user
+      if (!profileData && !appMeta.role && !appMeta.school_id) {
+        console.warn("[AuthSecurity] No authoritative profile or app_metadata found. Rejecting session.");
+        await supabase.auth.signOut().catch(() => {});
+        localStorage.removeItem("erp_session_user");
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      // 3. Fail closed on inactive or suspended accounts
+      if (profileData && (profileData.status === "inactive" || profileData.status === "suspended" || profileData.is_active === false)) {
+        console.warn("[AuthSecurity] User account is deactivated or suspended. Failing closed.");
+        await supabase.auth.signOut().catch(() => {});
+        localStorage.removeItem("erp_session_user");
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      // 4. Authoritative role: server app_metadata is primary authority, then verified public.profiles record
+      // NEVER allow client-controlled user_metadata to assign privileged roles
+      const rawVerifiedRole =
         appMeta.role ||
-        profileData?.role ||
-        userMeta.role ||
-        "STU";
+        profileData?.role;
+
+      const authoritativeRole =
+        rawVerifiedRole ||
+        (userMeta.role && ["student", "stu"].includes(String(userMeta.role).toLowerCase()) ? "STU" : "STU");
 
       const authoritativeRoleCode =
         appMeta.role_code ||
         profileData?.role_code ||
-        userMeta.role_code ||
         "";
 
       const canonicalRole = normalizeRole(authoritativeRole, authoritativeRoleCode);
 
-      const tenantCode =
+      // 5. Authoritative Tenant Resolution:
+      // Authenticated tenant identity MUST strictly derive from server app_metadata or verified profiles record
+      // NEVER allow client URL params (?tenant=...) or localStorage to alter authenticated tenant
+      const verifiedTenant =
         appMeta.school_id ||
         profileData?.schools?.code ||
-        profileData?.school_id ||
-        userMeta.school_id ||
-        resolveTenantCode();
+        profileData?.school_id;
+
+      if (!verifiedTenant) {
+        console.warn("[AuthSecurity] Authenticated user has no assigned institution. Failing closed.");
+        await supabase.auth.signOut().catch(() => {});
+        localStorage.removeItem("erp_session_user");
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      const tenantCode = verifiedTenant.toUpperCase().trim();
 
       const fullName =
         profileData?.full_name ||
@@ -195,6 +232,7 @@ export const AppProvider = ({ children }) => {
 
       setUser(userObj);
       localStorage.setItem("erp_session_user", JSON.stringify(userObj));
+      localStorage.setItem("erp_active_tenant", tenantCode);
 
       if (tenantCode) {
         loadTenantDetails(tenantCode);

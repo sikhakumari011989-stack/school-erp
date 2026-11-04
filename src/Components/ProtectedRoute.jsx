@@ -5,30 +5,21 @@ import { useToast } from "../context/ToastContext";
 import { dashboardFor, inferRoleFromCode } from "../pages/Login";
 
 export default function ProtectedRoute({ children, allowedRoles }) {
-  const { user, loading } = useContext(AppContext);
+  const { user, session, loading } = useContext(AppContext);
   const { showToast } = useToast();
   const location = useLocation();
   const [forceReady, setForceReady] = useState(false);
 
   useEffect(() => {
-    // Hard 800ms safety timeout guarantees screen never hangs on Android / mobile
+    // Safety timeout ensures screen never hangs on network latency
     const timer = setTimeout(() => {
       setForceReady(true);
     }, 800);
     return () => clearTimeout(timer);
   }, []);
 
-  // Read active authenticated session user
-  const getFreshUser = () => {
-    if (user) return user;
-    try {
-      const saved = localStorage.getItem("erp_session_user");
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return null;
-  };
-
-  const resolvedUser = getFreshUser();
+  // Authoritative session user strictly from authenticated Supabase context
+  const resolvedUser = user;
 
   if (loading && !resolvedUser && !forceReady) {
     return (
@@ -41,7 +32,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     );
   }
 
-  // Not logged in -> redirect to login
+  // Fail closed: Not authenticated -> redirect to login
   if (!resolvedUser) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }

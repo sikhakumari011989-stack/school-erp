@@ -20,12 +20,10 @@ export const DEFAULT_CRITERIA = [
     title: "Fire Safety Certificate & Emergency Evacuation Plan",
     description: "Annual verification from local Fire Department confirming operational fire hydrants, alarms, and bi-annual mock drill documentation.",
     assigned_officer: "Campus Estate Officer",
-    compliance_status: "compliant",
+    compliance_status: "in_progress",
     score_weightage: 15.0,
-    score_achieved: 15.0,
-    evidence_documents: [
-      { title: "Fire Safety NOC 2026-27", expiry_date: "2027-03-31", file_url: "#", verified: true },
-    ],
+    score_achieved: 0.0,
+    evidence_documents: [],
   },
   {
     id: "crit_2",
@@ -34,12 +32,10 @@ export const DEFAULT_CRITERIA = [
     title: "Safe Drinking Water & Sanitation Certificate",
     description: "Certified water bacteriological testing report and clean sanitary facility audit by Municipal Public Health Officer.",
     assigned_officer: "Health & Hygiene Supervisor",
-    compliance_status: "compliant",
+    compliance_status: "in_progress",
     score_weightage: 10.0,
-    score_achieved: 10.0,
-    evidence_documents: [
-      { title: "Water Quality Lab Report", expiry_date: "2026-11-25", file_url: "#", verified: true }, // Expiring soon!
-    ],
+    score_achieved: 0.0,
+    evidence_documents: [],
   },
   {
     id: "crit_3",
@@ -48,12 +44,10 @@ export const DEFAULT_CRITERIA = [
     title: "Pupil-to-Teacher Ratio (PTR) Compliance (<= 30:1)",
     description: "Sectional student strength ceiling of 40 students per class and institutional PTR not exceeding 30:1.",
     assigned_officer: "Academic Principal",
-    compliance_status: "compliant",
+    compliance_status: "in_progress",
     score_weightage: 20.0,
-    score_achieved: 20.0,
-    evidence_documents: [
-      { title: "U-DISE+ Teacher-Pupil Allocation Roster", expiry_date: "2027-05-30", file_url: "#", verified: true },
-    ],
+    score_achieved: 0.0,
+    evidence_documents: [],
   },
   {
     id: "crit_4",
@@ -64,10 +58,8 @@ export const DEFAULT_CRITERIA = [
     assigned_officer: "Trustee Infrastructure Rep",
     compliance_status: "in_progress",
     score_weightage: 15.0,
-    score_achieved: 7.5,
-    evidence_documents: [
-      { title: "Preliminary Structural Assessment", expiry_date: "2026-12-15", file_url: "#", verified: false },
-    ],
+    score_achieved: 0.0,
+    evidence_documents: [],
   },
   {
     id: "crit_5",
@@ -76,12 +68,10 @@ export const DEFAULT_CRITERIA = [
     title: "25% Economically Weaker Section (EWS) Quota Compliance",
     description: "Mandatory admission and free education quota compliance with district education office reimbursement filings.",
     assigned_officer: "Admissions & Legal Cell",
-    compliance_status: "compliant",
+    compliance_status: "in_progress",
     score_weightage: 20.0,
-    score_achieved: 20.0,
-    evidence_documents: [
-      { title: "District Education Officer RTE Roster Approval", expiry_date: "2027-03-31", file_url: "#", verified: true },
-    ],
+    score_achieved: 0.0,
+    evidence_documents: [],
   },
 ];
 

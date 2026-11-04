@@ -67,14 +67,16 @@ export default function AccreditationCenter() {
     setCriteria(loaded);
   };
 
-  const handleStatusToggle = (id, newStatus) => {
+  const handleStatusToggle = async (id, newStatus) => {
+    let targetCriterion = null;
     const updated = criteria.map((c) => {
       if (c.id === id) {
         const maxScore = Number(c.score_weightage || 10);
         let score = 0;
         if (newStatus === "compliant") score = maxScore;
         if (newStatus === "in_progress") score = maxScore * 0.5;
-        return { ...c, compliance_status: newStatus, score_achieved: score };
+        targetCriterion = { ...c, compliance_status: newStatus, score_achieved: score, updated_at: new Date().toISOString() };
+        return targetCriterion;
       }
       return c;
     });
@@ -83,6 +85,27 @@ export default function AccreditationCenter() {
     try {
       localStorage.setItem(`erp_accreditation_${schoolCode}`, JSON.stringify(updated));
     } catch (e) {}
+
+    if (supabase && targetCriterion) {
+      try {
+        await supabase
+          .from("accreditation_criteria")
+          .upsert({
+            school_id: schoolCode,
+            framework: targetCriterion.framework,
+            criterion_code: targetCriterion.criterion_code,
+            title: targetCriterion.title,
+            description: targetCriterion.description,
+            compliance_status: newStatus,
+            score_weightage: targetCriterion.score_weightage,
+            score_achieved: targetCriterion.score_achieved,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "school_id,criterion_code" });
+      } catch (err) {
+        console.warn("[Accreditation] Supabase sync notice:", err);
+      }
+    }
+
     showToast(`Compliance criterion updated to: ${newStatus}`, "info");
   };
 
