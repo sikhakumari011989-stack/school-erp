@@ -1,6 +1,7 @@
 import React, { useState, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
+import { normalizeRole } from "../utils/credentials";
 import BrandLogo from "./BrandLogo";
 
 export default function Sidebar() {

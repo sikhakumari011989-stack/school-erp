@@ -3,8 +3,29 @@ import { supabase } from "../supabaseClient";
 import { purgeOfflineQueue } from "../utils/offlineSyncQueue";
 import { getSchoolSubscription } from "../utils/cloudSyncService";
 
-export const AppContext = createContext();
-export const useAppContext = () => useContext(AppContext);
+export const AppContext = createContext({
+  session: null,
+  user: null,
+  setUser: () => {},
+  tenant: null,
+  subscription: {
+    isBlocked: false,
+    isSuspended: false,
+    isExpired: false,
+    expiryDate: null,
+    status: "active",
+    tier: "enterprise",
+  },
+  refreshTenant: async () => {},
+  loading: false,
+  login: async () => {},
+  logout: () => {},
+  handleSignOut: () => {},
+  loadProfile: async () => {},
+  switchTenant: () => {},
+});
+export const useAppContext = () => useContext(AppContext) || {};
+export const useApp = useAppContext;
 
 /**
  * Resolves active tenant from subdomain, query params (?tenant=...), or storage
@@ -490,3 +511,5 @@ export const AppProvider = ({ children }) => {
     </AppContext.Provider>
   );
 };
+
+export default AppContext;

@@ -46,16 +46,93 @@ export function inferRoleFromCode(code) {
 }
 
 /**
+ * Unified Canonical Role Normalization Function
+ * Maps any role string, alias, or Tier-2 credential code into the project's canonical role set:
+ * - TRUSTEE / HOD -> HOD
+ * - PRINCIPAL / PRIN -> PRIN
+ * - SUPERADMIN / ADMIN / ADM -> PRIN (executive leadership suite)
+ * - TEACHER / FACULTY / TCH -> TCH
+ * - ACCOUNTANT / ACC -> ACC
+ * - NON-TEACHING / STAFF / NTS -> NTS
+ * - STUDENT / STU -> STU
+ * - MASTER_OWNER -> MASTER_OWNER
+ */
+export function normalizeRole(role, personalCode = "") {
+  const codeStr = String(personalCode || "").trim().toUpperCase();
+  const roleStr = String(role || "").trim().toUpperCase();
+
+  // 1. MASTER_OWNER
+  if (roleStr === "MASTER_OWNER" || codeStr === "MASTER_OWNER" || roleStr.startsWith("MASTER") || codeStr.startsWith("MASTER")) {
+    return "MASTER_OWNER";
+  }
+
+  // 2. Map based on personalCode prefix (e.g. HOD-01, PRIN-01, ACC-01, etc.)
+  if (codeStr.startsWith("HOD") || codeStr.startsWith("TR-") || codeStr.startsWith("TRUSTEE")) {
+    return "HOD";
+  }
+  if (codeStr.startsWith("PRIN")) {
+    return "PRIN";
+  }
+  if (codeStr.startsWith("ADM") || codeStr.startsWith("SUPER")) {
+    return "PRIN";
+  }
+  if (codeStr.startsWith("ACC")) {
+    return "ACC";
+  }
+  if (codeStr.startsWith("TCH") || codeStr.startsWith("FAC")) {
+    return "TCH";
+  }
+  if (codeStr.startsWith("NON") || codeStr.startsWith("NTS") || codeStr.startsWith("STF") || codeStr.startsWith("STAFF")) {
+    return "NTS";
+  }
+
+  // 3. Map based on role string
+  if (roleStr === "TRUSTEE" || roleStr === "HOD") {
+    return "HOD";
+  }
+  if (roleStr === "PRINCIPAL" || roleStr === "PRIN") {
+    return "PRIN";
+  }
+  if (roleStr === "SUPERADMIN" || roleStr === "SUPER_ADMIN" || roleStr === "ADMIN" || roleStr === "ADM") {
+    return "PRIN";
+  }
+  if (roleStr === "TEACHER" || roleStr === "FACULTY" || roleStr === "TCH" || roleStr === "FAC") {
+    return "TCH";
+  }
+  if (roleStr === "ACCOUNTANT" || roleStr === "ACC") {
+    return "ACC";
+  }
+  if (roleStr === "STAFF" || roleStr === "NON_TEACHING" || roleStr === "NON-TEACHING" || roleStr === "NTS" || roleStr === "STF") {
+    return "NTS";
+  }
+  if (roleStr === "STUDENT" || roleStr === "STU") {
+    return "STU";
+  }
+
+  // 4. Substring fallback
+  if (roleStr.includes("TRUSTEE") || roleStr.includes("HOD")) return "HOD";
+  if (roleStr.includes("PRINCIPAL") || roleStr.includes("PRIN")) return "PRIN";
+  if (roleStr.includes("SUPERADMIN") || roleStr.includes("ADMIN")) return "PRIN";
+  if (roleStr.includes("TEACHER") || roleStr.includes("FACULTY")) return "TCH";
+  if (roleStr.includes("ACCOUNTANT")) return "ACC";
+  if (roleStr.includes("STAFF") || roleStr.includes("NON")) return "NTS";
+
+  return "STU";
+}
+
+/**
  * Maps any role to its corresponding portal route
  */
 export function dashboardFor(role) {
-  const normalized = String(role || "student").toLowerCase();
-  if (normalized === "master_owner") return "/master-setup";
-  if (normalized === "admin" || normalized === "super_admin") return "/admin/dashboard";
-  if (normalized === "accountant" || normalized === "acc") return "/accountant/dashboard";
-  if (normalized === "principal" || normalized === "prin") return "/principal/dashboard";
-  if (normalized === "trustee" || normalized === "hod") return "/trustee/dashboard";
-  if (normalized === "teacher" || normalized === "tch") return "/teacher/dashboard";
-  if (normalized === "staff" || normalized === "non_teaching" || normalized === "nts") return "/staff/dashboard";
+  const raw = String(role || "").trim().toLowerCase();
+  if (raw === "master_owner") return "/master-setup";
+  if (raw === "admin" || raw === "super_admin") return "/admin/dashboard";
+  const canonical = normalizeRole(role);
+  if (canonical === "MASTER_OWNER") return "/master-setup";
+  if (canonical === "ACC") return "/accountant/dashboard";
+  if (canonical === "PRIN") return "/principal/dashboard";
+  if (canonical === "HOD") return "/trustee/dashboard";
+  if (canonical === "TCH") return "/teacher/dashboard";
+  if (canonical === "NTS") return "/staff/dashboard";
   return "/student/dashboard";
 }

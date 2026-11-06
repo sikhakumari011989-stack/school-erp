@@ -1,13 +1,13 @@
 import React from "react";
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { AppProvider } from "./context/AppContext";
+import { AppProvider, AppContext, useAppContext } from "./context/AppContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ToastProvider, useToast } from "./context/ToastContext";
 import ProtectedRoute from "./Components/ProtectedRoute";
 
 // Import Components & Pages
 import Sidebar from "./Components/Sidebar";
-import Login, { dashboardFor, inferRoleFromCode } from "./pages/Login";
+import Login, { dashboardFor, inferRoleFromCode, normalizeRole } from "./pages/Login";
 
 // Lazy-loaded routes for optimal bundle chunking and performance
 const SuperAdminDashboard = React.lazy(() => import("./pages/SuperAdminDashboard"));
@@ -84,14 +84,13 @@ const AppLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { user, subscription, tenant, logout } = React.useContext(AppContext) || {};
+  const { user, subscription, tenant, logout } = useAppContext();
   const isPublicPage =
     PUBLIC_ROUTES.includes(location.pathname) ||
     location.pathname.startsWith("/verify-credential");
 
-  const rawRole = (user?.role || (user && inferRoleFromCode(user.role_code || user.roll_number || user.id)) || "").toUpperCase();
-  const roleCode = String(user?.role_code || user?.id || "").toUpperCase();
-  const isMasterUser = rawRole === "MASTER_OWNER" || roleCode === "MASTER_OWNER" || location.pathname === "/master-setup";
+  const canonicalRole = normalizeRole(user?.role, user?.role_code || user?.roll_number || user?.id);
+  const isMasterUser = canonicalRole === "MASTER_OWNER" || location.pathname === "/master-setup";
 
   // 1. GLOBAL INSTITUTIONAL SUSPENSION & LICENSING LOCK (ROOT ROUTER LEVEL)
   // If a school's status or subscription_status is marked suspended or its license has expired,

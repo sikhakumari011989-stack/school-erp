@@ -18,9 +18,9 @@ import {
   RefreshCw,
   Sparkles,
 } from "lucide-react";
-import { buildStandardErpEmail, inferRoleFromCode, dashboardFor } from "../utils/credentials";
+import { buildStandardErpEmail, inferRoleFromCode, dashboardFor, normalizeRole } from "../utils/credentials";
 
-export { buildStandardErpEmail, inferRoleFromCode, dashboardFor };
+export { buildStandardErpEmail, inferRoleFromCode, dashboardFor, normalizeRole };
 
 export default function Login({ isDirectPortal = false }) {
   const { user, setUser, login } = useContext(AppContext);
