@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { useToast } from "../context/ToastContext";
+import { useAppContext } from "../context/AppContext";
 
 export default function AddStudentModal({ isOpen, onClose, onRefresh }) {
   const { showToast } = useToast();
+  const { user } = useAppContext?.() || {};
+  const activeSchoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
   const [formData, setFormData] = useState({ name: "", roll_number: "", class_id: "" });
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -12,12 +15,12 @@ export default function AddStudentModal({ isOpen, onClose, onRefresh }) {
   useEffect(() => {
     if (isOpen) {
       const fetchClasses = async () => {
-        const { data } = await supabase.from("classes").select("*");
+        const { data } = await supabase.from("classes").select("*").eq("school_id", activeSchoolId);
         if (data) setClasses(data);
       };
       fetchClasses();
     }
-  }, [isOpen]);
+  }, [isOpen, activeSchoolId]);
 
   if (!isOpen) return null;
 
@@ -27,7 +30,7 @@ export default function AddStudentModal({ isOpen, onClose, onRefresh }) {
 
     try {
       const { error } = await supabase.from("students").insert([{
-        school_id: "school-demo-01",
+        school_id: activeSchoolId,
         name: formData.name,
         roll_number: formData.roll_number,
         class_id: formData.class_id

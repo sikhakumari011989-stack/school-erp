@@ -142,6 +142,33 @@ export default async function handler(req, res) {
           }
         );
 
+        const strictAdminRole = (adminRoleCode || "HOD-01").toUpperCase().startsWith("PRIN") ? "principal" : "trustee";
+        const standardEmail = (email || "").trim() || `${cleanCode.toLowerCase()}.${(adminRoleCode || "HOD-01").toLowerCase().replace(/[^a-z0-9]/g, "")}@academicos.internal`;
+
+        const targetSchoolId = rpcRes?.school_id;
+        // Guarantee administrator exists in public.profiles for instant login capability
+        if (targetSchoolId) {
+          try {
+            await supabase.from("profiles").upsert(
+              [
+                {
+                  school_id: targetSchoolId,
+                  full_name: (adminName || "Trustee Administrator").trim(),
+                  role: strictAdminRole,
+                  role_code: (adminRoleCode || "HOD-01").trim().toUpperCase(),
+                  email: standardEmail,
+                  phone: (phone || "").trim(),
+                  is_active: true,
+                  status: "active",
+                },
+              ],
+              { onConflict: "school_id,role_code" }
+            );
+          } catch (profErr) {
+            console.warn("[MasterAPI] Admin profile persistence notice:", profErr.message);
+          }
+        }
+
         if (!rpcErr && rpcRes) {
           return res.status(201).json({
             success: true,

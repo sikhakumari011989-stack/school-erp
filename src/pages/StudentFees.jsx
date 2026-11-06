@@ -88,7 +88,7 @@ export default function StudentFees() {
           const myCloudRecords = data.filter(matchStudent);
           combined = myCloudRecords.map((d, index) => {
             const rawStatus = (d.status || "paid").toLowerCase();
-            const displayStatus = rawStatus === "paid" ? "Paid" : rawStatus === "pending_verification" ? "Pending Verification" : "Pending";
+            const displayStatus = (rawStatus === "paid" || rawStatus === "completed") ? "Paid" : rawStatus === "pending_verification" ? "Pending Verification" : "Pending";
             return {
               id: d.id || `db-${index}`,
               term: d.term || (d.student_name ? `${d.student_name} - ${d.class_name || "Term Fee"}` : "Term Tuition Fee"),

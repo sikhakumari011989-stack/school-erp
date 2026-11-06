@@ -318,13 +318,152 @@ export default function StudentRazorpayCheckout() {
   };
 
   /**
-   * 1-Click Instant Sales Demo Auto-Filler
+   * Production-Grade Razorpay Standard Checkout Launch & Verification
    */
-  const handleAutoFillDemoUtr = () => {
-    const demoUtr = `2026${Math.floor(10000000 + Math.random() * 90000000)}`;
-    setUtrNumber(demoUtr);
-    showToast(`Generated verified test UTR: ${demoUtr}`, "info");
-    processUpiSettlement(demoUtr, `School UPI QR (UTR: ${demoUtr})`);
+  const handleLaunchRazorpayOnlinePayment = async () => {
+    if (!selectedFee) {
+      showToast("Please select a published fee head above to settle.", "error");
+      return;
+    }
+
+    const isPartial = paymentSplitType === "partial";
+    const numInstallment = Number(customInstallment);
+    if (isPartial && (!numInstallment || numInstallment <= 0 || numInstallment > Number(selectedFee.amount))) {
+      showToast(`Please enter a valid installment amount up to ₹${Number(selectedFee.amount).toLocaleString()}.`, "error");
+      return;
+    }
+
+    const amountToSettle = isPartial ? numInstallment : Number(selectedFee.amount);
+    setLoading(true);
+
+    try {
+      // 1. Initiate Razorpay Order from serverless gateway
+      const resp = await fetch("/api/razorpay/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: amountToSettle,
+          schoolId: activeSchoolCode,
+          studentId: user?.personal_code || user?.roll_number || user?.id || "STU-001",
+          studentName: user?.name || user?.full_name || "Enrolled Student",
+          studentEmail: user?.email || "",
+          feeTitle: selectedFee.title,
+          isPartial,
+        }),
+      });
+
+      const orderData = await resp.json().catch(() => ({}));
+      if (!resp.ok || !orderData.success || !orderData.order) {
+        throw new Error(orderData.error || "Failed to initiate online payment session with gateway.");
+      }
+
+      // 2. Load Razorpay Checkout SDK dynamically if not yet on window
+      if (!window.Razorpay) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://checkout.razorpay.com/v1/checkout.js";
+          script.async = true;
+          script.onload = resolve;
+          script.onerror = () => reject(new Error("Failed to load Razorpay payment SDK. Please verify internet connection."));
+          document.body.appendChild(script);
+        });
+      }
+
+      const options = {
+        key: orderData.order.key_id,
+        amount: orderData.order.amount,
+        currency: orderData.order.currency,
+        name: user?.institution_name || schoolUpiMeta.merchantName || "Academic OS",
+        description: `${selectedFee.title} Institutional Fee Clearance`,
+        order_id: orderData.order.id,
+        prefill: {
+          name: user?.name || user?.full_name || "",
+          email: user?.email || "",
+          contact: user?.phone || "",
+        },
+        theme: {
+          color: "#4F46E5",
+        },
+        handler: async function (paymentResponse) {
+          // 3. Cryptographically verify signature on serverless backend
+          try {
+            showToast("Verifying payment signature with treasury server...", "info");
+            const verifyResp = await fetch("/api/razorpay/verify-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+                schoolId: activeSchoolCode,
+                studentId: user?.personal_code || user?.roll_number || user?.id,
+                studentName: user?.name || user?.full_name,
+                studentEmail: user?.email,
+                className: user?.class_name,
+                amount: amountToSettle,
+                feeTitle: selectedFee.title,
+                isPartial,
+              }),
+            });
+
+            const verifyData = await verifyResp.json().catch(() => ({}));
+            if (!verifyResp.ok || !verifyData.verified) {
+              showToast("Payment verification failed: " + (verifyData.error || "Invalid signature"), "error");
+              setLoading(false);
+              return;
+            }
+
+            showToast(`Payment Verified! Official Tax Invoice: ${verifyData.invoice_no}`, "success");
+
+            // Update local storage for immediate UI reconciliation
+            const newRecord = {
+              id: `TXN-${paymentResponse.razorpay_payment_id}`,
+              school_id: activeSchoolCode,
+              student_name: user?.name || user?.full_name,
+              roll_number: user?.personal_code || user?.roll_number,
+              amount: amountToSettle,
+              status: "paid",
+              payment_mode: "Razorpay Online Gateway",
+              razorpay_payment_id: paymentResponse.razorpay_payment_id,
+              date: new Date().toISOString().split("T")[0],
+              invoice_no: verifyData.invoice_no,
+              term: selectedFee.title,
+            };
+
+            const tenantKey = `erp_fee_ledger_${activeSchoolCode}`;
+            const existing = JSON.parse(localStorage.getItem(tenantKey) || "[]");
+            localStorage.setItem(tenantKey, JSON.stringify([newRecord, ...existing]));
+            window.dispatchEvent(new Event("erp-fee-ledger-updated"));
+
+            setTimeout(() => {
+              navigate("/student/fees");
+            }, 1000);
+          } catch (verErr) {
+            console.error("Verification error:", verErr);
+            showToast("Server payment verification failed. Please contact school accountant.", "error");
+            setLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+            showToast("Payment session cancelled by student.", "info");
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (failResponse) {
+        console.error("Payment failed:", failResponse.error);
+        showToast(`Payment failed: ${failResponse.error.description}`, "error");
+        setLoading(false);
+      });
+      rzp.open();
+    } catch (err) {
+      console.error("Online payment initiation error:", err);
+      showToast(err.message, "error");
+      setLoading(false);
+    }
   };
 
   // UPI Deep Link for mobile devices
@@ -628,35 +767,46 @@ export default function StudentRazorpayCheckout() {
 
               {/* ACTION BUTTONS */}
               <div className="space-y-3 pt-2">
+                {/* PRIMARY ACTION: LIVE ONLINE GATEWAY CHECKOUT */}
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleLaunchRazorpayOnlinePayment}
                   disabled={loading || !selectedFee}
-                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 px-4 rounded-xl shadow-xl shadow-emerald-600/30 transition-all disabled:opacity-50 text-base flex items-center justify-center gap-2 cursor-pointer border border-emerald-400/30"
+                  className="w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white font-black py-4 px-4 rounded-xl shadow-xl shadow-indigo-600/30 transition-all disabled:opacity-50 text-base flex items-center justify-center gap-2 cursor-pointer border border-indigo-400/40 hover:-translate-y-0.5"
                 >
                   {loading ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>Submitting Payment Receipt to Treasury Queue...</span>
+                      <span>Connecting to Razorpay Secure Gateway...</span>
                     </>
                   ) : (
                     <>
-                      <Receipt className="w-5 h-5" />
+                      <ShieldCheck className="w-5 h-5 text-emerald-400" />
                       <span>
-                        Submit for Verification {selectedFee ? `(₹${(paymentSplitType === 'partial' && Number(customInstallment) > 0 ? Number(customInstallment) : Number(selectedFee.amount)).toLocaleString()})` : "(Select Fee Head Above)"}
+                        Pay Online via Razorpay Gateway {selectedFee ? `(₹${(paymentSplitType === 'partial' && Number(customInstallment) > 0 ? Number(customInstallment) : Number(selectedFee.amount)).toLocaleString()})` : ""}
                       </span>
                     </>
                   )}
                 </button>
 
-                {/* 1-CLICK INSTANT DEMO UTR BUTTON */}
+                <div className="relative flex py-2 items-center">
+                  <div className="flex-grow border-t border-slate-700"></div>
+                  <span className="flex-shrink mx-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    Or Settle via Direct Bank Transfer
+                  </span>
+                  <div className="flex-grow border-t border-slate-700"></div>
+                </div>
+
+                {/* SECONDARY ACTION: SUBMIT OFFLINE UTR FOR ACCOUNTANT VERIFICATION */}
                 <button
-                  type="button"
-                  onClick={handleAutoFillDemoUtr}
+                  type="submit"
                   disabled={loading || !selectedFee}
-                  className="w-full bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 font-bold py-3 px-4 rounded-xl transition-all text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 font-bold py-3.5 px-4 rounded-xl transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>⚡ Auto-Fill Verified Demo UTR & Route to Accountant (Sales Demo)</span>
+                  <Receipt className="w-4 h-4 text-emerald-400" />
+                  <span>
+                    Submit Bank UTR for Accountant Verification {selectedFee ? `(₹${(paymentSplitType === 'partial' && Number(customInstallment) > 0 ? Number(customInstallment) : Number(selectedFee.amount)).toLocaleString()})` : ""}
+                  </span>
                 </button>
               </div>
             </form>

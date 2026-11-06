@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useToast } from "../context/ToastContext";
+import { useAppContext } from "../context/AppContext";
 
 export default function CreateClassModal({ isOpen, onClose, onRefresh }) {
   const { showToast } = useToast();
+  const { user } = useAppContext?.() || {};
+  const activeSchoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
   const [formData, setFormData] = useState({ grade: "", section: "" });
   const [loading, setLoading] = useState(false);
 
@@ -18,7 +21,7 @@ export default function CreateClassModal({ isOpen, onClose, onRefresh }) {
 
     try {
       const { error } = await supabase.from("classes").insert([{
-        school_id: "school-demo-01",
+        school_id: activeSchoolId,
         grade: formData.grade,
         section: formData.section,
         name: className

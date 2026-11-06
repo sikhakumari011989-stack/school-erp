@@ -346,11 +346,11 @@ export default function TeacherAttendance() {
 
       if (isOnline && supabase) {
         try {
-          const schoolUuid = await resolveSchoolUuid(activeSchoolId);
           const { error: insertErr } = await supabase.from("attendance").insert([
             {
-              school_id: schoolUuid,
+              school_id: activeSchoolId,
               class_id: selectedBatch,
+              class_name: selectedBatch,
               date: today,
               records: formattedRecords,
             },

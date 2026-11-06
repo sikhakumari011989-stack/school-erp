@@ -138,7 +138,12 @@ export default function MasterSchoolSetup() {
     const cleanPass = passkeyInput.trim();
     setPasskeyError("");
 
-    // 1. Attempt Master API authentication
+    if (!cleanPass) {
+      setPasskeyError("Please enter the Master Operator Passkey.");
+      return;
+    }
+
+    // 1. Authoritative Master API authentication via HMAC-signed session
     try {
       const resp = await fetch("/api/master/auth", {
         method: "POST",
@@ -146,29 +151,23 @@ export default function MasterSchoolSetup() {
         body: JSON.stringify({ passkey: cleanPass }),
       });
 
-      if (resp.ok) {
-        const data = await resp.json();
-        if (data.success && data.token) {
-          sessionStorage.setItem("erp_master_token", data.token);
-          sessionStorage.setItem("erp_master_gate_unlocked", "true");
-          setIsUnlocked(true);
-          showToast("Master Gateway Unlocked! Access Granted.", "success");
-          return;
-        }
+      const data = await resp.json().catch(() => ({}));
+
+      if (resp.ok && data.success && data.token) {
+        sessionStorage.setItem("erp_master_token", data.token);
+        sessionStorage.setItem("erp_master_gate_unlocked", "true");
+        setIsUnlocked(true);
+        showToast("Master Gateway Unlocked! Access Granted.", "success");
+        return;
+      } else {
+        const errorMsg = data.error || "Access Denied: Invalid Master Passkey.";
+        setPasskeyError(errorMsg);
+        showToast(errorMsg, "error");
       }
     } catch (authErr) {
       console.warn("Master API auth notice:", authErr);
-    }
-
-    // 2. Resilient fallback check against configured or master key
-    const configuredKey = import.meta.env.VITE_MASTER_SETUP_KEY || "ASK&1412";
-    if (cleanPass === configuredKey || cleanPass === "ASK&1412") {
-      setIsUnlocked(true);
-      sessionStorage.setItem("erp_master_gate_unlocked", "true");
-      showToast("Master Gateway Unlocked! Access Granted.", "success");
-    } else {
-      setPasskeyError("Access Denied: Invalid Master Passkey.");
-      showToast("Access Denied: Invalid Master Passkey.", "error");
+      setPasskeyError("Unable to reach Master Authentication Gateway.");
+      showToast("Master Gateway server unreachable.", "error");
     }
   };
 
@@ -184,16 +183,19 @@ export default function MasterSchoolSetup() {
     const isCurrentlyActive = (school.subscriptionStatus || "active").toLowerCase() === "active";
     const newStatus = isCurrentlyActive ? "suspended" : "active";
 
-    // 1. Update in Supabase via API
-    let updatedInCloud = false;
+    const token = sessionStorage.getItem("erp_master_token");
+    if (!token) {
+      showToast("Master Session Token is missing or expired. Please re-authenticate.", "error");
+      return;
+    }
+
     try {
-      const token = sessionStorage.getItem("erp_master_token");
       const resp = await fetch("/api/master/schools", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : undefined,
-          "x-master-token": token || undefined,
+          Authorization: `Bearer ${token}`,
+          "x-master-token": token,
         },
         body: JSON.stringify({
           action: "set_status",
@@ -202,52 +204,46 @@ export default function MasterSchoolSetup() {
           expiryDate: school.expiryDate,
         }),
       });
-      if (resp.ok) updatedInCloud = true;
-    } catch (apiErr) {
-      console.warn("API set_status notice:", apiErr);
-    }
 
-    // Direct RPC fallback if API didn't respond
-    if (!updatedInCloud && supabase) {
-      try {
-        await supabase.rpc("set_school_license_status", {
-          p_school_code: school.code,
-          p_status: newStatus,
-          p_expires_at: school.expiryDate ? new Date(school.expiryDate).toISOString() : null,
-          p_notes: `Status toggled to ${newStatus} from Master Setup UI`,
-        });
-      } catch (rpcErr) {
-        console.warn("Direct RPC set_school_license_status notice:", rpcErr);
+      const resData = await resp.json().catch(() => ({}));
+      if (!resp.ok || !resData.success) {
+        showToast(resData.error || "Failed to update status in Supabase PostgreSQL", "error");
+        return;
       }
+
+      await updateSchoolSubscription({
+        schoolCode: school.code,
+        status: newStatus,
+        expiryDate: school.expiryDate,
+      });
+
+      showToast(
+        `School ${school.code} subscription set to ${newStatus.toUpperCase()}! ${newStatus === "suspended" ? "Access blocked." : "Access restored."}`,
+        newStatus === "suspended" ? "error" : "success"
+      );
+      loadSchools();
+    } catch (err) {
+      console.error("Toggle subscription error:", err);
+      showToast("Server communication error while updating status.", "error");
     }
-
-    // 2. Update via cloudSyncService
-    await updateSchoolSubscription({
-      schoolCode: school.code,
-      status: newStatus,
-      expiryDate: school.expiryDate,
-    });
-
-    showToast(
-      `School ${school.code} subscription set to ${newStatus.toUpperCase()}! ${newStatus === "suspended" ? "Access blocked." : "Access restored."}`,
-      newStatus === "suspended" ? "error" : "success"
-    );
-    loadSchools();
   };
 
   const handleUpdateExpiry = async (schoolCode, newDate) => {
     const current = getSchoolSubscription(schoolCode);
 
-    // 1. Update in Supabase via API
-    let updatedInCloud = false;
+    const token = sessionStorage.getItem("erp_master_token");
+    if (!token) {
+      showToast("Master Session Token is missing or expired. Please re-authenticate.", "error");
+      return;
+    }
+
     try {
-      const token = sessionStorage.getItem("erp_master_token");
       const resp = await fetch("/api/master/schools", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : undefined,
-          "x-master-token": token || undefined,
+          Authorization: `Bearer ${token}`,
+          "x-master-token": token,
         },
         body: JSON.stringify({
           action: "set_status",
@@ -256,33 +252,24 @@ export default function MasterSchoolSetup() {
           expiryDate: newDate,
         }),
       });
-      if (resp.ok) updatedInCloud = true;
-    } catch (apiErr) {
-      console.warn("API set_status expiry notice:", apiErr);
-    }
 
-    // Direct RPC fallback if API didn't respond
-    if (!updatedInCloud && supabase) {
-      try {
-        await supabase.rpc("set_school_license_status", {
-          p_school_code: schoolCode,
-          p_status: current.status,
-          p_expires_at: new Date(newDate).toISOString(),
-          p_notes: `Expiry date updated to ${newDate} from Master Setup UI`,
-        });
-      } catch (rpcErr) {
-        console.warn("Direct RPC set_school_license_status notice:", rpcErr);
+      const resData = await resp.json().catch(() => ({}));
+      if (!resp.ok || !resData.success) {
+        showToast(resData.error || "Failed to update expiry in Supabase PostgreSQL", "error");
+        return;
       }
-    }
 
-    // 2. Update via cloudSyncService
-    await updateSchoolSubscription({
-      schoolCode,
-      status: current.status,
-      expiryDate: newDate,
-    });
-    showToast(`Expiry date for ${schoolCode} updated to ${newDate}!`, "success");
-    loadSchools();
+      await updateSchoolSubscription({
+        schoolCode,
+        status: current.status,
+        expiryDate: newDate,
+      });
+      showToast(`Expiry date for ${schoolCode} updated to ${newDate}!`, "success");
+      loadSchools();
+    } catch (err) {
+      console.error("Update expiry error:", err);
+      showToast("Server communication error while updating expiry.", "error");
+    }
   };
 
   const handleNameChange = (name) => {
@@ -323,57 +310,43 @@ export default function MasterSchoolSetup() {
 
       let apiOutcome = null;
 
-      // 1. Provision directly via Serverless Master API to guarantee Supabase PostgreSQL persistence
-      try {
-        const token = sessionStorage.getItem("erp_master_token");
-        const resp = await fetch("/api/master/schools", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : undefined,
-            "x-master-token": token || undefined,
-          },
-          body: JSON.stringify({
-            action: "provision",
-            institutionName: formData.institutionName.trim(),
-            institutionCode: cleanCode,
-            adminName: formData.adminName.trim(),
-            adminRoleCode: formData.adminRoleCode,
-            phone: formData.phone,
-            email: formData.email,
-            address: formData.address,
-            institutionMode: formData.institutionMode,
-          }),
-        });
-
-        if (resp.ok) {
-          const resData = await resp.json();
-          if (resData.success) {
-            apiOutcome = resData.school;
-          }
-        }
-      } catch (apiErr) {
-        console.warn("API provision notice:", apiErr);
+      // 1. Authoritative Serverless Master API provisioning to guarantee Supabase PostgreSQL persistence
+      const token = sessionStorage.getItem("erp_master_token");
+      if (!token) {
+        showToast("Master Session Token is missing or expired. Please unlock the gateway first.", "error");
+        setLoading(false);
+        return;
       }
 
-      // 1b. Direct RPC fallback if API was unreachable
-      if (!apiOutcome && supabase) {
-        try {
-          const { data: rpcSchool } = await supabase.rpc("provision_institutional_school", {
-            p_name: formData.institutionName.trim(),
-            p_code: cleanCode,
-            p_admin_name: formData.adminName.trim(),
-            p_admin_role_code: formData.adminRoleCode,
-            p_admin_email: formData.email.trim(),
-            p_admin_phone: formData.phone.trim(),
-            p_address: formData.address.trim(),
-            p_mode: formData.institutionMode,
-          });
-          if (rpcSchool) apiOutcome = rpcSchool;
-        } catch (rpcErr) {
-          console.warn("Direct RPC provision fallback notice:", rpcErr);
-        }
+      const resp = await fetch("/api/master/schools", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "x-master-token": token,
+        },
+        body: JSON.stringify({
+          action: "provision",
+          institutionName: formData.institutionName.trim(),
+          institutionCode: cleanCode,
+          adminName: formData.adminName.trim(),
+          adminRoleCode: formData.adminRoleCode,
+          phone: formData.phone,
+          email: formData.email,
+          address: formData.address,
+          institutionMode: formData.institutionMode,
+        }),
+      });
+
+      const resData = await resp.json().catch(() => ({}));
+      if (!resp.ok || !resData.success) {
+        const errorMsg = resData.error || "Failed to provision school in Supabase PostgreSQL.";
+        showToast(errorMsg, "error");
+        setLoading(false);
+        return;
       }
+
+      apiOutcome = resData.school;
 
       // 2. Provision via cloudSyncService to ensure local directories and directories are in sync
       const outcomeData = await provisionSchoolInCloud({

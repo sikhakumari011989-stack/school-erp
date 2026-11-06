@@ -514,18 +514,30 @@ export default function AccountantDashboard() {
 
   const handleApprovePayment = async (item) => {
     try {
-      // 1. Update in Supabase fee_ledger & fees tables
+      // 1. Update in Supabase fee_ledger & fees tables with strict row scoping
       if (supabase) {
         try {
-          await supabase
-            .from("fee_ledger")
-            .update({ status: "paid" })
-            .or(`id.eq.${item.id},razorpay_payment_id.eq.${item.utr || item.razorpay_payment_id}`);
+          if (item.id && !String(item.id).startsWith("TXN-")) {
+            await supabase
+              .from("fee_ledger")
+              .update({ status: "completed" })
+              .eq("id", item.id)
+              .eq("school_id", schoolId);
+          } else if (item.utr || item.razorpay_payment_id) {
+            await supabase
+              .from("fee_ledger")
+              .update({ status: "completed" })
+              .eq("razorpay_payment_id", item.utr || item.razorpay_payment_id)
+              .eq("school_id", schoolId);
+          }
 
-          await supabase
-            .from("fees")
-            .update({ status: "paid" })
-            .eq("school_id", schoolId);
+          if (item.student_id) {
+            await supabase
+              .from("fees")
+              .update({ status: "paid" })
+              .eq("school_id", schoolId)
+              .eq("student_id", item.student_id);
+          }
         } catch (dbErr) {
           console.warn("Supabase approval sync notice:", dbErr);
         }
@@ -651,7 +663,7 @@ export default function AccountantDashboard() {
     let matchesStatus = true;
     const st = (item.status || "").toLowerCase();
     if (filterStatus === "paid") {
-      matchesStatus = st === "paid";
+      matchesStatus = st === "paid" || st === "completed";
     } else if (filterStatus === "pending") {
       matchesStatus = st === "pending";
     } else if (filterStatus === "pending_verification") {

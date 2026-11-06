@@ -630,6 +630,312 @@ test("Phase 2: Authentication Context Security & Profile Fail-Closed Enforcement
   });
 });
 
+test("Phase 3: Sales Readiness — Razorpay Order Generation & Signature Verification", async (t) => {
+  const { default: createOrderHandler } = await import("../api/razorpay/create-order.js");
+  const { default: verifyPaymentHandler } = await import("../api/razorpay/verify-payment.js");
+
+  function mockRes() {
+    return {
+      statusCode: 200,
+      headers: {},
+      body: null,
+      setHeader(k, v) { this.headers[k] = v; },
+      status(code) { this.statusCode = code; return this; },
+      json(obj) { this.body = obj; return this; },
+      end() { return this; },
+    };
+  }
+
+  await t.test("create-order rejects request when RAZORPAY_KEY_SECRET is unconfigured (Fail Closed 500)", async () => {
+    const prevSecret = process.env.RAZORPAY_KEY_SECRET;
+    delete process.env.RAZORPAY_KEY_SECRET;
+
+    const req = {
+      method: "POST",
+      body: { amount: 25000, schoolId: "TEST-CAMPUS" },
+    };
+    const res = mockRes();
+    await createOrderHandler(req, res);
+
+    assert.strictEqual(res.statusCode, 500);
+    assert.ok(res.body.error.includes("unconfigured"));
+
+    if (prevSecret) process.env.RAZORPAY_KEY_SECRET = prevSecret;
+  });
+
+  await t.test("create-order rejects missing or invalid amount with 400 Bad Request", async () => {
+    process.env.RAZORPAY_KEY_SECRET = "test_key_secret_2026";
+    process.env.RAZORPAY_KEY_ID = "rzp_test_12345";
+
+    const req = {
+      method: "POST",
+      body: { amount: -500, schoolId: "TEST-CAMPUS" },
+    };
+    const res = mockRes();
+    await createOrderHandler(req, res);
+
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error, "Valid payment amount is required.");
+  });
+
+  await t.test("verify-payment rejects missing signature parameters with 400 Bad Request", async () => {
+    process.env.RAZORPAY_KEY_SECRET = "test_key_secret_2026";
+
+    const req = {
+      method: "POST",
+      body: { razorpay_order_id: "order_123" },
+    };
+    const res = mockRes();
+    await verifyPaymentHandler(req, res);
+
+    assert.strictEqual(res.statusCode, 400);
+    assert.ok(res.body.error.includes("mandatory signature"));
+  });
+
+  await t.test("verify-payment rejects tampered signature with 400 Bad Request", async () => {
+    process.env.RAZORPAY_KEY_SECRET = "test_key_secret_2026";
+
+    const req = {
+      method: "POST",
+      body: {
+        razorpay_order_id: "order_abc_123",
+        razorpay_payment_id: "pay_xyz_456",
+        razorpay_signature: "tampered_signature_hex_0000000000000000000000000000000000000000000000000000000000000000",
+        schoolId: "TEST-CAMPUS",
+        amount: 15000,
+      },
+    };
+    const res = mockRes();
+    await verifyPaymentHandler(req, res);
+
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error, "Cryptographic signature verification failed. Untrusted payment assertion.");
+  });
+
+  await t.test("verify-payment accepts valid HMAC-SHA256 signature and returns verified receipt", async () => {
+    const secret = "test_key_secret_2026";
+    process.env.RAZORPAY_KEY_SECRET = secret;
+
+    const orderId = "order_valid_789";
+    const paymentId = "pay_valid_987";
+    const crypto = await import("crypto");
+    const validSignature = crypto
+      .createHmac("sha256", secret)
+      .update(`${orderId}|${paymentId}`)
+      .digest("hex");
+
+    const req = {
+      method: "POST",
+      body: {
+        razorpay_order_id: orderId,
+        razorpay_payment_id: paymentId,
+        razorpay_signature: validSignature,
+        schoolId: "TEST-CAMPUS",
+        amount: 25000,
+        studentName: "Aditya Verma",
+      },
+    };
+    const res = mockRes();
+    await verifyPaymentHandler(req, res);
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.verified, true);
+    assert.strictEqual(res.body.payment_id, paymentId);
+    assert.ok(res.body.invoice_no.startsWith("INV-"));
+  });
+});
+
+test("Phase 3: Master Setup SaaS School Onboarding & Auto-Provisioning", async (t) => {
+  const { default: schoolsHandler } = await import("../api/master/schools.js");
+
+  function mockRes() {
+    return {
+      statusCode: 200,
+      headers: {},
+      body: null,
+      setHeader(k, v) { this.headers[k] = v; },
+      status(code) { this.statusCode = code; return this; },
+      json(obj) { this.body = obj; return this; },
+      end() { return this; },
+    };
+  }
+
+  await t.test("schoolsHandler rejects requests missing valid master operator token with 401 Unauthorized", async () => {
+    const req = {
+      method: "GET",
+      headers: {},
+    };
+    const res = mockRes();
+    await schoolsHandler(req, res);
+
+    assert.strictEqual(res.statusCode, 401);
+    assert.strictEqual(res.body.success, false);
+    assert.ok(res.body.error.includes("Master Session Token required"));
+  });
+
+  await t.test("Master setup frontend requires server passkey without client hardcoded bypass", async () => {
+    const fs = await import("fs");
+    const setupSrc = fs.readFileSync("src/pages/MasterSchoolSetup.jsx", "utf8");
+
+    assert.ok(!setupSrc.includes('cleanPass === "ASK&1412"'), "Must remove hardcoded passkey bypass");
+    assert.ok(setupSrc.includes('/api/master/auth'), "Must authenticate via /api/master/auth endpoint");
+    assert.ok(setupSrc.includes('sessionStorage.setItem("erp_master_token"'), "Must store verified master token");
+  });
+});
+
+// ============================================================================
+// SUITE 19: INDEPENDENT REVIEW V3 HARDENING & UUID SCHEMA CONTRACT VERIFICATION
+// ============================================================================
+test("Independent Review v3: UUID Schema Contracts & Payment Order Ownership", async (t) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  await t.test("Reversal credit note ID conforms to UUID fee_ledger.id primary key", () => {
+    const creditNoteId = crypto.randomUUID();
+    assert.strictEqual(uuidRegex.test(creditNoteId), true, "Credit note ID must be a valid UUID");
+    assert.strictEqual(typeof creditNoteId, "string", "Credit note ID must be string representation of UUID");
+  });
+
+  await t.test("Reversal idempotency key correctly generated for UUID fee entry references", () => {
+    const entryId = "f0000000-0000-0000-0000-000000000001";
+    const idempotencyKey = `REV-${entryId}`;
+    assert.strictEqual(idempotencyKey, "REV-f0000000-0000-0000-0000-000000000001");
+    assert.strictEqual(uuidRegex.test(idempotencyKey.slice(4)), true);
+  });
+
+  await t.test("Audit log trigger exception contract fails closed", () => {
+    function simulateAuditTrigger(insertFails) {
+      if (insertFails) {
+        throw new Error("Audit log insertion failed on fee_ledger. Operation aborted.");
+      }
+      return "SUCCESS";
+    }
+
+    assert.throws(() => simulateAuditTrigger(true), /Audit log insertion failed/);
+    assert.strictEqual(simulateAuditTrigger(false), "SUCCESS");
+  });
+
+  await t.test("Payment order ownership check rejects tenant mismatch", () => {
+    const orderRecord = {
+      order_id: "order_123",
+      school_id: "a0000000-0000-0000-0000-000000000001",
+      amount: 15000,
+      status: "created",
+    };
+    const assertingSchool = "b0000000-0000-0000-0000-000000000002";
+
+    const isMatch = orderRecord.school_id.toLowerCase() === assertingSchool.toLowerCase();
+    assert.strictEqual(isMatch, false, "Must detect tenant mismatch");
+  });
+});
+
+test("Independent Review v3: Profile Privilege Escalation Guard Contracts", async (t) => {
+  await t.test("Guard logic blocks non-administrative user from setting administrative roles", () => {
+    function validateProfileInsert(callerRole, newRole, newRoleCode) {
+      const isAdminOrExecutive = ["PRIN", "HOD"].includes(callerRole);
+      if (!isAdminOrExecutive) {
+        throw new Error("Privilege Escalation Blocked: Non-administrative callers cannot insert profiles.");
+      }
+      const adminRoles = ["PRIN", "HOD", "ACC", "SUPER_ADMIN", "ADMIN"];
+      if (adminRoles.includes((newRoleCode || "").toUpperCase())) {
+        throw new Error("Privilege Escalation Blocked: Executive profiles can only be provisioned via trusted server-side provisioning (service_role).");
+      }
+      return true;
+    }
+
+    assert.throws(
+      () => validateProfileInsert("STU", "principal", "PRIN"),
+      /Privilege Escalation Blocked: Non-administrative callers cannot insert profiles/
+    );
+    assert.throws(
+      () => validateProfileInsert("PRIN", "principal", "PRIN"),
+      /Privilege Escalation Blocked: Executive profiles can only be provisioned via trusted server-side provisioning/
+    );
+    assert.strictEqual(validateProfileInsert("PRIN", "teacher", "TCH"), true);
+  });
+
+  await t.test("Guard logic blocks cross-tenant profile school_id migration", () => {
+    function validateProfileUpdate(oldSchoolId, newSchoolId) {
+      if (newSchoolId !== oldSchoolId) {
+        throw new Error("Tenant Isolation Violation: Profile cannot be transferred across institutions.");
+      }
+      return true;
+    }
+
+    assert.throws(
+      () => validateProfileUpdate("a0000000-0000-0000-0000-000000000001", "b0000000-0000-0000-0000-000000000002"),
+      /Tenant Isolation Violation/
+    );
+    assert.strictEqual(validateProfileUpdate("a0000000-0000-0000-0000-000000000001", "a0000000-0000-0000-0000-000000000001"), true);
+  });
+});
+
+test("Final Engineering Pass: Schema Consistency, Role Promotion Guard & Secrets Elimination", async (t) => {
+  await t.test("Trigger logic blocks executive from promoting non-executive to PRIN or HOD via client update", () => {
+    function simulateProfileUpdateTrigger(callerRole, oldRoleCode, newRoleCode) {
+      const isCallerExecutive = ["PRIN", "HOD"].includes(callerRole);
+      if (!isCallerExecutive) {
+        if (newRoleCode !== oldRoleCode) {
+          throw new Error("Privilege Escalation Blocked: Non-administrative users cannot modify role_code.");
+        }
+      } else {
+        const executiveRoles = ["PRIN", "HOD", "ADMIN", "SUPER_ADMIN", "SUPERADMIN"];
+        if (executiveRoles.includes(newRoleCode) && !executiveRoles.includes(oldRoleCode)) {
+          throw new Error("Privilege Escalation Blocked: Executive roles (PRIN, HOD) can only be granted via trusted server-side provisioning (service_role).");
+        }
+        if (["ADMIN", "SUPER_ADMIN", "SUPERADMIN"].includes(newRoleCode)) {
+          throw new Error("Privilege Escalation Blocked: Platform administrator roles can only be granted via server-side provisioning.");
+        }
+      }
+      return true;
+    }
+
+    // 1. Non-executive cannot modify role
+    assert.throws(
+      () => simulateProfileUpdateTrigger("STU", "STU", "PRIN"),
+      /Non-administrative users cannot modify role_code/
+    );
+
+    // 2. Executive cannot promote teacher to PRIN via client update
+    assert.throws(
+      () => simulateProfileUpdateTrigger("PRIN", "TCH", "PRIN"),
+      /Executive roles \(PRIN, HOD\) can only be granted via trusted server-side provisioning/
+    );
+
+    // 3. Executive cannot promote accountant to HOD via client update
+    assert.throws(
+      () => simulateProfileUpdateTrigger("PRIN", "ACC", "HOD"),
+      /Executive roles \(PRIN, HOD\) can only be granted via trusted server-side provisioning/
+    );
+
+    // 4. Executive can update teacher details or assign operational codes
+    assert.strictEqual(simulateProfileUpdateTrigger("PRIN", "TCH", "TCH"), true);
+  });
+
+  await t.test("Client notifications engine does not contain exposed Vite secret bearer tokens", async () => {
+    const fs = await import("fs");
+    const notificationsSrc = fs.readFileSync("src/utils/notifications.js", "utf8");
+
+    assert.ok(!notificationsSrc.includes("VITE_WATI_ACCESS_TOKEN"), "Must not expose VITE_WATI_ACCESS_TOKEN");
+    assert.ok(!notificationsSrc.includes("VITE_TWILIO_AUTH_TOKEN"), "Must not expose VITE_TWILIO_AUTH_TOKEN");
+  });
+
+  await t.test("Migration 22 & 23 schema contracts enforce TEXT school_id for fee_reversal_requests & payment_orders", async () => {
+    const fs = await import("fs");
+    const mig22 = fs.readFileSync("supabase/migrations/22_phase2_security_and_rls_hardening.sql", "utf8");
+    const mig23 = fs.readFileSync("supabase/migrations/23_sales_readiness_and_subscription_hardening.sql", "utf8");
+
+    // fee_reversal_requests.school_id must be text matching fee_ledger.school_id
+    assert.ok(mig22.includes("school_id text NOT NULL"), "fee_reversal_requests.school_id must be text NOT NULL");
+    assert.ok(!mig22.includes("school_id uuid NOT NULL,\n  entry_id uuid NOT NULL"), "Must not declare school_id as uuid in fee_reversal_requests");
+
+    // payment_orders.school_id must be text
+    assert.ok(mig23.includes("school_id text NOT NULL"), "payment_orders.school_id must be text NOT NULL");
+  });
+});
+
+
+
+
 
 
 

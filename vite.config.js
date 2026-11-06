@@ -143,8 +143,66 @@ function masterDevPlugin() {
   }
 }
 
+function razorpayDevPlugin() {
+  return {
+    name: 'razorpay-dev-api',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        if (req.url && req.url.startsWith('/api/razorpay/')) {
+          res.setHeader('Content-Type', 'application/json')
+          res.setHeader('Access-Control-Allow-Origin', '*')
+          res.setHeader('Cache-Control', 'private, no-store, max-age=0')
+
+          if (req.method === 'OPTIONS') {
+            res.statusCode = 200
+            return res.end()
+          }
+
+          let body = ''
+          req.on('data', (chunk) => {
+            body += chunk
+          })
+
+          req.on('end', async () => {
+            try {
+              req.body = body ? JSON.parse(body) : {}
+            } catch {
+              req.body = {}
+            }
+
+            res.status = function (code) {
+              res.statusCode = code
+              return res
+            }
+            res.json = function (obj) {
+              res.setHeader('Content-Type', 'application/json')
+              return res.end(JSON.stringify(obj))
+            }
+
+            try {
+              if (req.url.startsWith('/api/razorpay/create-order')) {
+                const { default: createOrderHandler } = await import('./api/razorpay/create-order.js')
+                return createOrderHandler(req, res)
+              } else if (req.url.startsWith('/api/razorpay/verify-payment')) {
+                const { default: verifyPaymentHandler } = await import('./api/razorpay/verify-payment.js')
+                return verifyPaymentHandler(req, res)
+              }
+            } catch (err) {
+              res.statusCode = 500
+              return res.end(JSON.stringify({ success: false, error: err.message }))
+            }
+            next()
+          })
+          return
+        }
+        next()
+      })
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss(), biometricDevPlugin(), masterDevPlugin()],
+  plugins: [react(), tailwindcss(), biometricDevPlugin(), masterDevPlugin(), razorpayDevPlugin()],
   build: {
     rollupOptions: {
       output: {

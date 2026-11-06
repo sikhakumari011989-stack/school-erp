@@ -9,9 +9,9 @@ export function isUUID(str) {
 }
 
 /**
- * Resolves an institution code (e.g. 'CAMPUS-01' or 'school-demo-01')
+ * Resolves an institution code (e.g. 'CAMPUS-01')
  * to its Supabase UUID in the schools table.
- * If none found, safely returns the canonical demo school UUID.
+ * If none found, returns null (never silently assign a default or foreign school).
  */
 export async function resolveSchoolUuid(codeOrUuid = "CAMPUS-01") {
   if (isUUID(codeOrUuid)) {
@@ -27,17 +27,11 @@ export async function resolveSchoolUuid(codeOrUuid = "CAMPUS-01") {
 
     if (data?.id) return data.id;
 
-    // Fallback: fetch the first school from database
-    const { data: firstSchool } = await supabase
-      .from("schools")
-      .select("id")
-      .limit(1)
-      .maybeSingle();
-
-    return firstSchool?.id || "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
+    // Strict tenant isolation: never silently return a foreign or default school UUID
+    return null;
   } catch (err) {
-    console.warn("Could not resolve school UUID, using fallback:", err);
-    return "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
+    console.warn("Could not resolve school UUID:", err);
+    return null;
   }
 }
 

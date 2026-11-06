@@ -23,17 +23,16 @@ export const COMMUNICATION_CATEGORIES = [
 ];
 
 /**
- * Check provider connection status
+ * Check provider connection status (Configured via secure server-side integrations)
+ * Outbound WhatsApp/SMS gateway credentials must NEVER be exposed in the frontend bundle.
  */
 export function getCommunicationGatewayStatus() {
-  const hasWati = Boolean(import.meta.env.VITE_WATI_API_ENDPOINT && import.meta.env.VITE_WATI_ACCESS_TOKEN);
-  const hasTwilio = Boolean(import.meta.env.VITE_TWILIO_ACCOUNT_SID && import.meta.env.VITE_TWILIO_AUTH_TOKEN);
-
+  // Provider gateways are managed through secure serverless backend dispatch
   return {
-    whatsappConfigured: hasWati,
-    smsConfigured: hasTwilio,
-    whatsappGateway: hasWati ? "WATI WhatsApp Cloud API (Online)" : "Configurable Gateway (Awaiting WATI credentials)",
-    smsGateway: hasTwilio ? "Twilio REST SMS API (Online)" : "Configurable SMS (Awaiting Twilio credentials)",
+    whatsappConfigured: false,
+    smsConfigured: false,
+    whatsappGateway: "Server Gateway (Awaiting WATI Server Credentials)",
+    smsGateway: "Server Gateway (Awaiting Twilio Server Credentials)",
   };
 }
 
@@ -56,67 +55,18 @@ export async function dispatchParentNotification({
   let deliveryStatus = "pending";
   let providerResponse = null;
 
-  // 1. WhatsApp Delivery
+  // 1. WhatsApp Delivery: Queued for server dispatch
   if (channel === "whatsapp") {
-    if (gateway.whatsappConfigured) {
-      try {
-        const watiEndpoint = import.meta.env.VITE_WATI_API_ENDPOINT;
-        const watiToken = import.meta.env.VITE_WATI_ACCESS_TOKEN;
-        const res = await fetch(`${watiEndpoint}/api/v1/sendSessionMessage/${cleanPhone.replace(/[^0-9]/g, "")}`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${watiToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ messageText: message }),
-        });
-        const data = await res.json();
-        deliveryStatus = res.ok ? "delivered" : "failed";
-        providerResponse = data;
-      } catch (err) {
-        deliveryStatus = "failed";
-        providerResponse = { error: err.message };
-      }
-    } else {
-      // Never claim live delivery if gateway is not connected
-      deliveryStatus = "queued";
-      providerResponse = { note: "Queued in local gateway pending WATI credentials" };
-    }
+    // Gateway credentials are strictly server-side; client queues notification
+    deliveryStatus = "queued";
+    providerResponse = { note: "Queued for server-side WhatsApp dispatch" };
   }
 
-  // 2. SMS Delivery
+  // 2. SMS Delivery: Queued for server dispatch
   if (channel === "sms") {
-    if (gateway.smsConfigured) {
-      try {
-        const accountSid = import.meta.env.VITE_TWILIO_ACCOUNT_SID;
-        const authToken = import.meta.env.VITE_TWILIO_AUTH_TOKEN;
-        const fromNumber = import.meta.env.VITE_TWILIO_PHONE_NUMBER;
-        const auth = btoa(`${accountSid}:${authToken}`);
-        const body = new URLSearchParams({
-          To: cleanPhone,
-          From: fromNumber,
-          Body: message,
-        });
-
-        const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-          method: "POST",
-          headers: {
-            Authorization: `Basic ${auth}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: body.toString(),
-        });
-        const data = await res.json();
-        deliveryStatus = res.ok ? "delivered" : "failed";
-        providerResponse = data;
-      } catch (err) {
-        deliveryStatus = "failed";
-        providerResponse = { error: err.message };
-      }
-    } else {
-      deliveryStatus = "queued";
-      providerResponse = { note: "Queued in local gateway pending Twilio credentials" };
-    }
+    // Gateway credentials are strictly server-side; client queues notification
+    deliveryStatus = "queued";
+    providerResponse = { note: "Queued for server-side SMS dispatch" };
   }
 
   if (channel === "in_app") {
