@@ -60,6 +60,7 @@ const ExpenseManagerPage = React.lazy(() => import("./pages/ExpenseManager"));
 import OfflineBanner from "./Components/OfflineBanner";
 import ErrorBoundary from "./Components/ErrorBoundary";
 import CommandPalette from "./Components/CommandPalette";
+import SuspensionNoticeBarrier from "./Components/SuspensionNoticeBarrier";
 import { SentryErrorBoundary, initSentry } from "./telemetry/sentry";
 
 // Initialize Sentry Telemetry for production observability
@@ -83,9 +84,28 @@ const AppLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { user, subscription, tenant, logout } = React.useContext(AppContext) || {};
   const isPublicPage =
     PUBLIC_ROUTES.includes(location.pathname) ||
     location.pathname.startsWith("/verify-credential");
+
+  const rawRole = (user?.role || (user && inferRoleFromCode(user.role_code || user.roll_number || user.id)) || "").toUpperCase();
+  const roleCode = String(user?.role_code || user?.id || "").toUpperCase();
+  const isMasterUser = rawRole === "MASTER_OWNER" || roleCode === "MASTER_OWNER" || location.pathname === "/master-setup";
+
+  // 1. GLOBAL INSTITUTIONAL SUSPENSION & LICENSING LOCK (ROOT ROUTER LEVEL)
+  // If a school's status or subscription_status is marked suspended or its license has expired,
+  // all users (Students, Teachers, Accountants, Principals) are immediately blocked from dashboard access.
+  // MASTER_OWNER role is strictly exempted so they can manage and renew institutions via /master-setup.
+  if (!isPublicPage && !isMasterUser && subscription?.isBlocked) {
+    return (
+      <SuspensionNoticeBarrier
+        tenant={tenant}
+        subscription={subscription}
+        onLogout={logout}
+      />
+    );
+  }
 
   const [installPrompt, setInstallPrompt] = React.useState(null);
   const [isInstalled, setIsInstalled] = React.useState(false);
@@ -159,7 +179,7 @@ const AppLayout = ({ children }) => {
   };
 
   return (
-    <div className="h-[100dvh] w-screen overflow-hidden flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans relative transition-colors duration-200">
+    <div className="h-[100dvh] w-screen overflow-hidden flex bg-slate-50 dark:bg-[#0A0E1A] text-slate-900 dark:text-slate-100 font-sans relative transition-colors duration-200">
       {!isPublicPage && <Sidebar />}
       <main
         className={`flex-1 h-full overflow-y-auto ${
@@ -228,11 +248,11 @@ export default function App() {
               <Route path="/contact" element={<ContactUs />} />
               <Route path="/verify-credential/:token" element={<PublicCredentialVerify />} />
 
-            {/* SUPER ADMIN & SYSTEM AUDIT (Admin only) */}
+            {/* SUPER ADMIN & SYSTEM AUDIT (Leadership Suite) */}
             <Route
               path="/admin/dashboard"
               element={
-                <ProtectedRoute allowedRoles={["admin"]}>
+                <ProtectedRoute allowedRoles={["admin", "principal", "trustee"]}>
                   <SuperAdminDashboard />
                 </ProtectedRoute>
               }
@@ -368,7 +388,7 @@ export default function App() {
             <Route
               path="/teacher/dashboard"
               element={
-                <ProtectedRoute allowedRoles={["teacher", "admin"]}>
+                <ProtectedRoute allowedRoles={["teacher", "admin", "principal", "trustee"]}>
                   <TeacherDashboard />
                 </ProtectedRoute>
               }
@@ -376,7 +396,7 @@ export default function App() {
             <Route
               path="/teacher/homework"
               element={
-                <ProtectedRoute allowedRoles={["teacher", "admin"]}>
+                <ProtectedRoute allowedRoles={["teacher", "admin", "principal", "trustee"]}>
                   <TeacherHomework />
                 </ProtectedRoute>
               }
@@ -384,7 +404,7 @@ export default function App() {
             <Route
               path="/teacher/attendance"
               element={
-                <ProtectedRoute allowedRoles={["teacher", "admin"]}>
+                <ProtectedRoute allowedRoles={["teacher", "admin", "principal", "trustee", "staff"]}>
                   <TeacherAttendance />
                 </ProtectedRoute>
               }
@@ -392,7 +412,7 @@ export default function App() {
             <Route
               path="/teacher/classes"
               element={
-                <ProtectedRoute allowedRoles={["teacher", "admin"]}>
+                <ProtectedRoute allowedRoles={["teacher", "admin", "principal", "trustee"]}>
                   <TeacherClasses />
                 </ProtectedRoute>
               }
@@ -400,7 +420,7 @@ export default function App() {
             <Route
               path="/teacher/analytics"
               element={
-                <ProtectedRoute allowedRoles={["teacher", "admin"]}>
+                <ProtectedRoute allowedRoles={["teacher", "admin", "principal", "trustee"]}>
                   <TeacherAnalytics />
                 </ProtectedRoute>
               }
@@ -408,7 +428,7 @@ export default function App() {
             <Route
               path="/teacher/planner"
               element={
-                <ProtectedRoute allowedRoles={["teacher", "admin"]}>
+                <ProtectedRoute allowedRoles={["teacher", "admin", "principal", "trustee"]}>
                   <TeacherPlanner />
                 </ProtectedRoute>
               }

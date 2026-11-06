@@ -98,7 +98,7 @@ export default function PrincipalAIBriefing({ schoolCode, onNavigateTab }) {
   }
 
   return (
-    <div className="relative overflow-hidden bg-white/90 dark:bg-slate-900/60 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-sm dark:shadow-2xl transition-all duration-300 hover:border-cyan-500/40">
+    <div className="relative overflow-hidden bg-white/95 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800/90 rounded-3xl p-6 sm:p-8 shadow-sm dark:shadow-2xl transition-all duration-300 hover:border-indigo-500/40">
       {/* Background Ambient Glow */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-cyan-500/10 via-indigo-500/5 to-transparent rounded-full blur-3xl pointer-events-none"></div>
 
@@ -143,37 +143,37 @@ export default function PrincipalAIBriefing({ schoolCode, onNavigateTab }) {
 
       {/* STATS TELEMETRY RIBBON */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 my-5">
-        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80">
+        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-[#0A0E1A] border border-slate-200 dark:border-slate-800/90 shadow-sm">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Enrolled Scholars</span>
           <span className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">{briefing.metricsSummary.enrolled}</span>
         </div>
-        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80">
+        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-[#0A0E1A] border border-slate-200 dark:border-slate-800/90 shadow-sm">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Faculty Roster</span>
           <span className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">{briefing.metricsSummary.faculty}</span>
         </div>
-        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80">
+        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-[#0A0E1A] border border-slate-200 dark:border-slate-800/90 shadow-sm">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Campus Attendance</span>
           <span className="text-xl font-extrabold text-cyan-600 dark:text-cyan-400 tracking-tight">{briefing.metricsSummary.attendanceRate}</span>
         </div>
-        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80">
+        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-[#0A0E1A] border border-slate-200 dark:border-slate-800/90 shadow-sm">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Fee Collection Rate</span>
           <span className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">{briefing.metricsSummary.feeCollectionRate}</span>
         </div>
-        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80">
+        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-[#0A0E1A] border border-slate-200 dark:border-slate-800/90 shadow-sm">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Outstanding Arrears</span>
           <span className="text-xl font-extrabold text-amber-600 dark:text-amber-400 tracking-tight">{briefing.metricsSummary.totalOverdue}</span>
         </div>
-        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80">
+        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-[#0A0E1A] border border-slate-200 dark:border-slate-800/90 shadow-sm">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Radar Watchlist</span>
           <span className="text-xl font-extrabold text-rose-600 dark:text-rose-400 tracking-tight">{briefing.metricsSummary.atRiskScholars}</span>
         </div>
       </div>
 
       {/* SECTION 1: SCHOOL OVERVIEW */}
-      <div className="mb-6 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-slate-50 via-slate-50/50 to-cyan-50/20 dark:from-slate-950/70 dark:via-slate-950/40 dark:to-cyan-950/20 border border-slate-200 dark:border-slate-800/90">
+      <div className="mb-6 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-slate-50 via-slate-50/50 to-indigo-50/20 dark:from-[#0A0E1A] dark:via-[#0F1629] dark:to-indigo-950/20 border border-slate-200 dark:border-slate-800/90 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
-          <Building2 className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-300">
+          <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
             1. Institutional Overview
           </h3>
         </div>
@@ -203,7 +203,7 @@ export default function PrincipalAIBriefing({ schoolCode, onNavigateTab }) {
                     ? "bg-amber-50/40 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40"
                     : isPositive
                     ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/40"
-                    : "bg-slate-50/70 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800/80"
+                    : "bg-slate-50/70 dark:bg-[#0A0E1A] border-slate-200 dark:border-slate-800/90"
                 }`}
               >
                 <div>
@@ -226,12 +226,12 @@ export default function PrincipalAIBriefing({ schoolCode, onNavigateTab }) {
                   <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-snug">
                     {obs.title}
                   </h4>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-normal">
+                  <p className="text-[11px] text-slate-600 dark:text-slate-200 mt-1 leading-normal">
                     {obs.description}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
-                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 block font-semibold truncate">
+                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-300 block font-semibold truncate">
                     📊 {obs.supportingMetric}
                   </span>
                 </div>
@@ -253,7 +253,7 @@ export default function PrincipalAIBriefing({ schoolCode, onNavigateTab }) {
           {briefing.recommendedActions.map((act) => (
             <div
               key={act.id}
-              className="p-4 rounded-2xl bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 hover:border-cyan-400 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between space-y-3 shadow-xs"
+              className="p-4 rounded-2xl bg-white dark:bg-[#0A0E1A] border border-slate-200 dark:border-slate-800/90 hover:border-indigo-400 dark:hover:border-indigo-500/40 transition-all duration-200 flex flex-col justify-between space-y-3 shadow-xs"
             >
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
@@ -262,7 +262,7 @@ export default function PrincipalAIBriefing({ schoolCode, onNavigateTab }) {
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white mt-1 leading-snug">
                   {act.title}
                 </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-normal">
+                <p className="text-[11px] text-slate-500 dark:text-slate-200 mt-1 leading-normal">
                   {act.description}
                 </p>
               </div>

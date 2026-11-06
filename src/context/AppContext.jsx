@@ -115,10 +115,11 @@ export const AppProvider = ({ children }) => {
         document.documentElement.style.setProperty("--tenant-accent", resolved.accentColor);
 
         // Automated Institutional Licensing Evaluation:
-        // current_date > subscription_expires_at OR status === 'suspended'
+        // current_date > subscription_expires_at / license_expires_at OR status === 'suspended'
         const todayIso = new Date().toISOString().split("T")[0];
-        const expiryIso = data.subscription_expires_at
-          ? new Date(data.subscription_expires_at).toISOString().split("T")[0]
+        const rawExpiry = data.subscription_expires_at || data.license_expires_at;
+        const expiryIso = rawExpiry
+          ? new Date(rawExpiry).toISOString().split("T")[0]
           : null;
         const isExpired = Boolean(expiryIso && todayIso > expiryIso);
         const isExplicitlySuspended =

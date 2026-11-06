@@ -262,14 +262,14 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
   });
 
   return (
-    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-sm dark:shadow-2xl space-y-4 transition-all duration-300 hover:-translate-y-0.5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-white/10 pb-4">
+    <div className="bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200 dark:border-slate-800/90 rounded-3xl p-6 shadow-sm dark:shadow-2xl space-y-4 transition-all duration-300 hover:-translate-y-0.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800/90 pb-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-400/30">
               Maker-Checker Gate
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Tenant: {cleanSchool}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-200 font-mono">Tenant: {cleanSchool}</span>
           </div>
           <h2 className="text-lg font-black text-slate-900 dark:text-white mt-1 flex items-center gap-2">
             <span>Unified Operational Approval Inbox</span>
@@ -277,7 +277,7 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
               {approvalItems.length} Pending Actions
             </span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-200 mt-0.5">
             Single queue for Principal sign-off: Staff Leaves, Accountant Credit Notes, and Official Certificates.
           </p>
         </div>
@@ -290,7 +290,7 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
               className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 filterType === cat
                   ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20"
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-white/5 dark:text-slate-400 dark:hover:text-white"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-[#0A0E1A] dark:text-slate-300 dark:border dark:border-slate-800/90 dark:hover:text-white"
               }`}
             >
               {cat === "all" ? "All Queue" : cat}
@@ -300,10 +300,10 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
       </div>
 
       {filteredItems.length === 0 ? (
-        <div className="py-10 text-center text-slate-500 dark:text-slate-400">
+        <div className="py-10 text-center text-slate-500 dark:text-slate-300">
           <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-80" />
           <p className="text-sm font-bold text-slate-900 dark:text-white">All Clear! No Operational Approvals Pending</p>
-          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+          <p className="text-xs text-slate-500 dark:text-slate-300 mt-1 max-w-sm mx-auto">
             Staff leaves, accountant financial adjustments, and scholar document requests will appear here for 1-click executive decision.
           </p>
         </div>
@@ -312,7 +312,7 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
           {filteredItems.map((item) => (
             <div
               key={`${item.category}_${item.id}`}
-              className="p-4 rounded-2xl bg-slate-50/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
+              className="p-4 rounded-2xl bg-slate-50/80 dark:bg-[#0A0E1A] border border-slate-200 dark:border-slate-800/90 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">

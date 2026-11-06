@@ -101,6 +101,10 @@ export default function ProtectedRoute({ children, allowedRoles }) {
         return false;
       }) ||
       canonicalUserRole === "PRIN" ||
+      canonicalUserRole === "HOD" ||
+      roleCode.startsWith("HOD-") ||
+      roleCode.startsWith("PRIN-") ||
+      roleCode.startsWith("TR-") ||
       roleCode.startsWith("ADM-") ||
       roleCode.startsWith("SUPER-");
 

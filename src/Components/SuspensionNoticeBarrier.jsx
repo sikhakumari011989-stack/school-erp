@@ -19,7 +19,7 @@ export default function SuspensionNoticeBarrier({ tenant, subscription, onLogout
       <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-amber-600/10 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-xl mx-auto">
-        <div className="bg-[#131A2B]/90 backdrop-blur-2xl border border-slate-700/60 rounded-3xl p-6 sm:p-10 shadow-2xl shadow-black/80 text-center animate-fade-in">
+        <div className="bg-[#131A2B]/95 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-6 sm:p-10 shadow-2xl shadow-black/80 text-center animate-fade-in">
           
           {/* Logo & Status Badge */}
           <div className="flex justify-center mb-5">
@@ -36,8 +36,8 @@ export default function SuspensionNoticeBarrier({ tenant, subscription, onLogout
             Institutional Access Suspended
           </h1>
 
-          <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
-            The subscription for this campus has expired. All data is safely preserved.
+          <p className="text-slate-200 text-sm sm:text-base leading-relaxed mb-6">
+            The subscription for this campus has expired or is suspended. All institutional data is safely preserved in Supabase PostgreSQL with zero data loss.
             Please contact your administrator or complete renewal to restore full workspace access.
           </p>
 
@@ -46,23 +46,23 @@ export default function SuspensionNoticeBarrier({ tenant, subscription, onLogout
             <span className="text-2xl mt-0.5">🛡️</span>
             <div>
               <h2 className="text-xs font-black uppercase tracking-wider text-emerald-400">
-                100% Data Preservation Guarantee
+                100% Data Preservation Guarantee (Zero Data Loss)
               </h2>
-              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+              <p className="text-xs text-slate-200 mt-1 leading-relaxed">
                 All student rosters, academic marks, financial ledgers, and attendance archives
-                remain fully intact and encrypted in Supabase PostgreSQL. No institutional records
+                remain fully intact and encrypted in Supabase PostgreSQL with zero data loss. No institutional records
                 have been deleted.
               </p>
             </div>
           </div>
 
           {/* Node Metadata Summary */}
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 mb-8 text-xs text-slate-400 space-y-2">
-            <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+          <div className="bg-[#0A0E1A] border border-slate-800/90 rounded-2xl p-4 mb-8 text-xs text-slate-300 space-y-2">
+            <div className="flex justify-between items-center py-1 border-b border-slate-800/80">
               <span className="font-semibold text-slate-400">Campus Name</span>
-              <span className="font-bold text-slate-200">{schoolName}</span>
+              <span className="font-bold text-white">{schoolName}</span>
             </div>
-            <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+            <div className="flex justify-between items-center py-1 border-b border-slate-800/80">
               <span className="font-semibold text-slate-400">Tenant Code</span>
               <span className="font-mono font-bold text-amber-400">{schoolCode}</span>
             </div>
@@ -84,7 +84,7 @@ export default function SuspensionNoticeBarrier({ tenant, subscription, onLogout
             <button
               type="button"
               onClick={onLogout || (() => { window.location.href = "/login?signedOut=true"; })}
-              className="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs uppercase tracking-wider border border-slate-700 transition-all cursor-pointer"
+              className="flex-1 py-3 px-4 rounded-xl bg-[#0A0E1A] hover:bg-slate-800 text-slate-200 font-bold text-xs uppercase tracking-wider border border-slate-800/90 transition-all cursor-pointer"
             >
               🚪 Sign Out / Switch Portal
             </button>

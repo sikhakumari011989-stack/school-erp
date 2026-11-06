@@ -211,9 +211,9 @@ export default function RiskRadarWidget({ className = "" }) {
   });
 
   return (
-    <div className={`bg-white/80 dark:bg-slate-900/50 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-3xl p-6 sm:p-7 shadow-xl transition-all ${className}`}>
+    <div className={`bg-white/80 dark:bg-[#131A2B] backdrop-blur-xl border border-slate-200 dark:border-slate-800/90 rounded-3xl p-6 sm:p-7 shadow-xl transition-all ${className}`}>
       {/* HEADER WITH PROACTIVE RADAR BEACON */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800/90">
         <div className="flex items-center gap-3">
           <div className="relative flex items-center justify-center">
             <span className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/30 flex items-center justify-center">
@@ -227,14 +227,14 @@ export default function RiskRadarWidget({ className = "" }) {
               <span className="text-[10px] font-black uppercase tracking-widest text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-500/30">
                 AI Early Warning Radar
               </span>
-              <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-slate-100 dark:bg-[#0A0E1A] text-slate-600 dark:text-slate-200 border border-slate-200 dark:border-slate-800/90">
                 Live Scan
               </span>
             </div>
             <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-0.5">
               Active Student Intervention Cases
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-200">
               Scholars flagged for Attendance &lt; 75% AND Test Evaluations &lt; 40%
             </p>
           </div>
@@ -264,7 +264,7 @@ export default function RiskRadarWidget({ className = "" }) {
             className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap text-xs ${
               filterType === btn.key
                 ? "bg-rose-600 text-white shadow-md shadow-rose-600/20"
-                : "bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700"
+                : "bg-slate-100 dark:bg-[#0A0E1A] text-slate-600 dark:text-slate-200 border border-slate-200 dark:border-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-800"
             }`}
           >
             {btn.label}

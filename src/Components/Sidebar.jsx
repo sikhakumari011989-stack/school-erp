@@ -65,22 +65,25 @@ export default function Sidebar() {
   const getLinks = () => {
     if (roleType === "principal") {
       return [
-        { name: "School Overview", path: "/principal/dashboard", icon: "🏛️" },
+        { name: "Executive Command", path: "/principal/dashboard", icon: "🏛️" },
+        { name: "Trustee Oversight", path: "/trustee/dashboard", icon: "📈" },
         { name: "Students & Admissions", path: "/admin/admissions", icon: "🎯" },
-        { name: "Attendance & Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Fee Collection & Dues", path: "/accountant/dashboard", icon: "💰" },
         { name: "Examinations & Marks", path: "/teacher/analytics", icon: "📊" },
+        { name: "Attendance & Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
         { name: "Administration & Audit", path: "/admin/dashboard", icon: "⚙️" },
       ];
     } else if (roleType === "trustee") {
       return [
-        { name: "Trustee Overview", path: "/trustee/dashboard", icon: "📈" },
-        { name: "School Operations", path: "/principal/dashboard", icon: "🏛️" },
+        { name: "Trustee Command", path: "/trustee/dashboard", icon: "📈" },
+        { name: "Principal Operations", path: "/principal/dashboard", icon: "🏛️" },
+        { name: "Students & Admissions", path: "/admin/admissions", icon: "🎯" },
         { name: "Fee Treasury & Dues", path: "/accountant/dashboard", icon: "💰" },
         { name: "Academic Performance", path: "/teacher/analytics", icon: "📊" },
         { name: "School Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
+        { name: "Administration & Audit", path: "/admin/dashboard", icon: "⚙️" },
       ];
     } else if (roleType === "accountant") {
       return [
@@ -111,9 +114,10 @@ export default function Sidebar() {
     } else if (roleType === "admin") {
       return [
         { name: "Super Admin Hub", path: "/admin/dashboard", icon: "🛡️" },
-        { name: "Principal Suite", path: "/principal/dashboard", icon: "🏛️" },
-        { name: "Trustee Suite", path: "/trustee/dashboard", icon: "📈" },
+        { name: "Principal Operations", path: "/principal/dashboard", icon: "🏛️" },
+        { name: "Trustee Oversight", path: "/trustee/dashboard", icon: "📈" },
         { name: "Fee Treasury", path: "/accountant/dashboard", icon: "💰" },
+        { name: "Academic Performance", path: "/teacher/analytics", icon: "📊" },
         { name: "School Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
         { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
@@ -132,6 +136,16 @@ export default function Sidebar() {
   };
 
   const links = getLinks();
+  const categoryTitle =
+    roleType === "principal" || roleType === "trustee" || roleType === "admin"
+      ? "Executive Suite / Command Center"
+      : roleType === "teacher"
+      ? "Academic Operations"
+      : roleType === "accountant"
+      ? "Fiscal Treasury & Ledgers"
+      : roleType === "staff"
+      ? "Campus Operations"
+      : "Student Workspace";
 
   const handleLinkClick = (path) => {
     navigate(path);
@@ -220,15 +234,15 @@ export default function Sidebar() {
             className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md transition-opacity"
           ></div>
 
-          <div className="relative w-72 max-w-[85vw] h-full bg-white dark:bg-slate-900/95 backdrop-blur-2xl border-r border-slate-200 dark:border-white/10 z-50 flex flex-col shadow-2xl animate-slide-right transition-colors duration-200">
-            <div className="p-5 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex items-center justify-between">
+          <div className="relative w-72 max-w-[85vw] h-full bg-white dark:bg-[#0A0E1A] backdrop-blur-2xl border-r border-slate-200 dark:border-slate-800/90 z-50 flex flex-col shadow-2xl animate-slide-right transition-colors duration-200">
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800/90 bg-slate-50 dark:bg-[#131A2B]/70 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <BrandLogo size="sm" customLogoUrl={tenant?.logoUrl} />
                 <div>
                   <h3 className="text-xs font-black text-slate-900 dark:text-white truncate max-w-[140px]">
                     {tenant?.name || "EduSaaS ERP"}
                   </h3>
-                  <p className="text-[9px] text-indigo-600 dark:text-cyan-400 font-bold uppercase tracking-wider">
+                  <p className="text-[9px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider">
                     {schoolCode}
                   </p>
                 </div>
@@ -242,6 +256,9 @@ export default function Sidebar() {
             </div>
 
             <div className="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto">
+              <div className="px-2 pb-1.5 text-[9px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+                {categoryTitle}
+              </div>
               {links.map((link, idx) => {
                 const currentFullPath = location.pathname + location.search;
                 const isActive = link.path.includes("?")
@@ -253,8 +270,8 @@ export default function Sidebar() {
                     onClick={() => handleLinkClick(link.path)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-xs transition-all duration-200 ease-in-out hover:-translate-y-0.5 text-left cursor-pointer ${
                       isActive
-                        ? "border-l-4 border-indigo-600 dark:border-cyan-400 text-indigo-700 dark:text-cyan-300 bg-indigo-50 dark:bg-cyan-500/10 shadow-sm dark:shadow-[0_0_20px_rgba(34,211,238,0.2)] font-black"
-                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white"
+                        ? "border-l-4 border-indigo-600 dark:border-indigo-400 text-indigo-700 dark:text-white bg-indigo-50 dark:bg-[#131A2B] dark:border-indigo-500/40 shadow-sm dark:shadow-[0_0_20px_rgba(99,102,241,0.2)] font-black"
+                        : "text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#131A2B] hover:text-slate-900 dark:hover:text-white font-medium"
                     }`}
                   >
                     <span className="text-base">{link.icon}</span>
@@ -264,11 +281,11 @@ export default function Sidebar() {
               })}
             </div>
 
-            <div className="p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
-              <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 rounded-xl p-3 mb-2 shadow-sm">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800/90 bg-slate-50 dark:bg-[#131A2B]/70">
+              <div className="bg-white dark:bg-[#131A2B] border border-slate-200 dark:border-slate-800/90 rounded-xl p-3 mb-2 shadow-sm">
                 <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user.name || user.full_name}</p>
                 <div className="flex items-center justify-between mt-1">
-                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-cyan-500/20 text-indigo-700 dark:text-cyan-300 border border-indigo-200 dark:border-cyan-400/30">
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                     {roleType}
                   </span>
                   <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{personalCode || "ACTIVE"}</span>
@@ -319,12 +336,12 @@ export default function Sidebar() {
       {/* 4. DESKTOP HOLOGRAPHIC SIDEBAR (Viewports >= 768px)          */}
       {/* ============================================================ */}
       <aside
-        className={`hidden md:flex flex-col h-full flex-shrink-0 sticky top-0 z-40 border-r border-slate-200 dark:border-slate-800/80 bg-white/95 dark:bg-slate-950/85 backdrop-blur-xl shadow-sm dark:shadow-2xl dark:shadow-cyan-500/10 transition-all duration-200 ease-in-out ${
+        className={`hidden md:flex flex-col h-full flex-shrink-0 sticky top-0 z-40 border-r border-slate-200 dark:border-slate-800/90 bg-white/95 dark:bg-[#0A0E1A] backdrop-blur-xl shadow-sm dark:shadow-2xl transition-all duration-200 ease-in-out ${
           isCollapsed ? "w-20" : "w-64"
         }`}
       >
         {/* Holographic Header */}
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/80 dark:bg-white/5 flex items-center justify-between flex-shrink-0 transition-colors">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800/90 bg-slate-50/80 dark:bg-[#131A2B]/70 flex items-center justify-between flex-shrink-0 transition-colors">
           {!isCollapsed && (
             <div className="flex items-center gap-3 min-w-0">
               <BrandLogo size="md" customLogoUrl={tenant?.logoUrl} />
@@ -333,8 +350,8 @@ export default function Sidebar() {
                   {tenant?.name || "EduSaaS ERP"}
                 </h2>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-cyan-400 animate-pulse"></span>
-                  <p className="text-[10px] text-indigo-600 dark:text-cyan-400 font-extrabold uppercase tracking-widest truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-emerald-400 animate-pulse"></span>
+                  <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-extrabold uppercase tracking-widest truncate">
                     {schoolCode}
                   </p>
                 </div>
@@ -351,7 +368,7 @@ export default function Sidebar() {
           <button
             onClick={toggleCollapse}
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-cyan-400 transition-all duration-200 ease-in-out hover:scale-105 cursor-pointer ml-auto"
+            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#131A2B] dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-200 ease-in-out hover:scale-105 cursor-pointer ml-auto"
           >
             <span className="text-xs font-mono">{isCollapsed ? "»" : "«"}</span>
           </button>
@@ -359,6 +376,11 @@ export default function Sidebar() {
 
         {/* Dynamic Holographic Route Links */}
         <nav className="flex-1 py-4 px-2 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-800">
+          {!isCollapsed && (
+            <div className="px-3 pt-1 pb-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+              {categoryTitle}
+            </div>
+          )}
           {links.map((link, idx) => {
             const currentFullPath = location.pathname + location.search;
             const isActive = link.path.includes("?")
@@ -373,8 +395,8 @@ export default function Sidebar() {
                   isCollapsed ? "justify-center" : ""
                 } ${
                   isActive
-                    ? "border-l-4 border-indigo-600 dark:border-cyan-400 text-indigo-700 dark:text-cyan-300 bg-indigo-50 dark:bg-cyan-500/10 shadow-sm dark:shadow-[0_0_20px_rgba(34,211,238,0.2)] font-black"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white font-medium"
+                    ? "border-l-4 border-indigo-600 dark:border-indigo-400 text-indigo-700 dark:text-white bg-indigo-50 dark:bg-[#131A2B] dark:border-indigo-500/40 shadow-sm dark:shadow-lg dark:shadow-indigo-500/10 font-black"
+                    : "text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#131A2B] hover:text-slate-900 dark:hover:text-white font-medium"
                 }`}
               >
                 <span className="text-base flex-shrink-0">{link.icon}</span>
@@ -385,12 +407,12 @@ export default function Sidebar() {
         </nav>
 
         {/* User Profile & Sign Out Footer */}
-        <div className="p-3 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/80 dark:bg-white/5 flex-shrink-0 mt-auto transition-colors">
+        <div className="p-3 border-t border-slate-200 dark:border-slate-800/90 bg-slate-50/80 dark:bg-[#131A2B]/70 flex-shrink-0 mt-auto transition-colors">
           {!isCollapsed ? (
-            <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 rounded-xl p-3 mb-2 shadow-sm dark:shadow-lg">
+            <div className="bg-white dark:bg-[#131A2B] border border-slate-200 dark:border-slate-800/90 rounded-xl p-3 mb-2 shadow-sm dark:shadow-lg">
               <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user.name || user.full_name}</p>
               <div className="flex items-center justify-between mt-1">
-                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-cyan-500/20 text-indigo-700 dark:text-cyan-300 border border-indigo-200 dark:border-cyan-400/30">
+                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                   {roleType}
                 </span>
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate max-w-[80px]">
@@ -400,7 +422,7 @@ export default function Sidebar() {
             </div>
           ) : (
             <div className="text-center mb-2">
-              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-indigo-100 dark:bg-cyan-500/20 text-indigo-700 dark:text-cyan-300 border border-indigo-200 dark:border-cyan-400/30">
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                 {roleType.slice(0, 3)}
               </span>
             </div>

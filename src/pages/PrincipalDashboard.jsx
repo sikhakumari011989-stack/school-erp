@@ -1309,6 +1309,11 @@ export default function PrincipalDashboard() {
             {/* TAB 1: EXECUTIVE COMMAND & FORECAST OVERVIEW */}
             {activeTab === "overview" && (
               <div className="space-y-8">
+                {/* FLAGSHIP EXECUTIVE AI FEATURE: PRINCIPAL'S AI BRIEFING */}
+                <div className="animate-fade-in-up">
+                  <PrincipalAIBriefing schoolCode={institutionCode} onNavigateTab={setActiveTab} />
+                </div>
+
                 {/* STUDENT EARLY WARNING SYSTEM (PROACTIVE RADAR) */}
                 <RiskRadarWidget />
 
@@ -1320,7 +1325,7 @@ export default function PrincipalDashboard() {
                 {/* 1. CEO SPATIAL BENTO GRID: REAL-TIME EXECUTIVE TELEMETRY DECK */}
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fade-in-up stagger-3">
                   {/* BENTO CARD 1: RECONCILED REVENUE (SPAN 2 COLS) */}
-                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
+                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-emerald-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
                     <div className="absolute top-0 right-0 w-44 h-44 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
                     <div>
                       <div className="flex items-center justify-between mb-2">
@@ -1329,9 +1334,9 @@ export default function PrincipalDashboard() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                           </span>
-                          <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Reconciled Revenue</p>
+                          <p className="text-slate-500 dark:text-slate-200 text-xs font-bold uppercase tracking-wider">Reconciled Revenue</p>
                         </div>
-                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">
+                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold">
                           Live Treasury
                         </span>
                       </div>
@@ -1342,25 +1347,25 @@ export default function PrincipalDashboard() {
                         </p>
                       ) : (
                         <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 bg-tech-grid">
-                          <p className="text-2xl sm:text-3xl font-extrabold text-slate-400 dark:text-slate-600 font-mono tracking-tight">₹0.00</p>
-                          <span className="text-[10px] text-slate-500 block mt-0.5">Clean Ledger • Ready for Settlement Inflow</span>
+                          <p className="text-2xl sm:text-3xl font-extrabold text-slate-400 dark:text-slate-500 font-mono tracking-tight">₹0.00</p>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">Clean Ledger • Ready for Settlement Inflow</span>
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-4 block border-t border-slate-200 dark:border-slate-800/80 pt-3">
+                    <span className="text-xs text-slate-500 dark:text-slate-300 mt-4 block border-t border-slate-200 dark:border-slate-800/80 pt-3">
                       {stats.totalRevenue > 0 ? `${stats.paidCount} verified institutional receipts` : "0 recorded transactions"}
                     </span>
                   </div>
 
                   {/* BENTO CARD 2: ACTIVE STUDENTS */}
-                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <span className="relative flex h-3 w-3">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
                         </span>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Active Students</p>
+                        <p className="text-slate-500 dark:text-slate-200 text-xs font-bold uppercase tracking-wider">Active Students</p>
                       </div>
 
                       {stats.enrolledStudents > 0 ? (
@@ -1369,59 +1374,59 @@ export default function PrincipalDashboard() {
                         </p>
                       ) : (
                         <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 bg-tech-grid">
-                          <p className="text-xl font-bold text-slate-400 dark:text-slate-600 font-mono">0 Enrolled</p>
+                          <p className="text-xl font-bold text-slate-400 dark:text-slate-500 font-mono">0 Enrolled</p>
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-300 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       Verified scholar directory node
                     </span>
                   </div>
 
                   {/* BENTO CARD: TODAY'S ATTENDANCE SUMMARY (LIVE POSTGRES DATA) */}
-                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-emerald-400 dark:hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Today's Attendance</p>
-                        <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+                        <p className="text-slate-500 dark:text-slate-200 text-xs font-bold uppercase tracking-wider">Today's Attendance</p>
+                        <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border dark:border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
                           {todayAttendanceSummary.total > 0 ? `${Math.round((todayAttendanceSummary.present / todayAttendanceSummary.total) * 100)}% Present` : "Live Register"}
                         </span>
                       </div>
                       <div className="flex items-baseline gap-2 mt-1">
                         <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{todayAttendanceSummary.present}</span>
-                        <span className="text-xs text-slate-500 font-medium">Present</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-300 font-medium">Present</span>
                         <span className="text-slate-300 dark:text-slate-700">|</span>
                         <span className="text-xl font-bold text-rose-500 dark:text-rose-400">{todayAttendanceSummary.absent}</span>
-                        <span className="text-xs text-slate-500 font-medium">Absent</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-300 font-medium">Absent</span>
                         {todayAttendanceSummary.late > 0 && (
                           <>
                             <span className="text-slate-300 dark:text-slate-700">|</span>
                             <span className="text-xl font-bold text-amber-500">{todayAttendanceSummary.late}</span>
-                            <span className="text-xs text-slate-500 font-medium">Late</span>
+                            <span className="text-xs text-slate-500 dark:text-slate-300 font-medium">Late</span>
                           </>
                         )}
                       </div>
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-300 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       {todayAttendanceSummary.total} total marked today
                     </span>
                   </div>
 
                   {/* BENTO CARD 3: COLLECTION EFFICIENCY */}
-                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-purple-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-purple-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
                     <div>
-                      <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Collection Rate</p>
+                      <p className="text-slate-500 dark:text-slate-200 text-xs font-bold uppercase tracking-wider mb-2">Collection Rate</p>
                       <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 dark:from-purple-400 dark:via-pink-400 dark:to-rose-400 tracking-tight">
                         {stats.feeCollectionRate}
                       </p>
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-300 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       Institutional recovery velocity
                     </span>
                   </div>
 
                   {/* BENTO CARD 4: FEES PAID THIS MONTH (SPAN 2 COLS) */}
-                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
+                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -1429,9 +1434,9 @@ export default function PrincipalDashboard() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
                           </span>
-                          <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Fees Paid This Month</p>
+                          <p className="text-slate-500 dark:text-slate-200 text-xs font-bold uppercase tracking-wider">Fees Paid This Month</p>
                         </div>
-                        <span className="text-[10px] font-mono text-cyan-700 bg-cyan-50 border border-cyan-200 dark:text-cyan-300 dark:bg-cyan-500/10 dark:border-cyan-500/20 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-mono text-cyan-700 bg-cyan-50 border border-cyan-200 dark:text-cyan-300 dark:bg-cyan-500/10 dark:border-cyan-500/30 px-2 py-0.5 rounded-full">
                           Run-Rate Velocity
                         </span>
                       </div>
@@ -1442,18 +1447,18 @@ export default function PrincipalDashboard() {
                         </p>
                       ) : (
                         <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 bg-tech-grid">
-                          <p className="text-xl font-bold text-slate-400 dark:text-slate-600 font-mono">₹0.00 Inflow</p>
-                          <span className="text-[10px] text-slate-500 block">Pending monthly cycle collections</span>
+                          <p className="text-xl font-bold text-slate-400 dark:text-slate-500 font-mono">₹0.00 Inflow</p>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Pending monthly cycle collections</span>
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-300 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       Active calendar month turnover
                     </span>
                   </div>
 
                   {/* BENTO CARD 5: DEFAULTER ARREARS (SPAN 2 COLS) */}
-                  <div className="col-span-1 md:col-span-1 lg:col-span-2 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-rose-400 dark:hover:border-rose-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
+                  <div className="col-span-1 md:col-span-1 lg:col-span-2 bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-rose-400 dark:hover:border-rose-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -1461,9 +1466,9 @@ export default function PrincipalDashboard() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
                           </span>
-                          <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Total Fees Pending</p>
+                          <p className="text-slate-500 dark:text-slate-200 text-xs font-bold uppercase tracking-wider">Total Fees Pending</p>
                         </div>
-                        <span className="text-[10px] font-mono text-rose-700 bg-rose-50 border border-rose-200 dark:text-rose-300 dark:bg-rose-500/10 dark:border-rose-500/20 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-mono text-rose-700 bg-rose-50 border border-rose-200 dark:text-rose-300 dark:bg-rose-500/10 dark:border-rose-500/30 px-2 py-0.5 rounded-full">
                           {defaulters.length} Accounts
                         </span>
                       </div>
@@ -1479,7 +1484,7 @@ export default function PrincipalDashboard() {
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-300 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       Overdue balances prioritized for recovery
                     </span>
                   </div>
@@ -1488,14 +1493,14 @@ export default function PrincipalDashboard() {
                 {/* 2. REVENUE FORECASTING & PERFORMANCE GRAPHS */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up stagger-4">
                   {/* CHART 1: ATTENDANCE TREND LINE CHART */}
-                  <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+                  <div className="bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/10 dark:border-cyan-400/30 dark:text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">
                           <span>📅</span> Punctuality Telemetry
                         </div>
                         <h3 className="text-lg font-black text-slate-900 dark:text-white">Campus Attendance Trend</h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Daily attendance percentage logged across working days</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">Daily attendance percentage logged across working days</p>
                       </div>
                     </div>
 
@@ -1530,14 +1535,14 @@ export default function PrincipalDashboard() {
                   </div>
 
                   {/* CHART 2: FEE COLLECTION DONUT OVERVIEW */}
-                  <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+                  <div className="bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-emerald-400 dark:hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider mb-1">
                           <span>💰</span> Treasury Position
                         </div>
                         <h3 className="text-lg font-black text-slate-900 dark:text-white">Fee Collection Overview</h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Reconciled receipts vs outstanding term dues</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">Reconciled receipts vs outstanding term dues</p>
                       </div>
                     </div>
 
@@ -1582,14 +1587,14 @@ export default function PrincipalDashboard() {
                   </div>
 
                   {/* CHART 3: CLASS-WISE STUDENT DISTRIBUTION */}
-                  <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-indigo-400 dark:hover:border-indigo-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+                  <div className="bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-indigo-400 dark:hover:border-indigo-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-300 text-[10px] font-bold uppercase tracking-wider mb-1">
                           <span>🎓</span> Batch Enrollment
                         </div>
                         <h3 className="text-lg font-black text-slate-900 dark:text-white">Class-Wise Scholar Distribution</h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Enrolled scholar strength across classes and divisions</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">Enrolled scholar strength across classes and divisions</p>
                       </div>
                     </div>
 
@@ -1624,14 +1629,14 @@ export default function PrincipalDashboard() {
                   </div>
 
                   {/* CHART 4: REVENUE FORECASTING CASH FLOW */}
-                  <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+                  <div className="bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/10 dark:border-cyan-400/30 dark:text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">
                           <span>📈</span> Predictive Treasury AI
                         </div>
                         <h3 className="text-lg font-black text-slate-900 dark:text-white">5-Month Revenue Cash Flow Forecast</h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Projected inflow velocity based on historical payment pace and pending arrears</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">Projected inflow velocity based on historical payment pace and pending arrears</p>
                       </div>
                     </div>
 
@@ -1688,14 +1693,14 @@ export default function PrincipalDashboard() {
                   </div>
 
                   {/* CHART B: TEACHER PERFORMANCE ANALYTICS */}
-                  <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+                  <div className="bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider mb-1">
                           <span>👨‍🏫</span> Faculty Merit Standing
                         </div>
                         <h3 className="text-lg font-black text-slate-900 dark:text-white">Teacher Academic Performance Analytics</h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Aggregated student exam marks & pass ratios across faculty rosters</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">Aggregated student exam marks & pass ratios across faculty rosters</p>
                       </div>
                     </div>
 
@@ -1739,7 +1744,7 @@ export default function PrincipalDashboard() {
                 </div>
 
                 {/* 3. HIGHEST OVERDUE DEFAULTERS LIST */}
-                <div id="defaulters-section" className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl shadow-sm dark:shadow-2xl overflow-hidden animate-fade-in-up stagger-5">
+                <div id="defaulters-section" className="bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl shadow-sm dark:shadow-2xl overflow-hidden animate-fade-in-up stagger-5">
                   <div className="p-6 border-b border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                       <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/30 dark:text-rose-300 text-xs font-bold uppercase tracking-wider mb-1">

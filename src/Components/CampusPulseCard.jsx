@@ -67,7 +67,7 @@ export default function CampusPulseCard({ schoolCode, compact = false, className
 
   if (compact) {
     return (
-      <div className={`flex items-center justify-between gap-3 p-3.5 bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border ${theme.cardBorder} rounded-xl shadow-sm dark:shadow-lg transition-all duration-200 ${className}`}>
+      <div className={`flex items-center justify-between gap-3 p-3.5 bg-white/90 dark:bg-[#131A2B] backdrop-blur-xl border ${theme.cardBorder} dark:border-slate-800/90 rounded-xl shadow-sm dark:shadow-lg transition-all duration-200 ${className}`}>
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="text-xl shrink-0">{theme.icon}</span>
           <div className="min-w-0">
@@ -75,7 +75,7 @@ export default function CampusPulseCard({ schoolCode, compact = false, className
               <span className={`inline-block w-2 h-2 rounded-full ${theme.ping} animate-pulse shrink-0`}></span>
               <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{todayPulse.title}</span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{todayFormatted} • {todayPulse.badge}</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-300 truncate">{todayFormatted} • {todayPulse.badge}</p>
           </div>
         </div>
         <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border shrink-0 ${theme.badgeBg}`}>
@@ -86,14 +86,14 @@ export default function CampusPulseCard({ schoolCode, compact = false, className
   }
 
   return (
-    <div className={`relative overflow-hidden bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-5 sm:p-6 shadow-sm dark:shadow-2xl ${className}`}>
+    <div className={`relative overflow-hidden bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-5 sm:p-6 shadow-sm dark:shadow-2xl ${className}`}>
       {/* Ambient background glow */}
       <div className="absolute -right-12 -top-12 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-950/60 border border-slate-200 dark:border-white/10 text-base shadow-inner">
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#0A0E1A] border border-slate-200 dark:border-slate-800/90 text-base shadow-inner">
             {theme.icon}
             <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full ${theme.ping} animate-ping`}></span>
             <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full ${theme.ping}`}></span>
@@ -105,7 +105,7 @@ export default function CampusPulseCard({ schoolCode, compact = false, className
                 LIVE
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{todayFormatted}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-300">{todayFormatted}</p>
           </div>
         </div>
 
@@ -115,13 +115,13 @@ export default function CampusPulseCard({ schoolCode, compact = false, className
       </div>
 
       {/* Main Today Pulse Description */}
-      <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200 dark:border-white/10 mb-4">
+      <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50/80 dark:bg-[#0A0E1A] border border-slate-200 dark:border-slate-800/90 mb-4">
         <div className="flex items-start justify-between gap-2">
           <div>
             <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
               {todayPulse.title}
             </h4>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-200 leading-relaxed">
               {todayPulse.reason}
             </p>
           </div>
@@ -131,10 +131,10 @@ export default function CampusPulseCard({ schoolCode, compact = false, className
       {/* Upcoming 7-Day Event Radar */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-200">
             7-Day Campus Radar
           </span>
-          <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500">
+          <span className="text-[11px] font-mono text-slate-400 dark:text-slate-400">
             {upcomingEvents.length} special date{upcomingEvents.length === 1 ? "" : "s"} ahead
           </span>
         </div>

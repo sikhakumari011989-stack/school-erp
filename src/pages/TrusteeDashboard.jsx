@@ -759,7 +759,7 @@ export default function TrusteeDashboard() {
               return (
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fade-in-up stagger-1">
                   {/* CARD 1: RECONCILED REVENUE (SPAN 2 COLS) */}
-                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between">
+                  <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-emerald-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between">
                     <div className="absolute top-0 right-0 w-44 h-44 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
                     <div>
                       <div className="flex items-center justify-between mb-2">
@@ -768,9 +768,9 @@ export default function TrusteeDashboard() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                           </span>
-                          <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Reconciled Revenue</p>
+                          <p className="text-slate-500 dark:text-slate-200 text-xs font-bold uppercase tracking-wider">Reconciled Revenue</p>
                         </div>
-                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">
+                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold">
                           Trustee Treasury
                         </span>
                       </div>
@@ -781,25 +781,25 @@ export default function TrusteeDashboard() {
                         </p>
                       ) : (
                         <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 bg-tech-grid">
-                          <p className="text-2xl sm:text-3xl font-extrabold text-slate-400 dark:text-slate-600 font-mono tracking-tight">₹0.00</p>
-                          <span className="text-[10px] text-slate-500 block mt-0.5">Clean Ledger • Awaiting Settlements</span>
+                          <p className="text-2xl sm:text-3xl font-extrabold text-slate-400 dark:text-slate-500 font-mono tracking-tight">₹0.00</p>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">Clean Ledger • Awaiting Settlements</span>
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-4 block border-t border-slate-200 dark:border-slate-800/80 pt-3">
+                    <span className="text-xs text-slate-500 dark:text-slate-300 mt-4 block border-t border-slate-200 dark:border-slate-800/80 pt-3">
                       {financialStats.totalRevenue > 0 ? `${financialStats.paidTransactions} settled institutional transactions` : "0 recorded transactions"}
                     </span>
                   </div>
 
                   {/* CARD 2: ACTIVE STUDENTS */}
-                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <span className="relative flex h-3 w-3">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
                         </span>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Active Students</p>
+                        <p className="text-slate-500 dark:text-slate-200 text-xs font-bold uppercase tracking-wider">Active Students</p>
                       </div>
 
                       {enrolledStudentsCount > 0 ? (
@@ -808,50 +808,50 @@ export default function TrusteeDashboard() {
                         </p>
                       ) : (
                         <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 bg-tech-grid">
-                          <p className="text-xl font-bold text-slate-400 dark:text-slate-600 font-mono">{loading ? "..." : "0 Enrolled"}</p>
+                          <p className="text-xl font-bold text-slate-400 dark:text-slate-500 font-mono">{loading ? "..." : "0 Enrolled"}</p>
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-300 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       Verified scholar directory node
                     </span>
                   </div>
 
                   {/* CARD 3: FACULTY STRENGTH */}
-                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-purple-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-purple-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between">
                     <div>
-                      <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Faculty Strength</p>
+                      <p className="text-slate-500 dark:text-slate-200 text-xs font-bold uppercase tracking-wider mb-2">Faculty Strength</p>
                       {facultyCount > 0 ? (
                         <p className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 dark:from-purple-400 dark:via-indigo-400 dark:to-pink-400 tracking-tight">
                           {facultyCount} Tutors
                         </p>
                       ) : (
                         <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 bg-tech-grid">
-                          <p className="text-xl font-bold text-slate-400 dark:text-slate-600 font-mono">0 Onboarded</p>
+                          <p className="text-xl font-bold text-slate-400 dark:text-slate-500 font-mono">0 Onboarded</p>
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-300 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       Institutional academic faculty
                     </span>
                   </div>
 
                   {/* CARD 4: FEE COLLECTION RATE */}
-                  <div className="col-span-1 md:col-span-3 lg:col-span-4 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="col-span-1 md:col-span-3 lg:col-span-4 bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-emerald-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] rounded-3xl p-6 relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Fee Collection Recovery Rate</p>
+                      <p className="text-slate-500 dark:text-slate-200 text-xs font-bold uppercase tracking-wider mb-1">Fee Collection Recovery Rate</p>
                       <p className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-400 tracking-tight">
                         {financialStats.collectionRate}
                       </p>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block">Live calculated across tuition billing cycles</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-300 mt-1 block">Live calculated across tuition billing cycles</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-center">
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold block">Status</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-300 uppercase font-bold block">Status</span>
                         <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Reconciled</span>
                       </div>
                       <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-center">
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold block">Gateway</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-300 uppercase font-bold block">Gateway</span>
                         <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">Instant UPI</span>
                       </div>
                     </div>
@@ -863,14 +863,14 @@ export default function TrusteeDashboard() {
             {/* TRUSTEE DATA VISUALIZATIONS & METRIC GRAPHS */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up stagger-2">
               {/* CHART 1: ATTENDANCE TREND LINE CHART */}
-              <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+              <div className="bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/10 dark:border-cyan-400/30 dark:text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">
                       <span>📅</span> Attendance Pacing
                     </div>
                     <h3 className="text-base font-black text-slate-900 dark:text-white">Campus Attendance Trend</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Daily attendance % across working days</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">Daily attendance % across working days</p>
                   </div>
                 </div>
 
@@ -905,14 +905,14 @@ export default function TrusteeDashboard() {
               </div>
 
               {/* CHART 2: FEE TREASURY DONUT CHART */}
-              <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+              <div className="bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-emerald-400 dark:hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider mb-1">
                       <span>💰</span> Treasury Dues
                     </div>
                     <h3 className="text-base font-black text-slate-900 dark:text-white">Fee Recovery Overview</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Collected revenue vs outstanding arrears</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">Collected revenue vs outstanding arrears</p>
                   </div>
                 </div>
 
@@ -957,14 +957,14 @@ export default function TrusteeDashboard() {
               </div>
 
               {/* CHART 3: CLASS-WISE SCHOLAR STRENGTH */}
-              <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-indigo-400 dark:hover:border-indigo-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
+              <div className="bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-indigo-400 dark:hover:border-indigo-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-300 text-[10px] font-bold uppercase tracking-wider mb-1">
                       <span>🎓</span> Strength
                     </div>
                     <h3 className="text-base font-black text-slate-900 dark:text-white">Class-Wise Distribution</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Enrolled scholar strength by class</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">Enrolled scholar strength by class</p>
                   </div>
                 </div>
 
@@ -1000,16 +1000,16 @@ export default function TrusteeDashboard() {
             </div>
 
             {/* TRUSTEE AUDIT CARD */}
-            <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-purple-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-8 shadow-sm dark:shadow-2xl animate-fade-in-up stagger-2">
+            <div className="bg-white/80 dark:bg-[#131A2B] backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/90 hover:border-purple-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-8 shadow-sm dark:shadow-2xl animate-fade-in-up stagger-2">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Board & Financial Compliance Vault</h2>
-              <p className="text-slate-600 dark:text-slate-300 text-sm mb-6 max-w-3xl">All institutional tax records, rental agreements, and teacher contracts are encrypted and verified under Supabase RLS security standards.</p>
+              <p className="text-slate-600 dark:text-slate-200 text-sm mb-6 max-w-3xl">All institutional tax records, rental agreements, and teacher contracts are encrypted and verified under Supabase RLS security standards.</p>
               <div className="flex flex-wrap gap-3">
                 <button onClick={() => showToast("Certified financial audit PDF compiled and verified under Supabase RLS standards.", "info")} className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer">
                   Download Certified Financial Audit (PDF) 📥
                 </button>
                 <button
                   onClick={() => setIsBulkModalOpen(true)}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-600 font-bold px-6 py-3 rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 cursor-pointer flex items-center gap-2"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-[#0A0E1A] dark:hover:bg-slate-800 dark:text-slate-200 dark:border-slate-700 font-bold px-6 py-3 rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 cursor-pointer flex items-center gap-2"
                 >
                   <span>📥</span>
                   <span>+ Bulk Import Students / Faculty (.CSV)</span>
