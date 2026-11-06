@@ -53,7 +53,8 @@ export function dashboardFor(role) {
   if (normalized === "master_owner") return "/master-setup";
   if (normalized === "admin" || normalized === "super_admin") return "/admin/dashboard";
   if (normalized === "accountant" || normalized === "acc") return "/accountant/dashboard";
-  if (normalized === "principal" || normalized === "prin" || normalized === "hod" || normalized === "trustee") return "/principal/dashboard";
+  if (normalized === "principal" || normalized === "prin") return "/principal/dashboard";
+  if (normalized === "trustee" || normalized === "hod") return "/trustee/dashboard";
   if (normalized === "teacher" || normalized === "tch") return "/teacher/dashboard";
   if (normalized === "staff" || normalized === "non_teaching" || normalized === "nts") return "/staff/dashboard";
   return "/student/dashboard";

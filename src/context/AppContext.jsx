@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { purgeOfflineQueue } from "../utils/offlineSyncQueue";
+import { getSchoolSubscription } from "../utils/cloudSyncService";
 
 export const AppContext = createContext();
 export const useAppContext = () => useContext(AppContext);
@@ -73,13 +74,22 @@ export const AppProvider = ({ children }) => {
     tagline: "Premier Multi-Tenant Academic Institution",
   });
 
-  // Dynamic White-Labeling: Load active institution branding
+  const [subscription, setSubscription] = useState({
+    isBlocked: false,
+    isSuspended: false,
+    isExpired: false,
+    expiryDate: null,
+    status: "active",
+    tier: "enterprise",
+  });
+
+  // Dynamic White-Labeling & Institutional Licensing Check
   const loadTenantDetails = async (tenantCode) => {
     const code = tenantCode || resolveTenantCode();
     try {
       const { data } = await supabase
         .from("schools")
-        .select("*")
+        .select("id, name, code, city, state, primary_color, accent_color, logo_url, tagline, status, subscription_status, subscription_tier, subscription_expires_at")
         .ilike("code", code)
         .maybeSingle();
 
@@ -94,14 +104,71 @@ export const AppProvider = ({ children }) => {
           accentColor: data.accent_color || "#8B5CF6",
           logoUrl: data.logo_url || null,
           tagline: data.tagline || "Enterprise Multi-Tenant Node",
+          status: data.status || "active",
+          subscriptionStatus: data.subscription_status || "active",
+          subscriptionTier: data.subscription_tier || "enterprise",
+          subscriptionExpiresAt: data.subscription_expires_at,
         };
         setTenant(resolved);
         document.title = `${resolved.name} | Multi-Tenant Tuition ERP`;
         document.documentElement.style.setProperty("--tenant-primary", resolved.primaryColor);
         document.documentElement.style.setProperty("--tenant-accent", resolved.accentColor);
+
+        // Automated Institutional Licensing Evaluation:
+        // current_date > subscription_expires_at OR status === 'suspended'
+        const todayIso = new Date().toISOString().split("T")[0];
+        const expiryIso = data.subscription_expires_at
+          ? new Date(data.subscription_expires_at).toISOString().split("T")[0]
+          : null;
+        const isExpired = Boolean(expiryIso && todayIso > expiryIso);
+        const isExplicitlySuspended =
+          String(data.subscription_status || data.status || "").toLowerCase() === "suspended";
+        const isBlocked = isExpired || isExplicitlySuspended;
+
+        const evaluatedSub = {
+          isBlocked,
+          isSuspended: isExplicitlySuspended,
+          isExpired,
+          expiryDate: expiryIso,
+          status: isBlocked ? "suspended" : "active",
+          tier: data.subscription_tier || "enterprise",
+        };
+        setSubscription(evaluatedSub);
+
+        // Sync evaluated subscription to tenant storage for offline resilience
+        try {
+          localStorage.setItem(
+            `erp_school_sub_${resolved.code.toUpperCase()}`,
+            JSON.stringify({
+              status: evaluatedSub.status,
+              expiryDate: evaluatedSub.expiryDate,
+              isBlocked: evaluatedSub.isBlocked,
+            })
+          );
+        } catch {}
+      } else {
+        // Fallback to local subscription evaluator
+        const localSub = getSchoolSubscription(code);
+        setSubscription({
+          isBlocked: localSub.isBlocked,
+          isSuspended: localSub.isSuspended,
+          isExpired: localSub.isExpired,
+          expiryDate: localSub.expiryDate,
+          status: localSub.status,
+          tier: "enterprise",
+        });
       }
     } catch (err) {
       console.warn("Failed to load custom tenant branding:", err);
+      const localSub = getSchoolSubscription(code);
+      setSubscription({
+        isBlocked: localSub.isBlocked,
+        isSuspended: localSub.isSuspended,
+        isExpired: localSub.isExpired,
+        expiryDate: localSub.expiryDate,
+        status: localSub.status,
+        tier: "enterprise",
+      });
     }
   };
 
@@ -408,6 +475,8 @@ export const AppProvider = ({ children }) => {
         user,
         setUser,
         tenant,
+        subscription,
+        refreshTenant: loadTenantDetails,
         loading,
         login,
         logout,

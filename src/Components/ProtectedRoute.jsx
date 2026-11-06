@@ -3,9 +3,10 @@ import { Navigate, useLocation } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { dashboardFor, inferRoleFromCode } from "../pages/Login";
+import SuspensionNoticeBarrier from "./SuspensionNoticeBarrier";
 
 export default function ProtectedRoute({ children, allowedRoles }) {
-  const { user, session, loading } = useContext(AppContext);
+  const { user, session, loading, subscription, tenant, logout } = useContext(AppContext);
   const { showToast } = useToast();
   const location = useLocation();
 
@@ -38,14 +39,27 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  const rawRole = (resolvedUser.role || inferRoleFromCode(resolvedUser.role_code || resolvedUser.roll_number || resolvedUser.id) || "").toUpperCase();
+  const roleCode = String(resolvedUser.role_code || resolvedUser.id || "").toUpperCase();
+  const isMasterUser = rawRole === "MASTER_OWNER" || roleCode === "MASTER_OWNER";
+
+  // INSTITUTIONAL SUBSCRIPTION & SUSPENSION ENFORCEMENT:
+  // If the campus subscription has expired or is marked suspended, block all non-MASTER_OWNER users
+  // and render the full-screen institutional suspension notice barrier.
+  if (!isMasterUser && subscription?.isBlocked) {
+    return (
+      <SuspensionNoticeBarrier
+        tenant={tenant}
+        subscription={subscription}
+        onLogout={logout}
+      />
+    );
+  }
+
   // If specific roles are required and user does not have required role
   if (allowedRoles && allowedRoles.length > 0) {
-    const rawRole = (resolvedUser.role || inferRoleFromCode(resolvedUser.role_code || resolvedUser.roll_number || resolvedUser.id) || "").toUpperCase();
-    const roleCode = String(resolvedUser.role_code || resolvedUser.id || "").toUpperCase();
-
     // STRICT GUARD FOR MASTER_OWNER: Only verified MASTER_OWNER can access /master-setup
     const isMasterRoute = allowedRoles.some((r) => r.toUpperCase() === "MASTER_OWNER");
-    const isMasterUser = rawRole === "MASTER_OWNER" || roleCode === "MASTER_OWNER";
 
     if (isMasterRoute) {
       if (!isMasterUser) {
