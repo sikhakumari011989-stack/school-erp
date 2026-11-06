@@ -3,11 +3,12 @@ import assert from "node:assert/strict";
 import crypto from "crypto";
 
 process.env.NODE_ENV = "test";
-process.env.MASTER_SETUP_KEY = process.env.MASTER_SETUP_KEY || "ASK&1412";
+process.env.MASTER_SETUP_KEY = process.env.MASTER_SETUP_KEY || process.env.MASTER_SETUP_PASSKEY || "test-master-setup-passkey-2026";
 process.env.MASTER_TOKEN_SECRET = process.env.MASTER_TOKEN_SECRET || "test-master-provisioning-secret-2026";
 
 import { signMasterToken, verifyMasterToken } from "../api/master/auth.js";
 import { detectRoleFromId } from "../src/utils/cloudSyncService.js";
+import { normalizeRole } from "../src/utils/credentials.js";
 import { getSchoolSubscription } from "../src/utils/cloudSyncService.js";
 import { fetchLiveInstitutionalTelemetry } from "../src/utils/aiIntelligenceEngine.js";
 
@@ -72,6 +73,52 @@ test("RBAC: Canonical Role Detection & Tier-2 Code Normalization", async (t) => 
     assert.strictEqual(detectRoleFromId(""), "student");
     assert.strictEqual(detectRoleFromId(null), "student");
     assert.strictEqual(detectRoleFromId("ATTACKER_INJECT"), "student");
+  });
+
+  await t.test("Unified normalizeRole maps all variants to canonical MVP role set", () => {
+    assert.strictEqual(normalizeRole("TRUSTEE"), "HOD");
+    assert.strictEqual(normalizeRole("trustee"), "HOD");
+    assert.strictEqual(normalizeRole("HOD"), "HOD");
+    assert.strictEqual(normalizeRole("", "HOD-01"), "HOD");
+    assert.strictEqual(normalizeRole("", "TR-99"), "HOD");
+
+    assert.strictEqual(normalizeRole("PRINCIPAL"), "PRIN");
+    assert.strictEqual(normalizeRole("principal"), "PRIN");
+    assert.strictEqual(normalizeRole("PRIN"), "PRIN");
+    assert.strictEqual(normalizeRole("", "PRIN-01"), "PRIN");
+
+    assert.strictEqual(normalizeRole("SUPERADMIN"), "PRIN");
+    assert.strictEqual(normalizeRole("SUPER_ADMIN"), "PRIN");
+    assert.strictEqual(normalizeRole("ADMIN"), "PRIN");
+    assert.strictEqual(normalizeRole("admin"), "PRIN");
+    assert.strictEqual(normalizeRole("", "ADM-01"), "PRIN");
+    assert.strictEqual(normalizeRole("", "SUPER-01"), "PRIN");
+
+    assert.strictEqual(normalizeRole("TEACHER"), "TCH");
+    assert.strictEqual(normalizeRole("teacher"), "TCH");
+    assert.strictEqual(normalizeRole("FACULTY"), "TCH");
+    assert.strictEqual(normalizeRole("TCH"), "TCH");
+    assert.strictEqual(normalizeRole("", "TCH-102"), "TCH");
+
+    assert.strictEqual(normalizeRole("ACCOUNTANT"), "ACC");
+    assert.strictEqual(normalizeRole("accountant"), "ACC");
+    assert.strictEqual(normalizeRole("ACC"), "ACC");
+    assert.strictEqual(normalizeRole("", "ACC-01"), "ACC");
+
+    assert.strictEqual(normalizeRole("STAFF"), "NTS");
+    assert.strictEqual(normalizeRole("NON_TEACHING"), "NTS");
+    assert.strictEqual(normalizeRole("NON-TEACHING"), "NTS");
+    assert.strictEqual(normalizeRole("NTS"), "NTS");
+    assert.strictEqual(normalizeRole("", "NTS-01"), "NTS");
+    assert.strictEqual(normalizeRole("", "NON-01"), "NTS");
+
+    assert.strictEqual(normalizeRole("STUDENT"), "STU");
+    assert.strictEqual(normalizeRole("student"), "STU");
+    assert.strictEqual(normalizeRole("STU"), "STU");
+    assert.strictEqual(normalizeRole("", "STU-101"), "STU");
+    assert.strictEqual(normalizeRole("UNKNOWN"), "STU");
+
+    assert.strictEqual(normalizeRole("MASTER_OWNER"), "MASTER_OWNER");
   });
 });
 
@@ -309,7 +356,8 @@ test("Serverless API: Direct Request Boundaries & HTTP Protocol Enforcements", a
   });
 
   await t.test("authHandler accepts valid master passkey and issues signed bearer token", async () => {
-    const req = { method: "POST", body: { passkey: "ASK&1412" }, headers: {} };
+    const validKey = process.env.MASTER_SETUP_KEY || process.env.MASTER_SETUP_PASSKEY;
+    const req = { method: "POST", body: { passkey: validKey }, headers: {} };
     const res = mockRes();
     await authHandler(req, res);
     assert.strictEqual(res.statusCode, 200);
@@ -777,7 +825,7 @@ test("Phase 3: Master Setup SaaS School Onboarding & Auto-Provisioning", async (
     const fs = await import("fs");
     const setupSrc = fs.readFileSync("src/pages/MasterSchoolSetup.jsx", "utf8");
 
-    assert.ok(!setupSrc.includes('cleanPass === "ASK&1412"'), "Must remove hardcoded passkey bypass");
+    assert.ok(!setupSrc.includes('cleanPass === "'), "Must remove hardcoded passkey bypass");
     assert.ok(setupSrc.includes('/api/master/auth'), "Must authenticate via /api/master/auth endpoint");
     assert.ok(setupSrc.includes('sessionStorage.setItem("erp_master_token"'), "Must store verified master token");
   });

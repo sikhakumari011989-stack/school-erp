@@ -7,7 +7,7 @@ export function getMasterKey() {
     process.env.MASTER_ADMIN_PASSKEY ||
     process.env.VITE_MASTER_SETUP_PASSKEY ||
     process.env.VITE_MASTER_SETUP_KEY ||
-    "ASK&1412"
+    ""
   );
 }
 

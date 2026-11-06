@@ -51,16 +51,15 @@ export default function Sidebar() {
   const rawRole = (user.role || "").toLowerCase();
   const personalCode = (user.role_code || user.roll_number || user.personal_code || "").toUpperCase();
 
-  // Strict 6-Role Detection
-  const roleType = (() => {
-    if (personalCode.startsWith("PRIN") || rawRole === "principal") return "principal";
-    if (personalCode.startsWith("HOD") || personalCode.startsWith("TR") || rawRole === "trustee") return "trustee";
-    if (personalCode.startsWith("ACC") || rawRole === "accountant") return "accountant";
-    if (personalCode.startsWith("TCH") || personalCode.startsWith("FAC") || rawRole === "teacher") return "teacher";
-    if (personalCode.startsWith("NTS") || personalCode.startsWith("NON") || rawRole === "staff" || rawRole === "non_teaching") return "staff";
-    if (personalCode.startsWith("ADM") || rawRole === "admin") return "admin";
-    return "student";
-  })();
+  // Strict Canonical Role Detection via Unified normalizeRole
+  const canonical = normalizeRole(user.role, personalCode);
+  const roleType =
+    canonical === "PRIN" ? "principal" :
+    canonical === "HOD" ? "trustee" :
+    canonical === "ACC" ? "accountant" :
+    canonical === "TCH" ? "teacher" :
+    canonical === "NTS" ? "staff" :
+    canonical === "MASTER_OWNER" ? "admin" : "student";
 
   // Streamlined Navigation strictly centered on Core MVP School Management Areas
   const getLinks = () => {

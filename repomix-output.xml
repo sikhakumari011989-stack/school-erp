@@ -396,7 +396,7 @@ import crypto from "crypto";
 const MASTER_KEY =
   process.env.MASTER_SETUP_KEY ||
   process.env.MASTER_ADMIN_PASSKEY ||
-  "ASK&1412";
+  "ENV_CONFIGURED_PASSKEY";
 
 const TOKEN_SECRET =
   process.env.MASTER_TOKEN_SECRET ||
@@ -17842,7 +17842,7 @@ test("Serverless API: Direct Request Boundaries & HTTP Protocol Enforcements", a
   });
 
   await t.test("authHandler accepts valid master passkey and issues signed bearer token", async () => {
-    const req = { method: "POST", body: { passkey: "ASK&1412" }, headers: {} };
+    const req = { method: "POST", body: { passkey: "ENV_CONFIGURED_PASSKEY" }, headers: {} };
     const res = mockRes();
     await authHandler(req, res);
     assert.strictEqual(res.statusCode, 200);
@@ -51906,8 +51906,8 @@ export default function MasterSchoolSetup() {
     }
 
     // 2. Resilient fallback check against configured or master key
-    const configuredKey = import.meta.env.VITE_MASTER_SETUP_KEY || "ASK&1412";
-    if (cleanPass === configuredKey || cleanPass === "ASK&1412") {
+    const configuredKey = import.meta.env.VITE_MASTER_SETUP_KEY || "ENV_CONFIGURED_PASSKEY";
+    if (cleanPass === configuredKey || cleanPass === "ENV_CONFIGURED_PASSKEY") {
       setIsUnlocked(true);
       sessionStorage.setItem("erp_master_gate_unlocked", "true");
       showToast("Master Gateway Unlocked! Access Granted.", "success");
