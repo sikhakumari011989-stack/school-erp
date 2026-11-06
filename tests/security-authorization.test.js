@@ -933,6 +933,169 @@ test("Final Engineering Pass: Schema Consistency, Role Promotion Guard & Secrets
   });
 });
 
+test("Institutional Provisioning & Error Handling in Master Setup", async (t) => {
+  await t.test("api/master/schools provisions auth.users and links profiles.id", async () => {
+    const fs = await import("fs");
+    const schoolsHandlerSrc = fs.readFileSync("api/master/schools.js", "utf8");
+
+    assert.ok(
+      schoolsHandlerSrc.includes("supabase.auth.admin.createUser"),
+      "Must create administrator in auth.users via Supabase Admin Auth"
+    );
+    assert.ok(
+      schoolsHandlerSrc.includes("profilePayload.id = authUserId") || schoolsHandlerSrc.includes("fallbackProfile.id = authUserId"),
+      "Must link profiles.id to valid auth.users(id)"
+    );
+    assert.ok(
+      schoolsHandlerSrc.includes("p_auth_user_id = authUserId"),
+      "Must forward authUserId to provision_institutional_school RPC"
+    );
+  });
+
+  await t.test("cloudSyncService calls auth.signUp to satisfy profiles foreign key constraint", async () => {
+    const fs = await import("fs");
+    const cloudSyncSrc = fs.readFileSync("src/utils/cloudSyncService.js", "utf8");
+
+    assert.ok(
+      cloudSyncSrc.includes("supabase.auth.signUp"),
+      "Must call auth.signUp for admin account to create auth.users entry"
+    );
+    assert.ok(
+      cloudSyncSrc.includes("profilePayload.id = authUserId"),
+      "Must set profilePayload.id = authUserId to satisfy foreign key"
+    );
+    assert.ok(
+      cloudSyncSrc.includes("erp-schools-updated"),
+      "Must dispatch erp-schools-updated event for instant table refresh"
+    );
+  });
+
+  await t.test("MasterSchoolSetup wraps provisioning in try/catch, resets loading on error, and clears on success", async () => {
+    const fs = await import("fs");
+    const masterSetupSrc = fs.readFileSync("src/pages/MasterSchoolSetup.jsx", "utf8");
+
+    // 1. Loading state must be reset in finally block
+    assert.ok(
+      masterSetupSrc.includes("finally {\n      setLoading(false);"),
+      "Must guarantee setLoading(false) in finally block so spinner never hangs"
+    );
+
+    // 2. Clear error toast with err.message
+    assert.ok(
+      masterSetupSrc.includes("showToast(err.message"),
+      "Must show clear toast with exact error message (err.message)"
+    );
+
+    // 3. Clear form inputs on success
+    assert.ok(
+      masterSetupSrc.includes("institutionName: \"\",") && masterSetupSrc.includes("institutionCode: \"\","),
+      "Must clear form inputs on successful provisioning"
+    );
+
+    // 4. Trigger loadSchools on success
+    assert.ok(
+      masterSetupSrc.includes("await loadSchools();"),
+      "Must automatically call loadSchools() on success to update table immediately"
+    );
+  });
+
+  await t.test("Postgres provision_institutional_school accepts p_auth_user_id and checks auth.users", async () => {
+    const fs = await import("fs");
+    const mig23 = fs.readFileSync("supabase/migrations/23_sales_readiness_and_subscription_hardening.sql", "utf8");
+
+    assert.ok(
+      mig23.includes("p_auth_user_id uuid DEFAULT NULL"),
+      "RPC must accept p_auth_user_id with DEFAULT NULL"
+    );
+    assert.ok(
+      mig23.includes("SELECT id INTO v_auth_user_id FROM auth.users WHERE email = v_admin_email"),
+      "RPC must query auth.users by email to resolve valid auth user identity"
+    );
+  });
+});
+
+test("Frontend Hardening: Master Route Protection, Demo Auth Purge & Write-Path Integrity", async (t) => {
+  const fs = await import("fs");
+
+  await t.test("/master-setup is excluded from PUBLIC_ROUTES and strictly protected with MASTER_OWNER", () => {
+    const appSrc = fs.readFileSync("src/App.jsx", "utf8");
+
+    // Must not be in public routes
+    assert.ok(
+      !appSrc.match(/PUBLIC_ROUTES\s*=\s*\[[^\]]*"\/master-setup"/),
+      "/master-setup must NOT be in PUBLIC_ROUTES"
+    );
+
+    // Route must be protected with MASTER_OWNER
+    assert.ok(
+      appSrc.includes('allowedRoles={["MASTER_OWNER"]}') && appSrc.includes('<MasterSchoolSetup />'),
+      "/master-setup route must be guarded with allowedRoles={['MASTER_OWNER']}"
+    );
+  });
+
+  await t.test("ProtectedRoute blocks PRIN/HOD/others from accessing MASTER_OWNER routes", () => {
+    const guardSrc = fs.readFileSync("src/Components/ProtectedRoute.jsx", "utf8");
+
+    assert.ok(
+      guardSrc.includes('isMasterRoute') && guardSrc.includes('isMasterUser'),
+      "ProtectedRoute must check isMasterRoute and isMasterUser"
+    );
+    assert.ok(
+      guardSrc.includes('Master Owner authority required'),
+      "ProtectedRoute must show actionable error toast if non-MASTER_OWNER attempts access"
+    );
+  });
+
+  await t.test("Credentials and role normalization correctly map MASTER_OWNER", async () => {
+    const { inferRoleFromCode, dashboardFor } = await import("../src/utils/credentials.js");
+
+    assert.strictEqual(inferRoleFromCode("MASTER_OWNER"), "master_owner");
+    assert.strictEqual(dashboardFor("MASTER_OWNER"), "/master-setup");
+    assert.strictEqual(dashboardFor("master_owner"), "/master-setup");
+  });
+
+  await t.test("Write paths explicitly check Supabase error and throw (no false-success fallbacks)", () => {
+    const accountantSrc = fs.readFileSync("src/pages/AccountantDashboard.jsx", "utf8");
+    const attendanceSrc = fs.readFileSync("src/pages/TeacherAttendance.jsx", "utf8");
+    const homeworkSrc = fs.readFileSync("src/pages/TeacherHomework.jsx", "utf8");
+
+    // Fee ledger write check
+    assert.ok(
+      accountantSrc.includes("const { error: insertErr } = await supabase.from(\"fee_ledger\").insert") &&
+      accountantSrc.includes("if (insertErr) {") &&
+      accountantSrc.includes("throw insertErr;"),
+      "AccountantDashboard must check { error: insertErr } from fee_ledger and throw"
+    );
+
+    // Attendance write check
+    assert.ok(
+      attendanceSrc.includes("const { error: insertErr } = await supabase.from(\"attendance\").insert") &&
+      attendanceSrc.includes("if (insertErr) {") &&
+      attendanceSrc.includes("throw insertErr;"),
+      "TeacherAttendance must check { error: insertErr } from attendance and throw"
+    );
+
+    // Homework write check
+    assert.ok(
+      homeworkSrc.includes("const { error: hwErr } = await supabase.from(\"homework\").insert") &&
+      homeworkSrc.includes("if (hwErr) {") &&
+      homeworkSrc.includes("throw hwErr;"),
+      "TeacherHomework must check { error: hwErr } from homework and throw"
+    );
+  });
+
+  await t.test("Out-of-scope modules are removed from active Sidebar navigation", () => {
+    const sidebarSrc = fs.readFileSync("src/Components/Sidebar.jsx", "utf8");
+
+    assert.ok(!sidebarSrc.includes('path: "/admin/broadcasts"'), "Broadcasts must be hidden from navigation");
+    assert.ok(!sidebarSrc.includes('path: "/admin/certificates"'), "Certificates must be hidden from navigation");
+    assert.ok(!sidebarSrc.includes('path: "/student/pay"'), "Live Razorpay student checkout must be hidden from navigation");
+    assert.ok(!sidebarSrc.includes('path: "/student/certificates"'), "Student certificates must be hidden from navigation");
+    assert.ok(!sidebarSrc.includes('tab=leaves'), "Staff leaves must be hidden from navigation");
+  });
+});
+
+
 
 
 

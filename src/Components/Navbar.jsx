@@ -143,26 +143,6 @@ export default function Navbar({ onMenuToggle, title, subtitle, className = "" }
         {/* Stealth Theme Toggle */}
         <ThemeToggle />
 
-        {/* Glowing Offline / Queue Status Badge */}
-        {(!isOnline || pendingQueueCount > 0) && (
-          <button
-            type="button"
-            onClick={handleManualSync}
-            disabled={!isOnline || isSyncing}
-            className={`flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[11px] font-bold border transition-all duration-200 ${
-              !isOnline
-                ? "bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-300"
-                : "bg-amber-400/20 border-amber-400/50 text-amber-700 dark:text-amber-300 hover:bg-amber-400/30 cursor-pointer shadow-sm animate-pulse"
-            }`}
-            title={isOnline ? "Click to trigger manual sync of queued offline transactions" : "You are currently offline. Operations will queue safely."}
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-            <span className="hidden sm:inline">Queue:</span>
-            <span>({pendingQueueCount})</span>
-            <span className="text-[10px] uppercase font-mono">{isSyncing ? "Syncing..." : isOnline ? "Pending" : "Offline"}</span>
-          </button>
-        )}
-
         {user && (
           <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-1.5 rounded-full backdrop-blur-xl transition-colors">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>

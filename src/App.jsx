@@ -70,7 +70,6 @@ const PUBLIC_ROUTES = [
   "/login",
   "/portal",
   "/system-check",
-  "/master-setup",
   "/terms",
   "/privacy",
   "/pricing-policy",
@@ -101,9 +100,7 @@ const AppLayout = ({ children }) => {
 
       const currentPath = location.pathname;
       if (currentPath === "/" || currentPath === "/login" || currentPath === "/portal") {
-        const saved =
-          localStorage.getItem("erp_session_user") ||
-          localStorage.getItem("erp_demo_session");
+        const saved = localStorage.getItem("erp_session_user");
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && (parsed.role || parsed.role_code)) {
@@ -162,7 +159,6 @@ const AppLayout = ({ children }) => {
 
   return (
     <div className="h-[100dvh] w-screen overflow-hidden flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans relative transition-colors duration-200">
-      <OfflineBanner />
       {!isPublicPage && <Sidebar />}
       <main
         className={`flex-1 h-full overflow-y-auto ${
@@ -221,7 +217,14 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/portal" element={<Login isDirectPortal={true} />} />
               <Route path="/system-check" element={<SystemDiagnosticPage />} />
-              <Route path="/master-setup" element={<MasterSchoolSetup />} />
+              <Route
+                path="/master-setup"
+                element={
+                  <ProtectedRoute allowedRoles={["MASTER_OWNER"]}>
+                    <MasterSchoolSetup />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/register" element={<Navigate to="/login" replace />} />
               <Route path="/join" element={<Navigate to="/login" replace />} />
               <Route path="/terms" element={<TermsOfService />} />

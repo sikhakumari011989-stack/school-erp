@@ -92,19 +92,30 @@ export default function MasterSchoolSetup() {
             .order("created_at", { ascending: false });
 
           if (!dbErr && Array.isArray(cloudSchools) && cloudSchools.length > 0) {
-            const mapped = cloudSchools.map((s) => ({
-              code: s.code,
-              name: s.name,
-              adminName: s.admin_name || "Trustee HOD",
-              adminId: s.admin_id || "HOD-01",
-              institutionMode: s.institution_mode || "school",
-              subscriptionStatus: s.subscription_status || s.status || "active",
-              expiryDate: s.subscription_expires_at
-                ? s.subscription_expires_at.split("T")[0]
-                : "2027-12-31",
-              createdAt: s.created_at,
-              isCloudPersisted: true,
-            }));
+            const mapped = cloudSchools.map((s) => {
+              let adminName = s.admin_name || "Trustee HOD";
+              let adminId = s.admin_id || "HOD-01";
+              if (s.address && s.address.startsWith("{")) {
+                try {
+                  const parsed = JSON.parse(s.address);
+                  if (parsed.masterAdminName) adminName = parsed.masterAdminName;
+                  if (parsed.masterAdminId) adminId = parsed.masterAdminId;
+                } catch (e) {}
+              }
+              return {
+                code: s.code,
+                name: s.name,
+                adminName,
+                adminId,
+                institutionMode: s.institution_mode || "school",
+                subscriptionStatus: s.subscription_status || s.status || "active",
+                expiryDate: s.subscription_expires_at
+                  ? s.subscription_expires_at.split("T")[0]
+                  : "2027-12-31",
+                createdAt: s.created_at,
+                isCloudPersisted: true,
+              };
+            });
             setSchoolsList(mapped);
             loadedFromApi = true;
           }
@@ -307,57 +318,66 @@ export default function MasterSchoolSetup() {
     try {
       const explicitRole = detectRoleFromId(formData.adminRoleCode, "trustee");
       const cleanCode = formData.institutionCode.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
+      const cleanName = formData.institutionName.trim();
+      const cleanPass = (formData.password || "password123").trim();
+      const standardEmail = (formData.email || "").trim() || buildStandardErpEmail(cleanCode, formData.adminRoleCode);
 
-      let apiOutcome = null;
+      let serverSuccess = false;
+      let outcomeData = null;
 
-      // 1. Authoritative Serverless Master API provisioning to guarantee Supabase PostgreSQL persistence
+      // 1. Authoritative Serverless Master API provisioning
       const token = sessionStorage.getItem("erp_master_token");
-      if (!token) {
-        showToast("Master Session Token is missing or expired. Please unlock the gateway first.", "error");
-        setLoading(false);
-        return;
+      if (token) {
+        try {
+          const resp = await fetch("/api/master/schools", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+              "x-master-token": token,
+            },
+            body: JSON.stringify({
+              action: "provision",
+              institutionName: cleanName,
+              institutionCode: cleanCode,
+              adminName: formData.adminName.trim(),
+              adminRoleCode: formData.adminRoleCode,
+              phone: formData.phone,
+              email: standardEmail,
+              password: cleanPass,
+              address: formData.address,
+              institutionMode: formData.institutionMode,
+            }),
+          });
+
+          const resData = await resp.json().catch(() => ({}));
+          if (resp.ok && resData.success) {
+            serverSuccess = true;
+            console.log("[MasterSetup] Server API provisioned node successfully:", resData.school);
+          } else if (resData.error) {
+            console.warn("[MasterSetup] Serverless API notice:", resData.error);
+            if (resp.status === 401 || resp.status === 403) {
+              throw new Error(resData.error || "Master Session Unauthorized. Please re-authenticate.");
+            }
+          }
+        } catch (apiErr) {
+          console.warn("[MasterSetup] Server API error notice:", apiErr.message);
+          if (apiErr.message.includes("Unauthorized") || apiErr.message.includes("Session")) {
+            throw apiErr;
+          }
+        }
       }
 
-      const resp = await fetch("/api/master/schools", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "x-master-token": token,
-        },
-        body: JSON.stringify({
-          action: "provision",
-          institutionName: formData.institutionName.trim(),
-          institutionCode: cleanCode,
-          adminName: formData.adminName.trim(),
-          adminRoleCode: formData.adminRoleCode,
-          phone: formData.phone,
-          email: formData.email,
-          address: formData.address,
-          institutionMode: formData.institutionMode,
-        }),
-      });
-
-      const resData = await resp.json().catch(() => ({}));
-      if (!resp.ok || !resData.success) {
-        const errorMsg = resData.error || "Failed to provision school in Supabase PostgreSQL.";
-        showToast(errorMsg, "error");
-        setLoading(false);
-        return;
-      }
-
-      apiOutcome = resData.school;
-
-      // 2. Provision via cloudSyncService to ensure local directories and directories are in sync
-      const outcomeData = await provisionSchoolInCloud({
-        institutionName: formData.institutionName,
+      // 2. Client-side cloudSyncService provisioning (with auth.signUp user creation & profile linking)
+      outcomeData = await provisionSchoolInCloud({
+        institutionName: cleanName,
         institutionCode: cleanCode,
         adminName: formData.adminName,
         adminId: formData.adminRoleCode,
         adminRole: explicitRole,
-        password: formData.password,
+        password: cleanPass,
         phone: formData.phone,
-        email: formData.email,
+        email: standardEmail,
         address: formData.address,
         institutionMode: formData.institutionMode,
       });
@@ -369,7 +389,7 @@ export default function MasterSchoolSetup() {
         action: AUDIT_ACTIONS.TENANT_SWITCH || "INSTITUTION_PROVISIONED",
         entityType: "SCHOOL",
         entityId: cleanCode,
-        details: `Platform Owner provisioned institutional node "${formData.institutionName}" (${cleanCode}) with Master Admin ${formData.adminRoleCode} [Mode: ${formData.institutionMode}]`,
+        details: `Platform Owner provisioned institutional node "${cleanName}" (${cleanCode}) with Master Admin ${formData.adminRoleCode} [Mode: ${formData.institutionMode}]`,
         schoolId: cleanCode,
       });
 
@@ -378,12 +398,30 @@ export default function MasterSchoolSetup() {
         institutionMode: formData.institutionMode,
         isCloudPersisted: true,
       });
-      showToast(`Institution "${formData.institutionName}" (${cleanCode}) permanently provisioned in Supabase PostgreSQL!`, "success");
-      loadSchools();
+
+      // Clear the form inputs on success
+      setFormData({
+        institutionName: "",
+        institutionCode: "",
+        institutionCodeManual: false,
+        institutionMode: "school",
+        adminName: "",
+        adminRoleCode: "HOD-01",
+        email: "",
+        phone: "+91 9518388499",
+        password: "password123",
+        address: "Mahim Manohar Highway, Palghar 401404",
+      });
+
+      showToast(`Institution "${cleanName}" (${cleanCode}) permanently provisioned in Supabase PostgreSQL!`, "success");
+
+      // Instantly refresh the registered schools table
+      await loadSchools();
+
     } catch (err) {
-      console.error("Master setup error:", err);
-      showToast("Provisioning completed in sandbox partition.", "info");
-      loadSchools();
+      console.error("[MasterSetup] Provisioning error:", err);
+      // Reset loading state and display exact database error message
+      showToast(err.message || "Failed to provision school. Check database connection and schema.", "error");
     } finally {
       setLoading(false);
     }

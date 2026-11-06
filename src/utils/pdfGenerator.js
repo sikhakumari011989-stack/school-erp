@@ -9,7 +9,7 @@ export function resolveInstitutionName(tenant = {}) {
 
   try {
     if (typeof window !== "undefined") {
-      const savedUser = localStorage.getItem("erp_session_user") || localStorage.getItem("erp_demo_session");
+      const savedUser = localStorage.getItem("erp_session_user");
       if (savedUser) {
         const parsed = JSON.parse(savedUser);
         if (!isInvalid(parsed.institution_name)) return parsed.institution_name;

@@ -174,7 +174,6 @@ export default function RegisterInstitution() {
         login(registeredHod);
       }
       localStorage.setItem("erp_session_user", JSON.stringify(registeredHod));
-      localStorage.setItem("erp_demo_session", JSON.stringify(registeredHod));
 
       setSuccessData({
         ...registeredHod,
@@ -184,20 +183,7 @@ export default function RegisterInstitution() {
       showToast(`School "${formData.institutionName}" registered successfully! Master HOD account activated.`, "success");
     } catch (err) {
       console.error("Institution registration error:", err);
-      showToast("Registration completed with offline sandbox parameters.", "info");
-      const fallbackHod = {
-        name: formData.adminName,
-        institution_code: cleanCode,
-        institution_name: formData.institutionName,
-        role: "trustee",
-        role_code: "HOD-01",
-        personal_code: "HOD-01",
-        school_id: cleanCode,
-      };
-      if (typeof login === "function") {
-        login(fallbackHod);
-      }
-      setSuccessData(fallbackHod);
+      showToast(err.message || "Failed to register institution. Please verify connectivity and parameters.", "error");
     } finally {
       setLoading(false);
     }
@@ -207,8 +193,6 @@ export default function RegisterInstitution() {
     if (successData) {
       if (typeof login === "function") {
         login(successData);
-      } else {
-        localStorage.setItem("erp_demo_session", JSON.stringify(successData));
       }
       navigate("/trustee/dashboard");
     }

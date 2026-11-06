@@ -30,7 +30,6 @@ export default function Sidebar() {
   const onSignOut = async () => {
     try {
       localStorage.removeItem("erp_session_user");
-      localStorage.removeItem("erp_demo_session");
       sessionStorage.clear();
     } catch (e) {
       console.warn("Storage clear notice:", e);
@@ -62,7 +61,7 @@ export default function Sidebar() {
     return "student";
   })();
 
-  // Streamlined Navigation strictly centered on 10 Core School Areas
+  // Streamlined Navigation strictly centered on Core MVP School Management Areas
   const getLinks = () => {
     if (roleType === "principal") {
       return [
@@ -71,10 +70,7 @@ export default function Sidebar() {
         { name: "Attendance & Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Fee Collection & Dues", path: "/accountant/dashboard", icon: "💰" },
         { name: "Examinations & Marks", path: "/teacher/analytics", icon: "📊" },
-        { name: "Staff & Leaves", path: "/principal/dashboard?tab=leaves", icon: "👨‍🏫" },
-        { name: "Announcements & Notices", path: "/admin/broadcasts", icon: "📢" },
         { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
-        { name: "Certificates", path: "/admin/certificates", icon: "📜" },
         { name: "Administration & Audit", path: "/admin/dashboard", icon: "⚙️" },
       ];
     } else if (roleType === "trustee") {
@@ -84,7 +80,6 @@ export default function Sidebar() {
         { name: "Fee Treasury & Dues", path: "/accountant/dashboard", icon: "💰" },
         { name: "Academic Performance", path: "/teacher/analytics", icon: "📊" },
         { name: "School Calendar", path: "/admin/calendar", icon: "📅" },
-        { name: "Announcements", path: "/admin/broadcasts", icon: "📢" },
         { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
       ];
     } else if (roleType === "accountant") {
@@ -111,7 +106,6 @@ export default function Sidebar() {
         { name: "Operations Overview", path: "/staff/dashboard", icon: "🛠️" },
         { name: "Student Directory", path: "/admin/admissions", icon: "🎯" },
         { name: "Campus Attendance", path: "/teacher/attendance", icon: "✅" },
-        { name: "Announcements", path: "/admin/broadcasts", icon: "📢" },
         { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
       ];
     } else if (roleType === "admin") {
@@ -122,22 +116,17 @@ export default function Sidebar() {
         { name: "Fee Treasury", path: "/accountant/dashboard", icon: "💰" },
         { name: "School Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Admissions CRM", path: "/admin/admissions", icon: "🎯" },
-        { name: "Broadcast Hub", path: "/admin/broadcasts", icon: "📢" },
-        { name: "Certificates", path: "/admin/certificates", icon: "📜" },
         { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
       ];
     } else {
-      // Default: Student / Parent
+      // Default: Student / Parent (view own profile, attendance, fees, marks, homework)
       return [
         { name: "Student Overview", path: "/student/dashboard", icon: "🎓" },
         { name: "My Marks", path: "/student/marks", icon: "📊" },
         { name: "Attendance & Calendar", path: "/student/calendar", icon: "📅" },
         { name: "Fee Dues & Receipts", path: "/student/fees", icon: "💳" },
-        { name: "Pay Online", path: "/student/pay", icon: "⚡" },
         { name: "Exams & Results", path: "/student/exams", icon: "📝" },
-        { name: "Homework & LMS", path: "/student/homework", icon: "📚" },
-        { name: "My Certificates", path: "/student/certificates", icon: "📜" },
-        { name: "Conduct & Announcements", path: "/student/conduct", icon: "⚖️" },
+        { name: "Homework & Assignments", path: "/student/homework", icon: "📚" },
       ];
     }
   };

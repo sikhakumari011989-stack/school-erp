@@ -26,6 +26,7 @@ export function buildStandardErpEmail(institutionCode, personalCode) {
  */
 export function inferRoleFromCode(code) {
   const upper = String(code || "").toUpperCase();
+  if (upper === "MASTER_OWNER" || upper.startsWith("MASTER")) return "master_owner";
   if (upper.startsWith("PRIN")) return "principal";
   if (upper.startsWith("HOD") || upper.startsWith("TR")) return "trustee";
   if (upper.startsWith("ACC")) return "accountant";
@@ -34,6 +35,7 @@ export function inferRoleFromCode(code) {
   if (upper.startsWith("ADM") || upper.startsWith("SUPER")) return "admin";
 
   const lower = String(code || "").toLowerCase();
+  if (lower === "master_owner") return "master_owner";
   if (lower === "principal" || lower === "prin") return "principal";
   if (lower === "trustee" || lower === "hod") return "trustee";
   if (lower === "accountant" || lower === "acc") return "accountant";
@@ -48,6 +50,7 @@ export function inferRoleFromCode(code) {
  */
 export function dashboardFor(role) {
   const normalized = String(role || "student").toLowerCase();
+  if (normalized === "master_owner") return "/master-setup";
   if (normalized === "admin" || normalized === "super_admin") return "/admin/dashboard";
   if (normalized === "accountant" || normalized === "acc") return "/accountant/dashboard";
   if (normalized === "principal" || normalized === "prin") return "/principal/dashboard";

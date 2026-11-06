@@ -340,43 +340,21 @@ export default function TeacherAttendance() {
       // Also maintain general date index for cross-dashboard analytics
       localStorage.setItem(`erp_attendance_${activeSchoolId}_${today}`, JSON.stringify(formattedRecords));
 
-      // 2. Sync to Supabase attendance table with durable offline mutation queue fallback
-      const isOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
-      let syncSucceeded = false;
-
-      if (isOnline && supabase) {
-        try {
-          const { error: insertErr } = await supabase.from("attendance").insert([
-            {
-              school_id: activeSchoolId,
-              class_id: selectedBatch,
-              class_name: selectedBatch,
-              date: today,
-              records: formattedRecords,
-            },
-          ]);
-          if (!insertErr) {
-            syncSucceeded = true;
-          } else {
-            console.warn("Supabase attendance insert notice, enqueuing offline queue:", insertErr);
-          }
-        } catch (dbErr) {
-          console.warn("Supabase attendance sync notice, enqueuing offline queue:", dbErr);
-        }
-      }
-
-      if (!syncSucceeded) {
-        // Enqueue to durable local event queue (erp_offline_mutation_queue)
-        enqueueOfflineMutation({
-          schoolId: activeSchoolId,
-          actionType: "attendance_mark",
-          payload: {
+      // 2. Sync to Supabase attendance table
+      if (supabase) {
+        const { error: insertErr } = await supabase.from("attendance").insert([
+          {
+            school_id: activeSchoolId,
             class_id: selectedBatch,
             class_name: selectedBatch,
             date: today,
             records: formattedRecords,
           },
-        });
+        ]);
+        if (insertErr) {
+          console.error("Supabase attendance insert error:", insertErr);
+          throw insertErr;
+        }
       }
 
       // 3. Automated Absent Notification Alerts with 60-Second Undo Window
@@ -414,7 +392,7 @@ export default function TeacherAttendance() {
       window.dispatchEvent(new Event("erp-attendance-updated"));
     } catch (err) {
       console.error("Error saving attendance:", err);
-      showToast("Attendance saved to local storage.", "info");
+      showToast(err.message || "Failed to save attendance register to database.", "error");
     } finally {
       setSaving(false);
     }

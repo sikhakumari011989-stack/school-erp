@@ -86,8 +86,47 @@ export async function provisionSchoolInCloud({
   };
 
   let cloudSchoolId = null;
+  let authUserId = null;
 
   if (supabase) {
+    // A. Create Administrator in auth.users via Supabase Auth SignUp to satisfy foreign key constraints
+    try {
+      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+        email: mappedEmail,
+        password: cleanPass,
+        options: {
+          data: {
+            full_name: adminName.trim(),
+            role: strictAdminRole,
+            role_code: cleanAdminId,
+            school_code: cleanCode,
+          },
+        },
+      });
+
+      if (signUpData?.user?.id) {
+        authUserId = signUpData.user.id;
+        initialMasterAdmin.id = authUserId;
+      } else if (signUpErr) {
+        console.warn("[CloudSync] auth.signUp notice:", signUpErr.message);
+        // If user already registered, sign in to retrieve valid auth ID
+        try {
+          const { data: signInData } = await supabase.auth.signInWithPassword({
+            email: mappedEmail,
+            password: cleanPass,
+          });
+          if (signInData?.user?.id) {
+            authUserId = signInData.user.id;
+            initialMasterAdmin.id = authUserId;
+          }
+        } catch (signInErr) {
+          console.warn("[CloudSync] auth.signIn fallback notice:", signInErr.message);
+        }
+      }
+    } catch (authErr) {
+      console.warn("[CloudSync] Client auth.signUp exception:", authErr);
+    }
+
     // B. Insert/Upsert into schools table with cloud-synchronized directory package
     try {
       const addressPayload = JSON.stringify({
@@ -96,6 +135,8 @@ export async function provisionSchoolInCloud({
         masterAdminId: cleanAdminId,
         masterAdminName: adminName.trim(),
         defaultPassword: cleanPass,
+        institutionMode,
+        subscriptionStatus: "active",
         provisionedAt: new Date().toISOString(),
       });
 
@@ -117,25 +158,66 @@ export async function provisionSchoolInCloud({
         .select()
         .single();
 
-      if (!schoolErr && schoolData) {
+      if (schoolErr) {
+        // Fallback with minimal core columns if extended columns are absent
+        const { data: retrySchool, error: retryErr } = await supabase
+          .from("schools")
+          .upsert(
+            [
+              {
+                name: cleanName,
+                code: cleanCode,
+                address: addressPayload,
+              },
+            ],
+            { onConflict: "code" }
+          )
+          .select()
+          .single();
+
+        if (retryErr) {
+          console.error("[CloudSync] schools table upsert error:", retryErr);
+          throw new Error(`Database error in schools table: ${retryErr.message}`);
+        }
+        if (retrySchool) {
+          cloudSchoolId = retrySchool.id;
+        }
+      } else if (schoolData) {
         cloudSchoolId = schoolData.id;
       }
     } catch (dbErr) {
-      console.warn("[CloudSync] schools table upsert notice:", dbErr);
+      console.error("[CloudSync] schools table upsert error:", dbErr);
+      throw dbErr;
     }
 
-    // C. Insert master admin into profiles table
+    // C. Insert master admin into profiles table linking exact auth.users(id)
     try {
-      await supabase.from("profiles").upsert([
-        {
-          full_name: adminName.trim(),
-          role: strictAdminRole,
-          role_code: cleanAdminId,
-          school_id: cloudSchoolId || undefined,
-        },
-      ]);
+      const profilePayload = {
+        full_name: adminName.trim(),
+        role: strictAdminRole,
+        role_code: cleanAdminId,
+        school_id: cloudSchoolId || undefined,
+        email: mappedEmail,
+        phone: phone.trim(),
+        is_active: true,
+        status: "active",
+      };
+
+      if (authUserId) {
+        profilePayload.id = authUserId;
+      }
+
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .upsert([profilePayload], { onConflict: "school_id,role_code" });
+
+      if (profErr) {
+        console.error("[CloudSync] profiles table upsert error:", profErr);
+        throw new Error(`Database error in profiles table: ${profErr.message}`);
+      }
     } catch (profErr) {
-      console.warn("[CloudSync] profiles table upsert notice:", profErr);
+      console.error("[CloudSync] profiles table upsert error:", profErr);
+      throw profErr;
     }
   }
 
@@ -178,6 +260,7 @@ export async function provisionSchoolInCloud({
   localStorage.removeItem(`erp_non_teaching_staff_${cleanCode}`);
 
   window.dispatchEvent(new Event("erp-directory-updated"));
+  window.dispatchEvent(new Event("erp-schools-updated"));
 
   return {
     institutionName: cleanName,
@@ -189,6 +272,7 @@ export async function provisionSchoolInCloud({
     mappedEmail,
     portalUrl: `${typeof window !== "undefined" ? window.location.origin : ""}/portal?school=${cleanCode}`,
     cloudId: cloudSchoolId,
+    authUserId,
   };
 }
 

@@ -51,7 +51,7 @@ export function getNextMemberId(role = "student", directory = [], existingMember
       }
 
       // Scan current session user
-      const rawSession = window.localStorage.getItem("erp_session_user") || window.localStorage.getItem("erp_demo_session");
+      const rawSession = window.localStorage.getItem("erp_session_user");
       if (rawSession) {
         const sess = JSON.parse(rawSession);
         if (sess) {

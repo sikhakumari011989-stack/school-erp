@@ -42,6 +42,21 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     const rawRole = (resolvedUser.role || inferRoleFromCode(resolvedUser.role_code || resolvedUser.roll_number || resolvedUser.id) || "").toUpperCase();
     const roleCode = String(resolvedUser.role_code || resolvedUser.id || "").toUpperCase();
 
+    // STRICT GUARD FOR MASTER_OWNER: Only verified MASTER_OWNER can access /master-setup
+    const isMasterRoute = allowedRoles.some((r) => r.toUpperCase() === "MASTER_OWNER");
+    const isMasterUser = rawRole === "MASTER_OWNER" || roleCode === "MASTER_OWNER";
+
+    if (isMasterRoute) {
+      if (!isMasterUser) {
+        showToast(
+          `Unauthorized access to ${location.pathname}. Master Owner authority required.`,
+          "error"
+        );
+        return <Navigate to={dashboardFor(resolvedUser.role)} replace />;
+      }
+      return children;
+    }
+
     const canonicalUserRole =
       rawRole === "PRIN" || rawRole === "PRINCIPAL" ? "PRIN" :
       rawRole === "HOD" || rawRole === "TRUSTEE" ? "HOD" :

@@ -106,7 +106,10 @@ export default function AccountantDashboard() {
             createdRequestId = data.request_id;
           }
         } catch (rpcErr) {
-          console.warn("[AccountantDashboard] RPC request_fee_reversal notice:", rpcErr);
+          console.error("[AccountantDashboard] RPC request_fee_reversal error:", rpcErr);
+          showToast(`Reversal request failed: ${rpcErr.message}`, "error");
+          setSubmittingReversal(false);
+          return;
         }
       }
 
@@ -415,38 +418,44 @@ export default function AccountantDashboard() {
 
     try {
       if (supabase) {
-        await supabase.from("fee_ledger").insert([newTxn]);
+        const { error: insertErr } = await supabase.from("fee_ledger").insert([newTxn]);
+        if (insertErr) {
+          console.error("Supabase fee_ledger insert error:", insertErr);
+          throw insertErr;
+        }
       }
+
+      try {
+        const tenantKey = `erp_fee_ledger_${schoolId}`;
+        const savedTenantRaw = localStorage.getItem(tenantKey);
+        const tenantList = savedTenantRaw ? JSON.parse(savedTenantRaw) : [];
+        tenantList.unshift(newTxn);
+        localStorage.setItem(tenantKey, JSON.stringify(tenantList));
+
+        const savedRaw = localStorage.getItem("erp_fee_ledger");
+        const globalList = savedRaw ? JSON.parse(savedRaw) : [];
+        globalList.unshift(newTxn);
+        localStorage.setItem("erp_fee_ledger", JSON.stringify(globalList));
+      } catch (e) {
+        console.warn("Local storage write notice:", e);
+      }
+
+      window.dispatchEvent(new Event("erp-fee-ledger-updated"));
+      showToast(`Transaction of ₹${Number(formData.amount).toLocaleString()} recorded!`, "success");
+      setFormData({
+        student_name: "",
+        class_name: "",
+        amount: "",
+        status: "paid",
+        payment_mode: "Cash / Cheque",
+      });
+      fetchLedger();
     } catch (err) {
-      console.warn("Supabase fee_ledger insert notice:", err);
+      console.error("Fee transaction submission error:", err);
+      showToast(err.message || "Failed to record transaction in database.", "error");
+    } finally {
+      setSubmitting(false);
     }
-
-    try {
-      const tenantKey = `erp_fee_ledger_${schoolId}`;
-      const savedTenantRaw = localStorage.getItem(tenantKey);
-      const tenantList = savedTenantRaw ? JSON.parse(savedTenantRaw) : [];
-      tenantList.unshift(newTxn);
-      localStorage.setItem(tenantKey, JSON.stringify(tenantList));
-
-      const savedRaw = localStorage.getItem("erp_fee_ledger");
-      const globalList = savedRaw ? JSON.parse(savedRaw) : [];
-      globalList.unshift(newTxn);
-      localStorage.setItem("erp_fee_ledger", JSON.stringify(globalList));
-    } catch (e) {
-      console.warn("Local storage write notice:", e);
-    }
-
-    window.dispatchEvent(new Event("erp-fee-ledger-updated"));
-    showToast(`Transaction of ₹${Number(formData.amount).toLocaleString()} recorded!`, "success");
-    setFormData({
-      student_name: "",
-      class_name: "",
-      amount: "",
-      status: "paid",
-      payment_mode: "Cash / Cheque",
-    });
-    setSubmitting(false);
-    fetchLedger();
   };
 
   const getSchoolUpi = () => {
@@ -516,30 +525,29 @@ export default function AccountantDashboard() {
     try {
       // 1. Update in Supabase fee_ledger & fees tables with strict row scoping
       if (supabase) {
-        try {
-          if (item.id && !String(item.id).startsWith("TXN-")) {
-            await supabase
-              .from("fee_ledger")
-              .update({ status: "completed" })
-              .eq("id", item.id)
-              .eq("school_id", schoolId);
-          } else if (item.utr || item.razorpay_payment_id) {
-            await supabase
-              .from("fee_ledger")
-              .update({ status: "completed" })
-              .eq("razorpay_payment_id", item.utr || item.razorpay_payment_id)
-              .eq("school_id", schoolId);
-          }
+        if (item.id && !String(item.id).startsWith("TXN-")) {
+          const { error: upErr1 } = await supabase
+            .from("fee_ledger")
+            .update({ status: "completed" })
+            .eq("id", item.id)
+            .eq("school_id", schoolId);
+          if (upErr1) throw upErr1;
+        } else if (item.utr || item.razorpay_payment_id) {
+          const { error: upErr2 } = await supabase
+            .from("fee_ledger")
+            .update({ status: "completed" })
+            .eq("razorpay_payment_id", item.utr || item.razorpay_payment_id)
+            .eq("school_id", schoolId);
+          if (upErr2) throw upErr2;
+        }
 
-          if (item.student_id) {
-            await supabase
-              .from("fees")
-              .update({ status: "paid" })
-              .eq("school_id", schoolId)
-              .eq("student_id", item.student_id);
-          }
-        } catch (dbErr) {
-          console.warn("Supabase approval sync notice:", dbErr);
+        if (item.student_id) {
+          const { error: upErr3 } = await supabase
+            .from("fees")
+            .update({ status: "paid" })
+            .eq("school_id", schoolId)
+            .eq("student_id", item.student_id);
+          if (upErr3) throw upErr3;
         }
       }
 
@@ -619,12 +627,11 @@ export default function AccountantDashboard() {
   const handleRejectPayment = async (item) => {
     try {
       if (supabase) {
-        try {
-          await supabase
-            .from("fee_ledger")
-            .update({ status: "rejected" })
-            .or(`id.eq.${item.id},razorpay_payment_id.eq.${item.utr || item.razorpay_payment_id}`);
-        } catch (dbErr) {}
+        const { error: rejErr } = await supabase
+          .from("fee_ledger")
+          .update({ status: "rejected" })
+          .or(`id.eq.${item.id},razorpay_payment_id.eq.${item.utr || item.razorpay_payment_id}`);
+        if (rejErr) throw rejErr;
       }
 
       const updateLocalList = (key) => {

@@ -20,7 +20,7 @@ export default function AcademicCalendar() {
   const [schoolCode, setSchoolCode] = useState(() => {
     if (appSchoolCode) return appSchoolCode;
     try {
-      const saved = localStorage.getItem("erp_session_user") || localStorage.getItem("erp_demo_session");
+      const saved = localStorage.getItem("erp_session_user");
       if (saved) {
         const parsed = JSON.parse(saved);
         return parsed.schoolCode || parsed.institution_code || "CAMPUS-01";

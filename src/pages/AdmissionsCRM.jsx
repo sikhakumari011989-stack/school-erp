@@ -172,8 +172,13 @@ export default function AdmissionsCRM() {
 
     if (supabase) {
       try {
-        await supabase.from("admission_leads").insert([payload]);
-      } catch (err) {}
+        const { error: insErr } = await supabase.from("admission_leads").insert([payload]);
+        if (insErr) throw insErr;
+      } catch (err) {
+        console.error("Admissions lead insert error:", err);
+        showToast(err.message || "Failed to record enquiry in database.", "error");
+        return;
+      }
     }
 
     const normalizedNew = {
@@ -211,12 +216,17 @@ export default function AdmissionsCRM() {
 
     if (supabase) {
       try {
-        await supabase
+        const { error: upErr } = await supabase
           .from("admission_leads")
           .update({ stage: newStatus, updated_at: new Date().toISOString() })
           .eq("id", leadId)
           .eq("school_id", schoolCode);
-      } catch (e) {}
+        if (upErr) throw upErr;
+      } catch (e) {
+        console.error("Admissions lead update error:", e);
+        showToast(e.message || "Failed to update lead status.", "error");
+        return;
+      }
     }
 
     try {

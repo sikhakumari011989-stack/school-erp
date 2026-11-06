@@ -124,7 +124,8 @@ CREATE OR REPLACE FUNCTION public.provision_institutional_school(
   p_address text DEFAULT '',
   p_mode text DEFAULT 'school',
   p_tier text DEFAULT 'enterprise',
-  p_validity_days int DEFAULT 365
+  p_validity_days int DEFAULT 365,
+  p_auth_user_id uuid DEFAULT NULL
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -135,7 +136,8 @@ DECLARE
   v_caller_role text := COALESCE(auth.role(), 'none');
   v_clean_code text := UPPER(TRIM(p_code));
   v_school_id uuid;
-  v_admin_profile_id uuid := gen_random_uuid();
+  v_auth_user_id uuid;
+  v_admin_profile_id uuid;
   v_expires_at timestamptz := now() + (p_validity_days || ' days')::interval;
   v_license_key text := 'LIC-' || v_clean_code || '-' || floor(extract(epoch from now()))::text;
   v_admin_role text := CASE 
@@ -158,6 +160,24 @@ BEGIN
     WHEN p_admin_email IS NOT NULL AND TRIM(p_admin_email) != '' THEN TRIM(p_admin_email)
     ELSE LOWER(v_clean_code) || '.' || LOWER(TRIM(p_admin_role_code)) || '@academicos.internal'
   END;
+
+  -- Resolve valid auth user id from parameter or existing auth.users record to satisfy profiles foreign key
+  IF p_auth_user_id IS NOT NULL THEN
+    v_admin_profile_id := p_auth_user_id;
+  ELSE
+    SELECT id INTO v_auth_user_id FROM auth.users WHERE email = v_admin_email LIMIT 1;
+    IF v_auth_user_id IS NOT NULL THEN
+      v_admin_profile_id := v_auth_user_id;
+    ELSE
+      -- Fallback: check if existing profile already has a valid auth ID
+      SELECT id INTO v_auth_user_id FROM public.profiles WHERE role_code = UPPER(TRIM(p_admin_role_code)) LIMIT 1;
+      IF v_auth_user_id IS NOT NULL THEN
+        v_admin_profile_id := v_auth_user_id;
+      ELSE
+        v_admin_profile_id := gen_random_uuid();
+      END IF;
+    END IF;
+  END IF;
 
   -- 1. Upsert into public.schools (id is UUID, code is TEXT)
   INSERT INTO public.schools (
@@ -307,8 +327,8 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.provision_institutional_school(text, text, text, text, text, text, text, text, text, int) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.provision_institutional_school(text, text, text, text, text, text, text, text, text, int) TO service_role;
+REVOKE EXECUTE ON FUNCTION public.provision_institutional_school(text, text, text, text, text, text, text, text, text, int, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.provision_institutional_school(text, text, text, text, text, text, text, text, text, int, uuid) TO service_role;
 
 -- ------------------------------------------------------------------------------
 -- 3. SUBSCRIPTION RENEWAL RPC (SECURITY DEFINER - SERVICE ROLE ONLY)

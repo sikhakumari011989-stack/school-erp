@@ -85,6 +85,7 @@ export default function PrincipalDashboard() {
     passRatio: "0%",
   });
   const [loadingStats, setLoadingStats] = useState(true);
+  const [todayAttendanceSummary, setTodayAttendanceSummary] = useState({ present: 0, absent: 0, late: 0, total: 0 });
 
   // Financial Analytics & Defaulters State
   const [totalPendingFees, setTotalPendingFees] = useState(0);
@@ -174,7 +175,7 @@ export default function PrincipalDashboard() {
   const fetchPrincipalStats = async () => {
     setLoadingStats(true);
     try {
-      // 1. Directory
+      // 1. Directory & Active Students (Strict live Supabase query + local cache)
       let localDir = [];
       try {
         const raw = localStorage.getItem(`erp_directory_${institutionCode}`);
@@ -185,9 +186,11 @@ export default function PrincipalDashboard() {
       let dbStudents = [];
       if (supabase) {
         try {
-          const { data } = await supabase.from("students").select("id").eq("school_id", institutionCode);
+          const { data } = await supabase.from("students").select("id, roll_number, name").eq("school_id", institutionCode);
           if (data) dbStudents = data;
-        } catch (e) {}
+        } catch (e) {
+          console.warn("Live students query notice:", e);
+        }
       }
 
       const studentSet = new Set();
@@ -196,12 +199,64 @@ export default function PrincipalDashboard() {
         if (id) studentSet.add(id);
       });
       dbStudents.forEach((s) => {
-        if (s.id) studentSet.add(s.id);
+        const id = s.roll_number || s.id;
+        if (id) studentSet.add(id);
       });
 
       const facultyCount = localDir.filter((m) => (m.role || "").toLowerCase() === "teacher" || (m.role || "").toLowerCase() === "faculty").length;
 
-      // 2. Financial ledger
+      // 2. Today's Attendance Summary (Live Postgres aggregation)
+      const todayDate = new Date().toISOString().split("T")[0];
+      const todaySummary = { present: 0, absent: 0, late: 0, total: 0 };
+      if (supabase) {
+        try {
+          const { data: attRows } = await supabase
+            .from("attendance")
+            .select("records")
+            .eq("school_id", institutionCode)
+            .eq("date", todayDate);
+
+          if (attRows && attRows.length > 0) {
+            attRows.forEach((row) => {
+              if (Array.isArray(row.records)) {
+                row.records.forEach((rec) => {
+                  const st = (rec.status || "").toLowerCase();
+                  todaySummary.total += 1;
+                  if (st === "present") todaySummary.present += 1;
+                  else if (st === "absent") todaySummary.absent += 1;
+                  else if (st === "late") todaySummary.late += 1;
+                  else todaySummary.present += 1;
+                });
+              }
+            });
+          }
+        } catch (attErr) {
+          console.warn("Live attendance summary query notice:", attErr);
+        }
+      }
+
+      // If no remote rows yet today, check local today's attendance
+      if (todaySummary.total === 0) {
+        try {
+          const rawTodayAtt = localStorage.getItem(`erp_attendance_${institutionCode}_${todayDate}`);
+          if (rawTodayAtt) {
+            const parsed = JSON.parse(rawTodayAtt);
+            if (Array.isArray(parsed)) {
+              parsed.forEach((rec) => {
+                const st = (rec.status || "").toLowerCase();
+                todaySummary.total += 1;
+                if (st === "present") todaySummary.present += 1;
+                else if (st === "absent") todaySummary.absent += 1;
+                else if (st === "late") todaySummary.late += 1;
+                else todaySummary.present += 1;
+              });
+            }
+          }
+        } catch (e) {}
+      }
+      setTodayAttendanceSummary(todaySummary);
+
+      // 3. Financial ledger (Live Supabase fee_ledger queries strictly by school_id)
       let localLedger = [];
       try {
         const tenantKey = `erp_fee_ledger_${institutionCode}`;
@@ -222,7 +277,9 @@ export default function PrincipalDashboard() {
         try {
           const { data } = await supabase.from("fee_ledger").select("*").eq("school_id", institutionCode);
           if (data) dbLedger = data;
-        } catch (e) {}
+        } catch (e) {
+          console.warn("Live fee_ledger query notice:", e);
+        }
       }
 
       const ledgerMap = new Map();
@@ -1227,13 +1284,12 @@ export default function PrincipalDashboard() {
               {[
                 { id: "overview", label: "Executive Command & Forecast", icon: "📊" },
                 { id: "tasks", label: "Task Delegation Engine", icon: "⚡" },
-                { id: "leaves", label: "Staff Leave Portal", icon: "🏖️" },
                 { id: "assets", label: "Asset & Inventory Tracker", icon: "📦" },
                 { id: "behavior", label: "Student Behavior & Merits", icon: "⚖️" },
                 { id: "grievances", label: "Grievance Ticketing", icon: "📩" },
                 { id: "scheduler", label: "15-Min Meeting Scheduler", icon: "📅" },
                 { id: "alumni", label: "Alumni Directory", icon: "🎓" },
-                { id: "modules", label: "All 12 Executive Modules", icon: "🏛️" },
+                { id: "modules", label: "All Executive Modules", icon: "🏛️" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -1253,9 +1309,6 @@ export default function PrincipalDashboard() {
             {/* TAB 1: EXECUTIVE COMMAND & FORECAST OVERVIEW */}
             {activeTab === "overview" && (
               <div className="space-y-8">
-                {/* 1. STANDOUT EXECUTIVE AI FEATURE: PRINCIPAL'S AI BRIEFING */}
-                <PrincipalAIBriefing schoolCode={institutionCode} onNavigateTab={setActiveTab} />
-
                 {/* STUDENT EARLY WARNING SYSTEM (PROACTIVE RADAR) */}
                 <RiskRadarWidget />
 
@@ -1322,6 +1375,35 @@ export default function PrincipalDashboard() {
                     </div>
                     <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
                       Verified scholar directory node
+                    </span>
+                  </div>
+
+                  {/* BENTO CARD: TODAY'S ATTENDANCE SUMMARY (LIVE POSTGRES DATA) */}
+                  <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-emerald-400 dark:hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-2xl">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Today's Attendance</p>
+                        <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+                          {todayAttendanceSummary.total > 0 ? `${Math.round((todayAttendanceSummary.present / todayAttendanceSummary.total) * 100)}% Present` : "Live Register"}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{todayAttendanceSummary.present}</span>
+                        <span className="text-xs text-slate-500 font-medium">Present</span>
+                        <span className="text-slate-300 dark:text-slate-700">|</span>
+                        <span className="text-xl font-bold text-rose-500 dark:text-rose-400">{todayAttendanceSummary.absent}</span>
+                        <span className="text-xs text-slate-500 font-medium">Absent</span>
+                        {todayAttendanceSummary.late > 0 && (
+                          <>
+                            <span className="text-slate-300 dark:text-slate-700">|</span>
+                            <span className="text-xl font-bold text-amber-500">{todayAttendanceSummary.late}</span>
+                            <span className="text-xs text-slate-500 font-medium">Late</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-3 block border-t border-slate-200 dark:border-slate-800/80 pt-2">
+                      {todayAttendanceSummary.total} total marked today
                     </span>
                   </div>
 

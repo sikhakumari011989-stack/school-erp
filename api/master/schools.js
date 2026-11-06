@@ -109,6 +109,7 @@ export default async function handler(req, res) {
         adminRoleCode = "HOD-01",
         phone = "",
         email = "",
+        password = "password123",
         address = "",
         institutionMode = "school",
         tier = "enterprise",
@@ -123,45 +124,104 @@ export default async function handler(req, res) {
       }
 
       const cleanCode = institutionCode.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
+      const cleanPass = (password || "password123").trim();
+      const strictAdminRole = (adminRoleCode || "HOD-01").toUpperCase().startsWith("PRIN") ? "principal" : "trustee";
+      const standardEmail = (email || "").trim() || `${cleanCode.toLowerCase()}.${(adminRoleCode || "HOD-01").toLowerCase().replace(/[^a-z0-9]/g, "")}@academicos.internal`;
+
+      let authUserId = null;
+
+      // 1. Ensure administrator exists in auth.users via Supabase Admin Auth
+      try {
+        const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
+          email: standardEmail,
+          password: cleanPass,
+          email_confirm: true,
+          user_metadata: {
+            full_name: (adminName || "Trustee Administrator").trim(),
+            role: strictAdminRole,
+            role_code: (adminRoleCode || "HOD-01").trim().toUpperCase(),
+            school_code: cleanCode,
+          },
+          app_metadata: {
+            role: strictAdminRole.toUpperCase() === "PRINCIPAL" ? "PRIN" : "HOD",
+            school_code: cleanCode,
+          },
+        });
+
+        if (authData?.user?.id) {
+          authUserId = authData.user.id;
+        } else if (authErr) {
+          console.warn("[MasterAPI] Admin createUser notice:", authErr.message);
+          // If user already exists in auth.users, lookup their auth ID to link profiles.id
+          const { data: listData } = await supabase.auth.admin.listUsers();
+          const existing = listData?.users?.find(
+            (u) => u.email?.toLowerCase() === standardEmail.toLowerCase()
+          );
+          if (existing?.id) {
+            authUserId = existing.id;
+            // Update password & metadata
+            await supabase.auth.admin.updateUserById(authUserId, {
+              password: cleanPass,
+              user_metadata: {
+                full_name: (adminName || "Trustee Administrator").trim(),
+                role: strictAdminRole,
+                role_code: (adminRoleCode || "HOD-01").trim().toUpperCase(),
+                school_code: cleanCode,
+              },
+              app_metadata: {
+                role: strictAdminRole.toUpperCase() === "PRINCIPAL" ? "PRIN" : "HOD",
+                school_code: cleanCode,
+              },
+            });
+          }
+        }
+      } catch (authException) {
+        console.warn("[MasterAPI] Supabase Admin Auth exception:", authException.message);
+      }
 
       try {
-        // Attempt provision via RPC
+        // 2. Attempt provision via RPC (with optional p_auth_user_id)
+        const rpcParams = {
+          p_name: institutionName.trim(),
+          p_code: cleanCode,
+          p_admin_name: (adminName || "").trim(),
+          p_admin_role_code: adminRoleCode,
+          p_admin_email: standardEmail,
+          p_admin_phone: (phone || "").trim(),
+          p_address: (address || "").trim(),
+          p_mode: institutionMode,
+          p_tier: tier,
+          p_validity_days: parseInt(validityDays, 10) || 365,
+        };
+        if (authUserId) {
+          rpcParams.p_auth_user_id = authUserId;
+        }
+
         const { data: rpcRes, error: rpcErr } = await supabase.rpc(
           "provision_institutional_school",
-          {
-            p_name: institutionName.trim(),
-            p_code: cleanCode,
-            p_admin_name: (adminName || "").trim(),
-            p_admin_role_code: adminRoleCode,
-            p_admin_email: (email || "").trim(),
-            p_admin_phone: (phone || "").trim(),
-            p_address: (address || "").trim(),
-            p_mode: institutionMode,
-            p_tier: tier,
-            p_validity_days: parseInt(validityDays, 10) || 365,
-          }
+          rpcParams
         );
 
-        const strictAdminRole = (adminRoleCode || "HOD-01").toUpperCase().startsWith("PRIN") ? "principal" : "trustee";
-        const standardEmail = (email || "").trim() || `${cleanCode.toLowerCase()}.${(adminRoleCode || "HOD-01").toLowerCase().replace(/[^a-z0-9]/g, "")}@academicos.internal`;
-
         const targetSchoolId = rpcRes?.school_id;
-        // Guarantee administrator exists in public.profiles for instant login capability
+        // Guarantee administrator exists in public.profiles with linked auth.users ID
         if (targetSchoolId) {
           try {
+            const profilePayload = {
+              school_id: targetSchoolId,
+              full_name: (adminName || "Trustee Administrator").trim(),
+              role: strictAdminRole,
+              role_code: (adminRoleCode || "HOD-01").trim().toUpperCase(),
+              email: standardEmail,
+              phone: (phone || "").trim(),
+              is_active: true,
+              status: "active",
+            };
+            if (authUserId) {
+              profilePayload.id = authUserId;
+            }
+
             await supabase.from("profiles").upsert(
-              [
-                {
-                  school_id: targetSchoolId,
-                  full_name: (adminName || "Trustee Administrator").trim(),
-                  role: strictAdminRole,
-                  role_code: (adminRoleCode || "HOD-01").trim().toUpperCase(),
-                  email: standardEmail,
-                  phone: (phone || "").trim(),
-                  is_active: true,
-                  status: "active",
-                },
-              ],
+              [profilePayload],
               { onConflict: "school_id,role_code" }
             );
           } catch (profErr) {
@@ -173,13 +233,21 @@ export default async function handler(req, res) {
           return res.status(201).json({
             success: true,
             message: `School ${cleanCode} provisioned successfully in Supabase PostgreSQL.`,
-            school: rpcRes,
+            school: { ...rpcRes, auth_user_id: authUserId },
           });
         }
 
-        // Fallback: Direct insert into schools table
+        // Fallback: Direct insert into schools and profiles tables
         const expiresAt = new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString();
-        const { data: inserted, error: insertErr } = await supabase
+        const addressPayload = JSON.stringify({
+          physicalAddress: (address || "").trim(),
+          institutionMode,
+          masterAdminName: (adminName || "").trim(),
+          masterAdminId: adminRoleCode,
+        });
+
+        let inserted = null;
+        const { data: primaryInserted, error: insertErr } = await supabase
           .from("schools")
           .upsert(
             [
@@ -187,12 +255,11 @@ export default async function handler(req, res) {
                 code: cleanCode,
                 name: institutionName.trim(),
                 phone: (phone || "").trim(),
-                address: (address || "").trim(),
+                address: addressPayload,
                 status: "active",
                 subscription_status: "active",
                 subscription_tier: tier,
                 subscription_expires_at: expiresAt,
-                institution_mode: institutionMode,
               },
             ],
             { onConflict: "code" }
@@ -201,13 +268,59 @@ export default async function handler(req, res) {
           .single();
 
         if (insertErr) {
-          throw insertErr;
+          // Retry with core verified columns if optional columns do not exist
+          const { data: retryInserted, error: retryErr } = await supabase
+            .from("schools")
+            .upsert(
+              [
+                {
+                  code: cleanCode,
+                  name: institutionName.trim(),
+                  address: addressPayload,
+                },
+              ],
+              { onConflict: "code" }
+            )
+            .select()
+            .single();
+
+          if (retryErr) {
+            throw retryErr;
+          }
+          inserted = retryInserted;
+        } else {
+          inserted = primaryInserted;
+        }
+
+        // Upsert profile in fallback mode with valid auth.users(id)
+        if (inserted?.id) {
+          const fallbackProfile = {
+            school_id: inserted.id,
+            full_name: (adminName || "Trustee Administrator").trim(),
+            role: strictAdminRole,
+            role_code: (adminRoleCode || "HOD-01").trim().toUpperCase(),
+            email: standardEmail,
+            phone: (phone || "").trim(),
+            is_active: true,
+            status: "active",
+          };
+          if (authUserId) {
+            fallbackProfile.id = authUserId;
+          }
+
+          const { error: fallbackProfErr } = await supabase
+            .from("profiles")
+            .upsert([fallbackProfile], { onConflict: "school_id,role_code" });
+
+          if (fallbackProfErr) {
+            console.warn("[MasterAPI] Fallback profile upsert notice:", fallbackProfErr.message);
+          }
         }
 
         return res.status(201).json({
           success: true,
           message: `School ${cleanCode} created successfully in Supabase PostgreSQL.`,
-          school: inserted,
+          school: { ...inserted, auth_user_id: authUserId },
         });
       } catch (err) {
         console.error("[MasterAPI] Provision error:", err);

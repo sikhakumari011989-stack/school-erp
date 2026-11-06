@@ -16,7 +16,6 @@ export default function NoticeBanner({ role = "All", schoolId, userClass }) {
         try {
           const savedUser = JSON.parse(
             localStorage.getItem("erp_session_user") ||
-            localStorage.getItem("erp_demo_session") ||
             "{}"
           );
           resolvedClass = (savedUser.class_name || savedUser.class || savedUser.batch || "").toLowerCase().trim();

@@ -135,8 +135,7 @@ export default function SystemDiagnostic({ isOpen = true, onClose = null, standa
     let t3Details;
     try {
       const cachedSession =
-        localStorage.getItem("erp_session_user") ||
-        localStorage.getItem("erp_demo_session");
+        localStorage.getItem("erp_session_user");
       // Synchronous parse test
       if (cachedSession) JSON.parse(cachedSession);
       t3Passed = true;

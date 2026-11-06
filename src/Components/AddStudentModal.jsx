@@ -39,14 +39,14 @@ export default function AddStudentModal({ isOpen, onClose, onRefresh }) {
       if (error) throw error;
 
       showToast("Student added successfully!", "success");
+      setFormData({ name: "", roll_number: "", class_id: "" });
       onRefresh(); // Updates the dashboard numbers
       onClose();   // Closes the popup
     } catch (error) {
       console.error("Database Error:", error);
-      showToast("Failed to add student. Please verify database connectivity.", "error");
+      showToast(error.message || "Failed to add student. Please verify database connectivity.", "error");
     } finally {
       setLoading(false);
-      setFormData({ name: "", roll_number: "", class_id: "" });
     }
   };
 

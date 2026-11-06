@@ -53,6 +53,13 @@ export default function StaffMessenger() {
 
   // 1. STRICT SECURITY GATE FOR STUDENTS
   const isStudent = userRole === "student" || userCode.startsWith("STU-");
+  const isNTS =
+    userRole === "staff" ||
+    userRole === "nts" ||
+    userRole === "non_teaching" ||
+    userCode.startsWith("NTS-") ||
+    userCode.startsWith("NON-") ||
+    userCode.startsWith("STF-");
 
   // State
   const [contacts, setContacts] = useState([]);
@@ -210,18 +217,21 @@ export default function StaffMessenger() {
     );
   }, [messages, userCode, activeContactId]);
 
-  // Send Message
-  const handleSendMessage = (textToSend) => {
+  // Send Message (Supports direct targeted delivery for NTS workflows)
+  const handleSendMessage = (textToSend, targetRecipientId) => {
     const text = (textToSend || inputText).trim();
-    if (!text || !activeContactId) return;
+    const recipient = targetRecipientId || activeContactId;
+    if (!text || !recipient) return;
+
+    const targetContact = contacts.find((c) => (c.role_code || c.id) === recipient) || activeContact;
 
     const newMsg = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       senderId: userCode,
       senderName: userName,
       senderRole: userRole,
-      recipientId: activeContactId,
-      recipientName: activeContact?.name || "Staff Member",
+      recipientId: recipient,
+      recipientName: targetContact?.name || "Staff Member",
       text,
       timestamp: new Date().toISOString(),
       read: false,
@@ -237,6 +247,42 @@ export default function StaffMessenger() {
     } catch (e) {
       console.error("Storage error:", e);
     }
+  };
+
+  // NTS Workflow: Dedicated reporting to Principal or HOD
+  const findExecutiveContact = () => {
+    return contacts.find((c) => {
+      const code = (c.role_code || c.roll_number || c.id || "").toUpperCase();
+      const r = (c.role || "").toLowerCase();
+      return code.startsWith("PRIN") || code.startsWith("HOD") || code.startsWith("TR") || r === "principal" || r === "trustee";
+    });
+  };
+
+  const handleNtsQuickReport = (reportType) => {
+    const exec = findExecutiveContact() || contacts[0];
+    if (!exec) {
+      showToast("No administrative contact found in staff roster.", "error");
+      return;
+    }
+    const execId = exec.role_code || exec.id;
+    setActiveContactId(execId);
+    setMobileShowChat(true);
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const dateStr = now.toISOString().split("T")[0];
+
+    let reportMsg = "";
+    if (reportType === "duty_checkin") {
+      reportMsg = `📋 [NTS DAILY ATTENDANCE]: Logged on-duty at ${timeStr} (${dateStr}). Routine campus operations and facility management underway.`;
+    } else if (reportType === "leave_request") {
+      reportMsg = `🏖️ [NTS LEAVE NOTICE]: Requesting official leave of absence for ${dateStr}. Assigned operational tasks have been coordinated.`;
+    } else if (reportType === "maintenance") {
+      reportMsg = `🛠️ [NTS FACILITY REPORT]: Daily campus inspection conducted at ${timeStr}. All security, classroom, and utility infrastructure inspected.`;
+    }
+
+    handleSendMessage(reportMsg, execId);
+    showToast(`Dispatched ${reportType.replace(/_/g, " ")} report to ${exec.name || execId}!`, "success");
   };
 
   // Switch Active Contact & Mark Messages as Read
@@ -324,7 +370,7 @@ export default function StaffMessenger() {
               </span>
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">
-              Secure 1-to-1 direct messaging exclusively for HODs, Faculty, and Accounts personnel.
+              Secure 1-to-1 direct messaging exclusively for HODs, Principals, Faculty, Accounts, and Operations Staff.
             </p>
           </div>
         </div>
@@ -336,6 +382,51 @@ export default function StaffMessenger() {
           </div>
         </div>
       </div>
+
+      {/* NTS OPERATIONS WORKFLOW BAR */}
+      {isNTS && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-amber-600/10 to-orange-500/10 border border-amber-500/30 rounded-2xl p-4 shadow-xl backdrop-blur-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-amber-400 font-bold text-sm">🛠️ NTS Operations Workflow</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono font-bold">
+                  Direct Principal / HOD Channel
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Instant daily duty check-in, maintenance logs, and leave requests routed to executive leadership.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => handleNtsQuickReport("duty_checkin")}
+                className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>📋</span>
+                <span>Log Duty Check-in</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleNtsQuickReport("leave_request")}
+                className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>🏖️</span>
+                <span>Submit Leave Notice</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleNtsQuickReport("maintenance")}
+                className="px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>🛠️</span>
+                <span>Maintenance Report</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Messenger Layout: Two Column on Desktop, Toggle on Mobile */}
       <div className="bg-slate-900/80 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[620px]">

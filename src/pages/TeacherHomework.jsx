@@ -203,13 +203,15 @@ export default function TeacherHomework() {
         due_date: formData.due_date,
       };
 
-      try {
-        await supabase.from("homework").insert([payload]);
-      } catch (dbErr) {
-        console.warn("DB homework insert notice:", dbErr);
+      if (supabase) {
+        const { error: hwErr } = await supabase.from("homework").insert([payload]);
+        if (hwErr) {
+          console.error("DB homework insert error:", hwErr);
+          throw hwErr;
+        }
       }
 
-      // Persist to tenant local storage
+      // Persist to tenant local storage cache
       const local = JSON.parse(localStorage.getItem(`erp_homework_${activeSchool}`) || "[]");
       const newLocalHw = {
         id: `hw_${Date.now()}`,
@@ -234,8 +236,7 @@ export default function TeacherHomework() {
       fetchHomework();
     } catch (error) {
       console.error("Database error assigning homework:", error);
-      showToast("Notice: Saved to local offline homework ledger.", "info");
-      fetchHomework();
+      showToast(error.message || "Failed to publish homework assignment to database.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -245,20 +246,25 @@ export default function TeacherHomework() {
     const activeSchool = user?.school_id || user?.institution_code || "CAMPUS-01";
     try {
       if (supabase) {
-        await supabase.from("homework").delete().eq("id", id);
+        const { error: delErr } = await supabase.from("homework").delete().eq("id", id);
+        if (delErr) {
+          console.error("DB homework delete error:", delErr);
+          throw delErr;
+        }
       }
+
+      try {
+        const local = JSON.parse(localStorage.getItem(`erp_homework_${activeSchool}`) || "[]");
+        const updated = local.filter((hw) => hw.id !== id);
+        localStorage.setItem(`erp_homework_${activeSchool}`, JSON.stringify(updated));
+      } catch (e) {}
+
+      setHomeworkList((prev) => prev.filter((hw) => hw.id !== id));
+      showToast("Assignment removed successfully.", "info");
     } catch (err) {
-      console.warn("DB homework delete notice:", err);
+      console.error("Error deleting homework:", err);
+      showToast(err.message || "Failed to delete homework.", "error");
     }
-
-    try {
-      const local = JSON.parse(localStorage.getItem(`erp_homework_${activeSchool}`) || "[]");
-      const updated = local.filter((hw) => hw.id !== id);
-      localStorage.setItem(`erp_homework_${activeSchool}`, JSON.stringify(updated));
-    } catch (e) {}
-
-    setHomeworkList((prev) => prev.filter((hw) => hw.id !== id));
-    showToast("Assignment removed.", "info");
   };
 
   // Helper to map class ID back to readable name

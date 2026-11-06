@@ -104,6 +104,7 @@ export const AppProvider = ({ children }) => {
    */
   function normalizeRole(role, roleCode) {
     const code = String(roleCode || "").toUpperCase();
+    if (code === "MASTER_OWNER" || role === "MASTER_OWNER") return "MASTER_OWNER";
     if (code.startsWith("PRIN")) return "PRIN";
     if (code.startsWith("HOD") || code.startsWith("TR")) return "HOD";
     if (code.startsWith("ACC")) return "ACC";
@@ -112,6 +113,7 @@ export const AppProvider = ({ children }) => {
     if (code.startsWith("ADM") || code.startsWith("SUPER")) return "PRIN";
 
     const r = String(role || "").toUpperCase();
+    if (r === "MASTER_OWNER") return "MASTER_OWNER";
     if (r === "PRIN" || r === "PRINCIPAL" || r === "ADMIN" || r === "SUPER_ADMIN" || r === "SUPERADMIN") return "PRIN";
     if (r === "HOD" || r === "TRUSTEE") return "HOD";
     if (r === "ACC" || r === "ACCOUNTANT") return "ACC";
@@ -194,9 +196,9 @@ export const AppProvider = ({ children }) => {
       // Authenticated tenant identity MUST strictly derive from server app_metadata or verified profiles record
       // NEVER allow client URL params (?tenant=...) or localStorage to alter authenticated tenant
       const verifiedTenant =
-        appMeta.school_id ||
-        profileData?.schools?.code ||
-        profileData?.school_id;
+        canonicalRole === "MASTER_OWNER"
+          ? (appMeta.school_id || profileData?.schools?.code || profileData?.school_id || "MASTER")
+          : (appMeta.school_id || profileData?.schools?.code || profileData?.school_id);
 
       if (!verifiedTenant) {
         console.warn("[AuthSecurity] Authenticated user has no assigned institution. Failing closed.");
@@ -272,7 +274,6 @@ export const AppProvider = ({ children }) => {
             setUser(null);
             try {
               localStorage.removeItem("erp_session_user");
-              localStorage.removeItem("erp_demo_session");
             } catch {}
             setLoading(false);
             return;
@@ -291,7 +292,6 @@ export const AppProvider = ({ children }) => {
     setUser(userData);
     try {
       localStorage.setItem("erp_session_user", JSON.stringify(userData));
-      localStorage.setItem("erp_demo_session", JSON.stringify(userData));
       if (userData?.institution_code) {
         loadTenantDetails(userData.institution_code);
       }
