@@ -70,6 +70,7 @@ const PUBLIC_ROUTES = [
   "/login",
   "/portal",
   "/system-check",
+  "/master-setup",
   "/terms",
   "/privacy",
   "/pricing-policy",
@@ -217,14 +218,7 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/portal" element={<Login isDirectPortal={true} />} />
               <Route path="/system-check" element={<SystemDiagnosticPage />} />
-              <Route
-                path="/master-setup"
-                element={
-                  <ProtectedRoute allowedRoles={["MASTER_OWNER"]}>
-                    <MasterSchoolSetup />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/master-setup" element={<MasterSchoolSetup />} />
               <Route path="/register" element={<Navigate to="/login" replace />} />
               <Route path="/join" element={<Navigate to="/login" replace />} />
               <Route path="/terms" element={<TermsOfService />} />
@@ -325,6 +319,14 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            {/* Direct Dashboard Aliases for Compatibility */}
+            <Route path="/principal-dashboard" element={<Navigate to="/principal/dashboard" replace />} />
+            <Route path="/trustee-dashboard" element={<Navigate to="/trustee/dashboard" replace />} />
+            <Route path="/accountant-dashboard" element={<Navigate to="/accountant/dashboard" replace />} />
+            <Route path="/teacher-dashboard" element={<Navigate to="/teacher/dashboard" replace />} />
+            <Route path="/student-dashboard" element={<Navigate to="/student/dashboard" replace />} />
+            <Route path="/staff-dashboard" element={<Navigate to="/staff/dashboard" replace />} />
+            <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />
 
             {/* ACCOUNTANT FINANCIAL SUITE */}
             <Route

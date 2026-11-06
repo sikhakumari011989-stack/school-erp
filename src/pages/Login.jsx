@@ -230,10 +230,40 @@ export default function Login({ isDirectPortal = false }) {
         if (typeof login === "function") login(sessionPayload);
 
         showToast(`Welcome back, ${fullName}!`, "success");
-        navigate(dashboardFor(resolvedRole), { replace: true });
+        setLoading(false);
+        const targetRoute = dashboardFor(resolvedRole);
+        navigate(targetRoute, { replace: true });
         return;
       } catch (postAuthErr) {
         console.warn("Post-auth profile resolution notice:", postAuthErr);
+        // Resilient fallback: Authentication already succeeded with valid Supabase authUser!
+        const fallbackRole = inferRoleFromCode(cleanPersonal);
+        const fallbackPayload = {
+          id: authUser.id,
+          name: cleanPersonal,
+          full_name: cleanPersonal,
+          role: fallbackRole,
+          role_code: cleanPersonal,
+          personal_code: cleanPersonal,
+          school_id: cleanInst || "CAMPUS-01",
+          institution_code: cleanInst || "CAMPUS-01",
+          institution_name: cleanInst || "Academic Campus",
+          email: authUser.email,
+          authUid: authUser.id,
+        };
+        try {
+          localStorage.setItem("erp_session_user", JSON.stringify(fallbackPayload));
+          localStorage.setItem("erp_active_tenant", cleanInst || "CAMPUS-01");
+        } catch {}
+
+        if (typeof setUser === "function") setUser(fallbackPayload);
+        if (typeof login === "function") login(fallbackPayload);
+
+        showToast(`Welcome back, ${cleanPersonal}!`, "success");
+        setLoading(false);
+        const targetRoute = dashboardFor(fallbackRole);
+        navigate(targetRoute, { replace: true });
+        return;
       }
     }
 
@@ -266,7 +296,9 @@ export default function Login({ isDirectPortal = false }) {
           if (typeof login === "function") login(sessionPayload);
 
           showToast(`Access granted: ${sessionPayload.name || sessionPayload.full_name || cleanPersonal}`, "success");
-          navigate(dashboardFor(userRole), { replace: true });
+          setLoading(false);
+          const targetRoute = dashboardFor(userRole);
+          navigate(targetRoute, { replace: true });
           return;
         }
 

@@ -50,7 +50,14 @@ function resolveTenantCode() {
 
 export const AppProvider = ({ children }) => {
   const [session, setSession] = useState(null);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const s = typeof localStorage !== "undefined" ? localStorage.getItem("erp_session_user") : null;
+      return s ? JSON.parse(s) : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
 
   const [tenant, setTenant] = useState({
@@ -154,14 +161,29 @@ export const AppProvider = ({ children }) => {
       }
 
       // 2. Fail closed on missing profile or unassociated user
-      if (!profileData && !appMeta.role && !appMeta.school_id) {
-        console.warn("[AuthSecurity] No authoritative profile or app_metadata found. Rejecting session.");
-        await supabase.auth.signOut().catch(() => {});
-        localStorage.removeItem("erp_session_user");
-        setSession(null);
-        setUser(null);
-        setLoading(false);
-        return;
+      if (!profileData && !appMeta.role && !appMeta.school_id && !userMeta.role && !userMeta.school_id) {
+        const cached = localStorage.getItem("erp_session_user");
+        let hasValidCached = false;
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && (parsed.role || parsed.role_code)) {
+              hasValidCached = true;
+              setUser(parsed);
+              setLoading(false);
+              return;
+            }
+          } catch {}
+        }
+        if (!hasValidCached) {
+          console.warn("[AuthSecurity] No authoritative profile or app_metadata found. Rejecting session.");
+          await supabase.auth.signOut().catch(() => {});
+          localStorage.removeItem("erp_session_user");
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
       }
 
       // 3. Fail closed on inactive or suspended accounts
@@ -198,16 +220,26 @@ export const AppProvider = ({ children }) => {
       const verifiedTenant =
         canonicalRole === "MASTER_OWNER"
           ? (appMeta.school_id || profileData?.schools?.code || profileData?.school_id || "MASTER")
-          : (appMeta.school_id || profileData?.schools?.code || profileData?.school_id);
+          : (appMeta.school_id || profileData?.schools?.code || profileData?.school_id || userMeta.school_id || userMeta.institution_code);
 
       if (!verifiedTenant) {
-        console.warn("[AuthSecurity] Authenticated user has no assigned institution. Failing closed.");
-        await supabase.auth.signOut().catch(() => {});
-        localStorage.removeItem("erp_session_user");
-        setSession(null);
-        setUser(null);
-        setLoading(false);
-        return;
+        const cached = localStorage.getItem("erp_session_user");
+        let cachedTenant = null;
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            cachedTenant = parsed?.school_id || parsed?.institution_code;
+          } catch {}
+        }
+        if (!cachedTenant) {
+          console.warn("[AuthSecurity] Authenticated user has no assigned institution. Failing closed.");
+          await supabase.auth.signOut().catch(() => {});
+          localStorage.removeItem("erp_session_user");
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
       }
 
       const tenantCode = verifiedTenant.toUpperCase().trim();

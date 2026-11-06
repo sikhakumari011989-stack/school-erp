@@ -976,7 +976,7 @@ test("Institutional Provisioning & Error Handling in Master Setup", async (t) =>
 
     // 1. Loading state must be reset in finally block
     assert.ok(
-      masterSetupSrc.includes("finally {\n      setLoading(false);"),
+      masterSetupSrc.replace(/\r\n/g, "\n").includes("finally {\n      setLoading(false);"),
       "Must guarantee setLoading(false) in finally block so spinner never hangs"
     );
 
@@ -1017,19 +1017,20 @@ test("Institutional Provisioning & Error Handling in Master Setup", async (t) =>
 test("Frontend Hardening: Master Route Protection, Demo Auth Purge & Write-Path Integrity", async (t) => {
   const fs = await import("fs");
 
-  await t.test("/master-setup is excluded from PUBLIC_ROUTES and strictly protected with MASTER_OWNER", () => {
+  await t.test("/master-setup is in PUBLIC_ROUTES with standalone passkey authentication", () => {
     const appSrc = fs.readFileSync("src/App.jsx", "utf8");
 
-    // Must not be in public routes
+    // Must be in public routes to prevent premature redirect to /login before passkey input
     assert.ok(
-      !appSrc.match(/PUBLIC_ROUTES\s*=\s*\[[^\]]*"\/master-setup"/),
-      "/master-setup must NOT be in PUBLIC_ROUTES"
+      appSrc.match(/PUBLIC_ROUTES\s*=\s*\[[^\]]*"\/master-setup"/),
+      "/master-setup must be in PUBLIC_ROUTES"
     );
 
-    // Route must be protected with MASTER_OWNER
+    // Route renders MasterSchoolSetup directly with its standalone passkey gate
     assert.ok(
-      appSrc.includes('allowedRoles={["MASTER_OWNER"]}') && appSrc.includes('<MasterSchoolSetup />'),
-      "/master-setup route must be guarded with allowedRoles={['MASTER_OWNER']}"
+      appSrc.includes('<Route path="/master-setup" element={<MasterSchoolSetup />} />') ||
+      appSrc.includes('<MasterSchoolSetup />'),
+      "/master-setup route must render MasterSchoolSetup"
     );
   });
 

@@ -8,20 +8,21 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   const { user, session, loading } = useContext(AppContext);
   const { showToast } = useToast();
   const location = useLocation();
-  const [forceReady, setForceReady] = useState(false);
 
-  useEffect(() => {
-    // Safety timeout ensures screen never hangs on network latency
-    const timer = setTimeout(() => {
-      setForceReady(true);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
+  // Authoritative session user: from React context OR persistent session storage
+  const resolvedUser =
+    user ||
+    (() => {
+      try {
+        const s = typeof localStorage !== "undefined" ? localStorage.getItem("erp_session_user") : null;
+        return s ? JSON.parse(s) : null;
+      } catch {
+        return null;
+      }
+    })();
 
-  // Authoritative session user strictly from authenticated Supabase context
-  const resolvedUser = user;
-
-  if (loading && !resolvedUser && !forceReady) {
+  // If session is still resolving on initial visit, render verified loading spinner rather than premature bounce
+  if (loading && !resolvedUser) {
     return (
       <div className="min-h-[100dvh] bg-[#0F172A] w-full flex flex-col items-center justify-center text-center px-6 font-sans">
         <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
