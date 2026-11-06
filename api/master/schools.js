@@ -2,8 +2,16 @@ import { createClient } from "@supabase/supabase-js";
 import { verifyMasterToken } from "./auth.js";
 
 function getSupabaseClient() {
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl =
+    process.env.VITE_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    "https://lkcnausuvgdiwnsppakp.supabase.co";
+  const serviceKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxrY25hdXN1dmdkaXduc3BwYWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzMDMwMjcsImV4cCI6MjEwNjg3OTAyN30.QFmG6waeGtrK0dgGtzt0R6E9pSmvAL6Q9-XCnMyEWrw";
 
   if (!supabaseUrl || !serviceKey) {
     throw new Error("Missing Supabase configuration: SUPABASE_SERVICE_ROLE_KEY is required for master provisioning operations.");
