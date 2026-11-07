@@ -64,7 +64,8 @@ export function formatDisplayDate(dateStr) {
  * Reads calendar records for a specific school node
  */
 export function getCalendarEvents(schoolCode = "CAMPUS-01") {
-  const key = `${STORAGE_PREFIX}${schoolCode.toUpperCase()}`;
+  const cleanSchool = String(schoolCode || "CAMPUS-01").toUpperCase();
+  const key = `${STORAGE_PREFIX}${cleanSchool}`;
   try {
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : [];
@@ -78,7 +79,7 @@ export function getCalendarEvents(schoolCode = "CAMPUS-01") {
  * Saves calendar records and broadcasts an update event
  */
 export function saveCalendarEvents(schoolCode = "CAMPUS-01", events = []) {
-  const cleanSchool = schoolCode.toUpperCase();
+  const cleanSchool = String(schoolCode || "CAMPUS-01").toUpperCase();
   const key = `${STORAGE_PREFIX}${cleanSchool}`;
   try {
     localStorage.setItem(key, JSON.stringify(events));
@@ -156,7 +157,7 @@ export function parseSparseCalendarCsv(csvText) {
  * If today is not in calendar, automatically returns "Regular Academic Day".
  */
 export function getTodayAndUpcomingPulse(schoolCode = "CAMPUS-01") {
-  const cleanSchool = schoolCode.toUpperCase();
+  const cleanSchool = String(schoolCode || "CAMPUS-01").toUpperCase();
   const events = getCalendarEvents(cleanSchool);
 
   const now = new Date();

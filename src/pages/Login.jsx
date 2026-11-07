@@ -102,33 +102,9 @@ export default function Login({ isDirectPortal = false }) {
 
     setLoading(true);
 
-    // 0. Subscription & Master Kill-Switch Check
-    if (cleanInst) {
-      try {
-        const sub = await checkSchoolSubscriptionStatus(cleanInst);
-        if (sub && sub.isBlocked) {
-          setLoading(false);
-          setSuspendedNotice({
-            schoolCode: cleanInst,
-            isSuspended: sub.isSuspended,
-            isExpired: sub.isExpired,
-            expiryDate: sub.expiryDate,
-          });
-          showToast(
-            sub.isSuspended
-              ? `Campus node ${cleanInst} is SUSPENDED by platform administrator.`
-              : `Campus node ${cleanInst} license expired on ${sub.expiryDate}.`,
-            "error"
-          );
-          return;
-        }
-      } catch (subErr) {
-        console.warn("Subscription check notice:", subErr);
-      }
-    }
-
     const standardizedEmail = buildStandardErpEmail(cleanInst, cleanPersonal);
     const emailAlt = `${cleanInst.toLowerCase().replace(/[^a-z0-9]/g, "")}.${cleanPersonal.toLowerCase().replace(/[^a-z0-9]/g, "")}@gmail.com`;
+    const academicosEmail = `${cleanInst.toLowerCase().replace(/[^a-z0-9]/g, "")}.${cleanPersonal.toLowerCase().replace(/[^a-z0-9]/g, "")}@academicos.internal`;
 
     let authUser = null;
     let explicitAuthError = null;
@@ -137,7 +113,7 @@ export default function Login({ isDirectPortal = false }) {
     if (supabase) {
       const candidates = isEmail
         ? [rawPersonal.toLowerCase()]
-        : [standardizedEmail, emailAlt];
+        : [standardizedEmail, academicosEmail, emailAlt];
 
       for (const candidateEmail of candidates) {
         try {
@@ -203,7 +179,7 @@ export default function Login({ isDirectPortal = false }) {
         }
 
         const rawRole = profile?.role || appMeta.role || userMeta.role || inferRoleFromCode(cleanPersonal);
-        const resolvedRole = inferRoleFromCode(rawRole);
+        const resolvedRole = normalizeRole(rawRole, cleanPersonal);
         const fullName = profile?.full_name || userMeta.full_name || userMeta.name || cleanPersonal;
 
         const sessionPayload = {
@@ -237,7 +213,7 @@ export default function Login({ isDirectPortal = false }) {
       } catch (postAuthErr) {
         console.warn("Post-auth profile resolution notice:", postAuthErr);
         // Resilient fallback: Authentication already succeeded with valid Supabase authUser!
-        const fallbackRole = inferRoleFromCode(cleanPersonal);
+        const fallbackRole = normalizeRole(cleanPersonal);
         const fallbackPayload = {
           id: authUser.id,
           name: cleanPersonal,
@@ -278,7 +254,7 @@ export default function Login({ isDirectPortal = false }) {
 
         if (cloudResult && cloudResult.success && cloudResult.user) {
           const userObj = cloudResult.user;
-          const userRole = inferRoleFromCode(userObj.role || cleanPersonal);
+          const userRole = normalizeRole(userObj.role || cleanPersonal, cleanPersonal);
           const sessionPayload = {
             ...userObj,
             role: userRole,

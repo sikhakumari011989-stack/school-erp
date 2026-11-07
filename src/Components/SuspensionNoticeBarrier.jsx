@@ -13,7 +13,7 @@ export default function SuspensionNoticeBarrier({ tenant, subscription, onLogout
   const isExpired = subscription?.isExpired;
 
   return (
-    <div className="fixed inset-0 z-50 w-full min-h-[100dvh] bg-[#0A0E1A] text-slate-100 flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] w-full min-h-[100dvh] bg-[#0A0E1A]/95 backdrop-blur-xl text-slate-100 flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans overflow-y-auto">
       {/* Ambient background glows */}
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-rose-600/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-amber-600/10 rounded-full blur-[140px] pointer-events-none" />
@@ -32,13 +32,12 @@ export default function SuspensionNoticeBarrier({ tenant, subscription, onLogout
           </div>
 
           {/* Primary Notice */}
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-3">
-            Institutional Access Suspended
+          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight mb-3">
+            Access Suspended: this school's subscription is inactive. Contact the platform administrator to restore access.
           </h1>
 
-          <p className="text-slate-200 text-sm sm:text-base leading-relaxed mb-6">
-            The subscription for this campus has expired or is suspended. All institutional data is safely preserved in Supabase PostgreSQL with zero data loss.
-            Please contact your administrator or complete renewal to restore full workspace access.
+          <p className="text-slate-200 text-sm sm:text-base leading-relaxed mb-6 font-medium">
+            100% of data preserved in Supabase PostgreSQL — zero data loss. Reactivation restores full access.
           </p>
 
           {/* Data Preservation Reassurance Badge */}
@@ -49,8 +48,8 @@ export default function SuspensionNoticeBarrier({ tenant, subscription, onLogout
                 100% Data Preservation Guarantee (Zero Data Loss)
               </h2>
               <p className="text-xs text-slate-200 mt-1 leading-relaxed">
-                All student rosters, academic marks, financial ledgers, and attendance archives
-                remain fully intact and encrypted in Supabase PostgreSQL with zero data loss. No institutional records
+                100% of data preserved in Supabase PostgreSQL — zero data loss. Reactivation restores full access. All student rosters, academic marks, financial ledgers, and attendance archives
+                remain fully intact and encrypted in Supabase PostgreSQL. No institutional records
                 have been deleted.
               </p>
             </div>

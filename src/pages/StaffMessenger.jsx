@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
+import { normalizeRole } from "../utils/credentials";
 import {
   MessageSquare,
   Send,
@@ -50,10 +51,12 @@ export default function StaffMessenger() {
 
   const userName = user?.name || user?.full_name || "Faculty Member";
   const userRole = (user?.role || "").toLowerCase().trim();
+  const canonicalRole = normalizeRole(user?.role, userCode);
 
   // 1. STRICT SECURITY GATE FOR STUDENTS
-  const isStudent = userRole === "student" || userCode.startsWith("STU-");
+  const isStudent = canonicalRole === "STU" || userRole === "student" || userCode.startsWith("STU-");
   const isNTS =
+    canonicalRole === "NTS" ||
     userRole === "staff" ||
     userRole === "nts" ||
     userRole === "non_teaching" ||

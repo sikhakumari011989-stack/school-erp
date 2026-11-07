@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useMemo } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { generatePayslipPDF } from "../utils/pdfGenerator";
+import { normalizeRole } from "../utils/credentials";
 import {
   Wallet,
   FileText,
@@ -84,7 +85,10 @@ export default function PayrollManager() {
 
       let eligibleStaff = dir.filter((m) => {
         const r = (m.role || "").toLowerCase();
+        const code = (m.role_code || m.roll_number || m.personal_code || m.id || "").toUpperCase();
+        const canon = normalizeRole(m.role, code);
         return (
+          ["TCH", "ACC", "NTS", "PRIN", "HOD"].includes(canon) ||
           r === "teacher" ||
           r === "accountant" ||
           r === "staff" ||

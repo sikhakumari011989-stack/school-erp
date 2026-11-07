@@ -1,10 +1,14 @@
 import { useContext, useState } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
+import { normalizeRole } from "../utils/credentials";
 
 export default function Homework() {
-  const { homework, uploadHomework, getClassHomework, classes, user } = useContext(AppContext);
+  const { homework = [], uploadHomework, getClassHomework, classes = [], user } = useContext(AppContext) || {};
   const { showToast } = useToast();
+  const canonicalRole = normalizeRole(user?.role, user?.role_code || user?.personal_code || user?.id);
+  const isTeacher = canonicalRole === "TCH" || user?.role === "teacher";
+
   const [formData, setFormData] = useState({
     class_id: "",
     subject: "",
@@ -20,19 +24,23 @@ export default function Homework() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await uploadHomework(formData);
+    if (typeof uploadHomework === "function") {
+      await uploadHomework(formData);
+    }
     setFormData({ class_id: "", subject: "", title: "", description: "", due_date: "", file_url: "" });
     showToast("Homework uploaded successfully!", "success");
   };
 
-  const classHomework = formData.class_id ? getClassHomework(formData.class_id) : homework;
+  const classHomework = formData.class_id && typeof getClassHomework === "function"
+    ? getClassHomework(formData.class_id)
+    : (homework || []);
 
   return (
     <div className="p-8 bg-gradient-to-br from-slate-900 to-slate-800 min-h-[100dvh]">
       <h1 className="text-4xl font-bold text-white mb-8">📚 Homework</h1>
 
       {/* Upload Form - Teacher Only */}
-      {user?.role === "teacher" && (
+      {isTeacher && (
         <div className="bg-slate-700/50 border border-slate-600/50 rounded-xl p-6 mb-8">
           <h2 className="text-xl font-bold text-white mb-4">Upload Homework</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -44,7 +52,7 @@ export default function Homework() {
                 className="px-4 py-2 bg-slate-600/50 border border-slate-500/50 rounded-lg text-white"
               >
                 <option value="">Select Class</option>
-                {classes.map((c) => (
+                {(classes || []).map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>

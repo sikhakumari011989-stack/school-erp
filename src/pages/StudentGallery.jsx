@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
+import { normalizeRole } from "../utils/credentials";
 
 const DEFAULT_GALLERY_PHOTOS = [];
 
@@ -27,7 +28,8 @@ export default function StudentGallery() {
 
   const activeSchoolId = user?.institution_code || user?.school_id || tenant?.code || "CAMPUS-01";
   const userRole = (user?.role || "").toLowerCase();
-  const canUpload = ["teacher", "principal", "trustee", "admin"].includes(userRole);
+  const canonicalRole = normalizeRole(user?.role, user?.role_code || user?.personal_code || user?.id);
+  const canUpload = ["TCH", "PRIN", "HOD", "MASTER_OWNER"].includes(canonicalRole) || ["teacher", "principal", "trustee", "admin", "tch", "prin", "hod"].includes(userRole);
 
   const [photos, setPhotos] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("ALL");

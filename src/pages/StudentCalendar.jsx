@@ -2,13 +2,15 @@ import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import SchoolCalendar from "../Components/SchoolCalendar";
+import { normalizeRole } from "../utils/credentials";
 
 export default function StudentCalendar() {
   const { user } = useContext(AppContext);
   const { showToast } = useToast();
   const schoolId = user?.school_id || user?.institution_code || "CAMPUS-01";
   const userRole = (user?.role || "").toLowerCase();
-  const canManage = ["teacher", "principal", "trustee", "admin"].includes(userRole);
+  const canonicalRole = normalizeRole(user?.role, user?.role_code || user?.personal_code || user?.id);
+  const canManage = ["TCH", "PRIN", "HOD", "MASTER_OWNER"].includes(canonicalRole) || ["teacher", "principal", "trustee", "admin", "tch", "prin", "hod"].includes(userRole);
 
   const [selectedMonth] = useState("Academic Session 2026-27");
   const [events, setEvents] = useState([]);

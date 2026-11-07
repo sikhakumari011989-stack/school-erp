@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getNotices } from "../utils/noticeService";
+import { normalizeRole } from "../utils/credentials";
 
 export default function NoticeBanner({ role = "All", schoolId, userClass }) {
   const [notices, setNotices] = useState([]);
@@ -23,6 +24,7 @@ export default function NoticeBanner({ role = "All", schoolId, userClass }) {
       }
 
       const userRole = (role || "").toLowerCase().trim();
+      const canonical = normalizeRole(role, role);
 
       // Filter for target audience
       const filtered = all.filter((n) => {
@@ -44,13 +46,16 @@ export default function NoticeBanner({ role = "All", schoolId, userClass }) {
         if (
           userRole === "trustee" ||
           userRole === "principal" ||
-          userRole === "admin"
+          userRole === "admin" ||
+          canonical === "HOD" ||
+          canonical === "PRIN" ||
+          canonical === "MASTER_OWNER"
         ) {
           return true;
         }
 
         // 3. Teachers & Faculty
-        if (userRole === "teacher") {
+        if (userRole === "teacher" || canonical === "TCH") {
           if (
             aud.includes("teacher") ||
             aud.includes("faculty") ||
@@ -63,7 +68,7 @@ export default function NoticeBanner({ role = "All", schoolId, userClass }) {
         }
 
         // 4. Students
-        if (userRole === "student") {
+        if (userRole === "student" || canonical === "STU") {
           // General student notices
           if (aud === "students" || aud === "all students" || aud.includes("all students")) {
             return true;

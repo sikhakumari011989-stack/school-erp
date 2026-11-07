@@ -67,7 +67,11 @@ export default function Sidebar() {
       return [
         { name: "Executive Command", path: "/principal/dashboard", icon: "🏛️" },
         { name: "Trustee Oversight", path: "/trustee/dashboard", icon: "📈" },
+        { name: "School Analytics", path: "/admin/analytics", icon: "📊" },
+        { name: "Executive Reports", path: "/admin/reports", icon: "📑" },
         { name: "Students & Admissions", path: "/admin/admissions", icon: "🎯" },
+        { name: "Classes & Sections", path: "/admin/classes", icon: "🏫" },
+        { name: "Master Timetable", path: "/admin/timetable", icon: "🗓️" },
         { name: "Fee Collection & Dues", path: "/accountant/dashboard", icon: "💰" },
         { name: "Examinations & Marks", path: "/teacher/analytics", icon: "📊" },
         { name: "Attendance & Calendar", path: "/admin/calendar", icon: "📅" },
@@ -78,7 +82,11 @@ export default function Sidebar() {
       return [
         { name: "Trustee Command", path: "/trustee/dashboard", icon: "📈" },
         { name: "Principal Operations", path: "/principal/dashboard", icon: "🏛️" },
+        { name: "School Analytics", path: "/admin/analytics", icon: "📊" },
+        { name: "Executive Reports", path: "/admin/reports", icon: "📑" },
         { name: "Students & Admissions", path: "/admin/admissions", icon: "🎯" },
+        { name: "Classes & Sections", path: "/admin/classes", icon: "🏫" },
+        { name: "Master Timetable", path: "/admin/timetable", icon: "🗓️" },
         { name: "Fee Treasury & Dues", path: "/accountant/dashboard", icon: "💰" },
         { name: "Academic Performance", path: "/teacher/analytics", icon: "📊" },
         { name: "School Calendar", path: "/admin/calendar", icon: "📅" },
@@ -88,6 +96,7 @@ export default function Sidebar() {
     } else if (roleType === "accountant") {
       return [
         { name: "Fee Treasury & Receipts", path: "/accountant/dashboard", icon: "💰" },
+        { name: "Financial Reports", path: "/admin/reports", icon: "📑" },
         { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
         { name: "Expense Ledger", path: "/accountant/expenses", icon: "🧾" },
         { name: "Admissions & Dues", path: "/admin/admissions", icon: "🎯" },

@@ -57,6 +57,10 @@ const PayrollManager = React.lazy(() => import("./pages/PayrollManager"));
 const BroadcastManager = React.lazy(() => import("./pages/BroadcastManager"));
 const StaffMessenger = React.lazy(() => import("./pages/StaffMessenger"));
 const ExpenseManagerPage = React.lazy(() => import("./pages/ExpenseManager"));
+const Reports = React.lazy(() => import("./pages/Reports"));
+const Analytics = React.lazy(() => import("./pages/Analytics"));
+const Classes = React.lazy(() => import("./pages/Classes"));
+const TimeTable = React.lazy(() => import("./pages/TimeTable"));
 import OfflineBanner from "./Components/OfflineBanner";
 import ErrorBoundary from "./Components/ErrorBoundary";
 import CommandPalette from "./Components/CommandPalette";
@@ -85,57 +89,9 @@ const AppLayout = ({ children }) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { user, subscription, tenant, logout } = useAppContext();
-  const isPublicPage =
-    PUBLIC_ROUTES.includes(location.pathname) ||
-    location.pathname.startsWith("/verify-credential");
-
-  const canonicalRole = normalizeRole(user?.role, user?.role_code || user?.roll_number || user?.id);
-  const isMasterUser = canonicalRole === "MASTER_OWNER" || location.pathname === "/master-setup";
-
-  // 1. GLOBAL INSTITUTIONAL SUSPENSION & LICENSING LOCK (ROOT ROUTER LEVEL)
-  // If a school's status or subscription_status is marked suspended or its license has expired,
-  // all users (Students, Teachers, Accountants, Principals) are immediately blocked from dashboard access.
-  // MASTER_OWNER role is strictly exempted so they can manage and renew institutions via /master-setup.
-  if (!isPublicPage && !isMasterUser && subscription?.isBlocked) {
-    return (
-      <SuspensionNoticeBarrier
-        tenant={tenant}
-        subscription={subscription}
-        onLogout={logout}
-      />
-    );
-  }
-
   const [installPrompt, setInstallPrompt] = React.useState(null);
   const [isInstalled, setIsInstalled] = React.useState(false);
   const [showInstallPill, setShowInstallPill] = React.useState(true);
-
-  // Mobile Swipe-to-Refresh & Persistent Session Auto-Router:
-  // If user opens `/`, `/login`, or `/portal` while a valid session is stored in localStorage,
-  // strictly bypass login and auto-route them directly to their respective dashboard.
-  React.useEffect(() => {
-    try {
-      const searchParams = new URLSearchParams(location.search);
-      if (searchParams.get("signedOut") === "true") return;
-
-      const currentPath = location.pathname;
-      if (currentPath === "/" || currentPath === "/login" || currentPath === "/portal") {
-        const saved = localStorage.getItem("erp_session_user");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && (parsed.role || parsed.role_code)) {
-            const dest = dashboardFor(
-              parsed.role ||
-                inferRoleFromCode(parsed.role_code || parsed.roll_number)
-            );
-            navigate(dest, { replace: true });
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("Session auto-route check:", e);
-    }
-  }, [location.pathname, location.search, navigate]);
 
   React.useEffect(() => {
     const handleBeforeInstall = (e) => {
@@ -165,6 +121,20 @@ const AppLayout = ({ children }) => {
     };
   }, []);
 
+  const isPublicPage =
+    PUBLIC_ROUTES.includes(location.pathname) ||
+    location.pathname.startsWith("/verify-credential");
+
+  const canonicalRole = normalizeRole(user?.role, user?.role_code || user?.roll_number || user?.id);
+  const isMasterUser = canonicalRole === "MASTER_OWNER" || location.pathname === "/master-setup";
+
+  // 1. GLOBAL INSTITUTIONAL SUSPENSION & LICENSING LOCK (ROOT ROUTER LEVEL)
+  // If a school's status or subscription_status is marked suspended or its license has expired,
+  // all users (Students, Teachers, Accountants, Principals) are immediately blocked from dashboard access.
+  // MASTER_OWNER role is strictly exempted so they can manage and renew institutions via /master-setup.
+  // Normal app remains mounted underneath so no other behavior or state changes unexpectedly.
+  const showSuspendedOverlay = !isPublicPage && !isMasterUser && Boolean(subscription?.isBlocked);
+
   const handleInstallClick = async () => {
     if (installPrompt) {
       installPrompt.prompt();
@@ -187,6 +157,15 @@ const AppLayout = ({ children }) => {
       >
         {children}
       </main>
+
+      {/* FULL-SCREEN SUSPENSION BARRIER OVERLAY (Normal app remains mounted underneath) */}
+      {showSuspendedOverlay && (
+        <SuspensionNoticeBarrier
+          tenant={tenant}
+          subscription={subscription}
+          onLogout={logout}
+        />
+      )}
 
       {/* PERSISTENT SLEEK PWA INSTALL FLOATING PILL */}
       {!isInstalled && showInstallPill && (
@@ -320,6 +299,42 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/admin/reports"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant"]}>
+                  <Reports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/analytics"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal"]}>
+                  <Analytics />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/reports" element={<Navigate to="/admin/reports" replace />} />
+            <Route path="/analytics" element={<Navigate to="/admin/analytics" replace />} />
+            <Route
+              path="/admin/classes"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "teacher"]}>
+                  <Classes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/timetable"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "teacher"]}>
+                  <TimeTable />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/classes" element={<Navigate to="/admin/classes" replace />} />
+            <Route path="/timetable" element={<Navigate to="/admin/timetable" replace />} />
 
             {/* HOD & PRINCIPAL / TRUSTEE SUITE */}
             <Route
@@ -339,6 +354,8 @@ export default function App() {
               }
             />
             {/* Direct Dashboard Aliases for Compatibility */}
+            <Route path="/hod/dashboard" element={<Navigate to="/trustee/dashboard" replace />} />
+            <Route path="/hod-dashboard" element={<Navigate to="/trustee/dashboard" replace />} />
             <Route path="/principal-dashboard" element={<Navigate to="/principal/dashboard" replace />} />
             <Route path="/trustee-dashboard" element={<Navigate to="/trustee/dashboard" replace />} />
             <Route path="/accountant-dashboard" element={<Navigate to="/accountant/dashboard" replace />} />

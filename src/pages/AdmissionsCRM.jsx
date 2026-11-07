@@ -4,6 +4,7 @@ import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { getNextMemberId } from "../utils/idGenerator";
 import { enrollMemberInCloud } from "../utils/cloudSyncService";
+import { normalizeRole } from "../utils/credentials";
 import {
   Users,
   UserPlus,
@@ -69,7 +70,10 @@ export default function AdmissionsCRM() {
   ).toUpperCase();
 
   const userRole = (user?.role || "").toLowerCase();
-  const isAuthorized = ["admin", "super_admin", "principal", "trustee", "hod", "accountant", "staff"].includes(userRole);
+  const canonicalRole = normalizeRole(user?.role, user?.role_code || user?.personal_code || user?.id);
+  const isAuthorized =
+    ["PRIN", "HOD", "ACC", "NTS", "MASTER_OWNER"].includes(canonicalRole) ||
+    ["admin", "super_admin", "principal", "trustee", "hod", "accountant", "staff", "prin", "acc", "nts"].includes(userRole);
 
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -70,7 +70,14 @@ export default async function handler(req, res) {
       });
     }
 
-    const cleanSchool = (schoolId || "CAMPUS-01").trim().toUpperCase();
+    if (!schoolId || !schoolId.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "schoolId is required to reconcile payment with institutional ledger.",
+      });
+    }
+
+    const cleanSchool = schoolId.trim().toUpperCase();
     const numAmount = Number(amount) || 0;
     const invoiceNo = `INV-${Date.now().toString().slice(-6)}`;
     const today = new Date().toISOString().split("T")[0];

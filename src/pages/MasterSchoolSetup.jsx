@@ -40,7 +40,7 @@ export default function MasterSchoolSetup() {
     adminRoleCode: "HOD-01",
     email: "",
     phone: "+91 9518388499",
-    password: "password123",
+    password: "",
     address: "Mahim Manohar Highway, Palghar 401404",
   });
 
@@ -312,6 +312,10 @@ export default function MasterSchoolSetup() {
       showToast("Please provide the trustee / HOD name.", "error");
       return;
     }
+    if (!formData.password || formData.password.trim().length < 6) {
+      showToast("Please provide an administrator password with at least 6 characters.", "error");
+      return;
+    }
 
     setLoading(true);
 
@@ -319,7 +323,7 @@ export default function MasterSchoolSetup() {
       const explicitRole = detectRoleFromId(formData.adminRoleCode, "trustee");
       const cleanCode = formData.institutionCode.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
       const cleanName = formData.institutionName.trim();
-      const cleanPass = (formData.password || "password123").trim();
+      const cleanPass = formData.password.trim();
       const standardEmail = (formData.email || "").trim() || buildStandardErpEmail(cleanCode, formData.adminRoleCode);
 
       let serverSuccess = false;
@@ -409,7 +413,7 @@ export default function MasterSchoolSetup() {
         adminRoleCode: "HOD-01",
         email: "",
         phone: "+91 9518388499",
-        password: "password123",
+        password: "",
         address: "Mahim Manohar Highway, Palghar 401404",
       });
 
@@ -765,7 +769,7 @@ export default function MasterSchoolSetup() {
                   <input
                     type="text"
                     required
-                    placeholder="password123"
+                    placeholder="Enter admin password (min 6 characters)"
                     className="w-full bg-slate-950/60 border border-slate-700 rounded-xl px-4 py-3 text-amber-300 font-mono text-sm focus:outline-none focus:border-blue-500"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}

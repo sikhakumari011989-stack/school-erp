@@ -187,7 +187,8 @@ export default function TeacherAttendance() {
           .filter((item) => {
             const role = (item.role || "student").toLowerCase();
             const code = (item.role_code || item.roll_number || item.personal_code || item.id || "").toUpperCase();
-            return role === "student" && !code.startsWith("HOD-") && !code.startsWith("PRIN-") && !code.startsWith("TR-") && !code.startsWith("ACC-") && !code.startsWith("TCH-") && !code.startsWith("FAC-");
+            const isStu = role === "student" || role === "stu";
+            return isStu && !code.startsWith("HOD-") && !code.startsWith("PRIN-") && !code.startsWith("TR-") && !code.startsWith("ACC-") && !code.startsWith("TCH-") && !code.startsWith("FAC-");
           })
           .forEach((item) => {
             const roll = item.roll_number || item.role_code || item.personal_code || item.id;
@@ -274,6 +275,23 @@ export default function TeacherAttendance() {
           } catch (e) {
             console.warn("Attendance parse error:", e);
           }
+        } else if (supabase) {
+          try {
+            const { data: dbAtt } = await supabase
+              .from("attendance")
+              .select("records")
+              .eq("date", today)
+              .ilike("class_name", `%${selectedBatch}%`)
+              .maybeSingle();
+            if (dbAtt?.records && Array.isArray(dbAtt.records)) {
+              dbAtt.records.forEach((rec) => {
+                const key = rec.student_id || rec.roll_number;
+                if (key) initialStatus[key] = rec.status || "present";
+              });
+            }
+          } catch (e) {
+            console.warn("Supabase attendance read notice:", e);
+          }
         }
 
         // Initialize status for all batch students
@@ -342,9 +360,10 @@ export default function TeacherAttendance() {
 
       // 2. Sync to Supabase attendance table
       if (supabase) {
+        const schoolUuid = await resolveSchoolUuid(activeSchoolId);
         const { error: insertErr } = await supabase.from("attendance").insert([
           {
-            school_id: activeSchoolId,
+            school_id: schoolUuid || activeSchoolId,
             class_id: selectedBatch,
             class_name: selectedBatch,
             date: today,

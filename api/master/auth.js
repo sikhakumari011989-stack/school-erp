@@ -15,7 +15,7 @@ export function getTokenSecret() {
   return (
     process.env.MASTER_TOKEN_SECRET ||
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    (process.env.NODE_ENV === "test" ? "test-master-provisioning-secret-2026" : "academic-os-master-provisioning-secret-2026")
+    (process.env.NODE_ENV === "test" ? "test-master-provisioning-secret-2026" : "")
   );
 }
 

@@ -38,6 +38,7 @@ import ComprehensiveMemberModal from "../Components/ComprehensiveMemberModal";
 import FeeStructureConfigurator from "../Components/FeeStructureConfigurator";
 import BroadcastManager from "../Components/BroadcastManager";
 import NoticeBanner from "../Components/NoticeBanner";
+import { enrollMemberInCloud } from "../utils/cloudSyncService";
 import TaskManager from "../Components/TaskManager";
 import LeaveManager from "../Components/LeaveManager";
 import AssetRegistry from "../Components/AssetRegistry";
@@ -556,6 +557,28 @@ export default function PrincipalDashboard() {
       window.dispatchEvent(new Event("erp-fee-ledger-updated"));
     } catch (e) {}
 
+    // Cloud synchronization to Supabase fee_ledger table
+    if (supabase) {
+      supabase
+        .from("fee_ledger")
+        .insert([
+          {
+            school_id: institutionCode,
+            student_name: manualPayForm.studentName.trim(),
+            class_name: manualPayForm.className,
+            amount: Number(manualPayForm.amount),
+            status: "paid",
+            payment_mode: manualPayForm.paymentMode,
+            receipt_no: manualPayForm.receiptNo,
+            date: new Date().toISOString().split("T")[0],
+          },
+        ])
+        .then(({ error }) => {
+          if (error) console.warn("[PrincipalDashboard] Supabase fee_ledger notice:", error);
+        })
+        .catch(() => {});
+    }
+
     logSecurityAction({
       action: "Manual Fee Settlement Recorded",
       entityType: "FEE_PAYMENT",
@@ -608,6 +631,12 @@ export default function PrincipalDashboard() {
       localStorage.setItem(`erp_directory_${institutionCode}`, JSON.stringify(updated));
       window.dispatchEvent(new Event("erp-directory-updated"));
     } catch (e) {}
+
+    // Cloud-First Enrollment into Supabase (profiles, students/teachers)
+    enrollMemberInCloud({
+      schoolCode: institutionCode,
+      member: newMember,
+    }).catch((err) => console.warn("[PrincipalDashboard] Cloud enrollment notice:", err));
 
     logSecurityAction({
       action: "Roster Member Added",

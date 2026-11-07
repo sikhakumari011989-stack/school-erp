@@ -3,27 +3,14 @@ import { Navigate, useLocation } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { dashboardFor, normalizeRole } from "../utils/credentials";
-import SuspensionNoticeBarrier from "./SuspensionNoticeBarrier";
 
 export default function ProtectedRoute({ children, allowedRoles }) {
   const { user, session, loading, subscription, tenant, logout } = useContext(AppContext) || {};
   const { showToast } = useToast();
   const location = useLocation();
 
-  // Authoritative session user: from React context OR persistent session storage
-  const resolvedUser =
-    user ||
-    (() => {
-      try {
-        const s = typeof localStorage !== "undefined" ? localStorage.getItem("erp_session_user") : null;
-        return s ? JSON.parse(s) : null;
-      } catch {
-        return null;
-      }
-    })();
-
   // If session is still resolving on initial visit, render verified loading spinner rather than premature bounce
-  if (loading && !resolvedUser) {
+  if (loading) {
     return (
       <div className="min-h-[100dvh] bg-[#0F172A] w-full flex flex-col items-center justify-center text-center px-6 font-sans">
         <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
@@ -33,6 +20,9 @@ export default function ProtectedRoute({ children, allowedRoles }) {
       </div>
     );
   }
+
+  // Authoritative session user from React context
+  const resolvedUser = user;
 
   // Fail closed: Not authenticated -> redirect to login
   if (!resolvedUser) {
@@ -46,16 +36,10 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   const isMasterUser = userCanonicalRole === "MASTER_OWNER";
 
   // INSTITUTIONAL SUBSCRIPTION & SUSPENSION ENFORCEMENT:
-  // If the campus subscription has expired or is marked suspended, block all non-MASTER_OWNER users
-  // and render the full-screen institutional suspension notice barrier.
+  // If the campus subscription has expired or is marked suspended, AppLayout renders
+  // the full-screen barrier (z-[9999]) while keeping the normal app mounted underneath.
   if (!isMasterUser && subscription?.isBlocked) {
-    return (
-      <SuspensionNoticeBarrier
-        tenant={tenant}
-        subscription={subscription}
-        onLogout={logout}
-      />
-    );
+    return children;
   }
 
   // If specific roles are required and user does not have required role

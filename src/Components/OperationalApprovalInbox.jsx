@@ -9,7 +9,7 @@ export default function OperationalApprovalInbox({ schoolCode = "CAMPUS-01" }) {
   const [filterType, setFilterType] = useState("all");
   const [processingId, setProcessingId] = useState(null);
 
-  const cleanSchool = schoolCode.toUpperCase();
+  const cleanSchool = String(schoolCode || "CAMPUS-01").toUpperCase();
 
   useEffect(() => {
     loadApprovalItems();

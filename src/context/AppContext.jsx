@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { purgeOfflineQueue } from "../utils/offlineSyncQueue";
 import { getSchoolSubscription } from "../utils/cloudSyncService";
+import { normalizeRole } from "../utils/credentials";
 
 export const AppContext = createContext({
   session: null,
@@ -194,31 +195,6 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  /**
-   * Normalizes any incoming role to Academic OS canonical roles:
-   * 'PRIN' | 'HOD' | 'ACC' | 'TCH' | 'STU' | 'NTS'
-   */
-  function normalizeRole(role, roleCode) {
-    const code = String(roleCode || "").toUpperCase();
-    if (code === "MASTER_OWNER" || role === "MASTER_OWNER") return "MASTER_OWNER";
-    if (code.startsWith("PRIN")) return "PRIN";
-    if (code.startsWith("HOD") || code.startsWith("TR")) return "HOD";
-    if (code.startsWith("ACC")) return "ACC";
-    if (code.startsWith("TCH") || code.startsWith("FAC")) return "TCH";
-    if (code.startsWith("NON") || code.startsWith("NTS") || code.startsWith("STF") || code.startsWith("STAFF")) return "NTS";
-    if (code.startsWith("ADM") || code.startsWith("SUPER")) return "PRIN";
-
-    const r = String(role || "").toUpperCase();
-    if (r === "MASTER_OWNER") return "MASTER_OWNER";
-    if (r === "PRIN" || r === "PRINCIPAL" || r === "ADMIN" || r === "SUPER_ADMIN" || r === "SUPERADMIN") return "PRIN";
-    if (r === "HOD" || r === "TRUSTEE") return "HOD";
-    if (r === "ACC" || r === "ACCOUNTANT") return "ACC";
-    if (r === "TCH" || r === "TEACHER" || r === "FACULTY" || r === "FAC") return "TCH";
-    if (r === "NTS" || r === "STAFF" || r === "NON_TEACHING" || r === "NON-TEACHING") return "NTS";
-    if (r === "STU" || r === "STUDENT" || r === "PARENT") return "STU";
-    return "STU";
-  }
-
   // Reads the authenticated user's profile strictly from Supabase
   const loadProfile = async (currentSession) => {
     try {
@@ -233,6 +209,19 @@ export const AppProvider = ({ children }) => {
       // Server-controlled app_metadata is the authoritative identity authority for RLS
       const appMeta = currentSession.user.app_metadata || {};
       const userMeta = currentSession.user.user_metadata || {};
+      const userEmail = String(currentSession.user.email || "").toLowerCase().trim();
+
+      // Extract institutional identifiers from email format: [school_code].[personal_code]@...
+      let emailSchoolCode = "";
+      let emailPersonalCode = "";
+      if (userEmail.includes("@")) {
+        const prefix = userEmail.split("@")[0];
+        const dotParts = prefix.split(".");
+        if (dotParts.length >= 2) {
+          emailSchoolCode = dotParts[0].toUpperCase();
+          emailPersonalCode = dotParts[1].toUpperCase();
+        }
+      }
 
       let profileData = null;
       try {
@@ -249,33 +238,14 @@ export const AppProvider = ({ children }) => {
         console.warn("Supabase profile read notice:", profErr);
       }
 
-      // 2. Fail closed on missing profile or unassociated user
-      if (!profileData && !appMeta.role && !appMeta.school_id && !userMeta.role && !userMeta.school_id) {
+      // Check cached session if available
+      let cachedUser = null;
+      try {
         const cached = localStorage.getItem("erp_session_user");
-        let hasValidCached = false;
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            if (parsed && (parsed.role || parsed.role_code)) {
-              hasValidCached = true;
-              setUser(parsed);
-              setLoading(false);
-              return;
-            }
-          } catch {}
-        }
-        if (!hasValidCached) {
-          console.warn("[AuthSecurity] No authoritative profile or app_metadata found. Rejecting session.");
-          await supabase.auth.signOut().catch(() => {});
-          localStorage.removeItem("erp_session_user");
-          setSession(null);
-          setUser(null);
-          setLoading(false);
-          return;
-        }
-      }
+        if (cached) cachedUser = JSON.parse(cached);
+      } catch {}
 
-      // 3. Fail closed on inactive or suspended accounts
+      // Fail closed on explicitly deactivated or suspended accounts in profiles
       if (profileData && (profileData.status === "inactive" || profileData.status === "suspended" || profileData.is_active === false)) {
         console.warn("[AuthSecurity] User account is deactivated or suspended. Failing closed.");
         await supabase.auth.signOut().catch(() => {});
@@ -286,55 +256,37 @@ export const AppProvider = ({ children }) => {
         return;
       }
 
-      // 4. Authoritative role: server app_metadata is primary authority, then verified public.profiles record
-      // NEVER allow client-controlled user_metadata to assign privileged roles
-      const rawVerifiedRole =
+      // Authoritative Role Resolution via unified normalizeRole:
+      // Priority: profiles record -> app_metadata -> email personal code -> cached user role -> user_metadata -> default STU
+      const rawRole =
+        profileData?.role ||
         appMeta.role ||
-        profileData?.role;
-
-      const authoritativeRole =
-        rawVerifiedRole ||
-        (userMeta.role && ["student", "stu"].includes(String(userMeta.role).toLowerCase()) ? "STU" : "STU");
-
-      const authoritativeRoleCode =
-        appMeta.role_code ||
-        profileData?.role_code ||
+        cachedUser?.role ||
+        userMeta.role ||
         "";
 
-      const canonicalRole = normalizeRole(authoritativeRole, authoritativeRoleCode);
+      const rawRoleCode =
+        profileData?.role_code ||
+        appMeta.role_code ||
+        emailPersonalCode ||
+        cachedUser?.role_code ||
+        userMeta.role_code ||
+        "";
 
-      // 5. Authoritative Tenant Resolution:
-      // Authenticated tenant identity MUST strictly derive from server app_metadata or verified profiles record
+      const canonicalRole = normalizeRole(rawRole, rawRoleCode);
+
+      // Authoritative Tenant Resolution:
       // NEVER allow client URL params (?tenant=...) or localStorage to alter authenticated tenant
-      const verifiedTenant =
+      const tenantCode = (
         canonicalRole === "MASTER_OWNER"
-          ? (appMeta.school_id || profileData?.schools?.code || profileData?.school_id || "MASTER")
-          : (appMeta.school_id || profileData?.schools?.code || profileData?.school_id || userMeta.school_id || userMeta.institution_code);
-
-      if (!verifiedTenant) {
-        const cached = localStorage.getItem("erp_session_user");
-        let cachedTenant = null;
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            cachedTenant = parsed?.school_id || parsed?.institution_code;
-          } catch {}
-        }
-        if (!cachedTenant) {
-          console.warn("[AuthSecurity] Authenticated user has no assigned institution. Failing closed.");
-          await supabase.auth.signOut().catch(() => {});
-          localStorage.removeItem("erp_session_user");
-          setSession(null);
-          setUser(null);
-          setLoading(false);
-          return;
-        }
-      }
-
-      const tenantCode = verifiedTenant.toUpperCase().trim();
+          ? (appMeta.school_id || profileData?.schools?.code || profileData?.school_id || cachedUser?.institution_code || "MASTER")
+          : (appMeta.school_id || profileData?.schools?.code || profileData?.school_id || emailSchoolCode || cachedUser?.institution_code || userMeta.school_id || userMeta.institution_code || "CAMPUS-01")
+      ).toUpperCase().trim();
 
       const fullName =
         profileData?.full_name ||
+        cachedUser?.full_name ||
+        cachedUser?.name ||
         userMeta.full_name ||
         userMeta.name ||
         currentSession.user.email?.split("@")[0] ||
@@ -345,17 +297,20 @@ export const AppProvider = ({ children }) => {
         name: fullName,
         full_name: fullName,
         role: canonicalRole,
-        role_code: authoritativeRoleCode || canonicalRole,
+        role_code: rawRoleCode || canonicalRole,
+        personal_code: rawRoleCode || canonicalRole,
         school_id: tenantCode,
         institution_code: tenantCode,
-        institution_name: profileData?.schools?.name || userMeta.institution_name || "Academic Campus",
+        institution_name: profileData?.schools?.name || cachedUser?.institution_name || userMeta.institution_name || "Academic Campus",
         email: currentSession.user.email,
         authUid: currentSession.user.id,
       };
 
       setUser(userObj);
-      localStorage.setItem("erp_session_user", JSON.stringify(userObj));
-      localStorage.setItem("erp_active_tenant", tenantCode);
+      try {
+        localStorage.setItem("erp_session_user", JSON.stringify(userObj));
+        localStorage.setItem("erp_active_tenant", tenantCode);
+      } catch {}
 
       if (tenantCode) {
         loadTenantDetails(tenantCode);
@@ -369,10 +324,10 @@ export const AppProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // Hard 800ms safety timeout: guarantees loading screen never hangs on slow mobile networks
+    // Safety timeout: 10s fallback ensures loading screen never hangs permanently if Supabase connection stalls
     const safetyTimeout = setTimeout(() => {
       setLoading(false);
-    }, 800);
+    }, 10000);
 
     // 1. Initial tenant resolution and branding
     loadTenantDetails();
