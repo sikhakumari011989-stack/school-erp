@@ -126,7 +126,7 @@ export function normalizeRole(role, personalCode = "") {
 export function dashboardFor(role) {
   const raw = String(role || "").trim().toLowerCase();
   if (raw === "master_owner") return "/master-setup";
-  if (raw === "admin" || raw === "super_admin") return "/admin/dashboard";
+  if (raw === "admin" || raw === "super_admin") return "/principal/dashboard";
   const canonical = normalizeRole(role);
   if (canonical === "MASTER_OWNER") return "/master-setup";
   if (canonical === "ACC") return "/accountant/dashboard";

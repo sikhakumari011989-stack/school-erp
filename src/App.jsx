@@ -226,15 +226,8 @@ export default function App() {
               <Route path="/contact" element={<ContactUs />} />
               <Route path="/verify-credential/:token" element={<PublicCredentialVerify />} />
 
-            {/* SUPER ADMIN & SYSTEM AUDIT (Leadership Suite) */}
-            <Route
-              path="/admin/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "principal", "trustee"]}>
-                  <SuperAdminDashboard />
-                </ProtectedRoute>
-              }
-            />
+            {/* LEADERSHIP ROUTING ALIAS: Redirect legacy admin dashboard to Principal Command */}
+            <Route path="/admin/dashboard" element={<Navigate to="/principal/dashboard" replace />} />
             <Route
               path="/admin/calendar"
               element={

@@ -76,7 +76,6 @@ export default function Sidebar() {
         { name: "Examinations & Marks", path: "/teacher/analytics", icon: "📊" },
         { name: "Attendance & Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
-        { name: "Administration & Audit", path: "/admin/dashboard", icon: "⚙️" },
       ];
     } else if (roleType === "trustee") {
       return [
@@ -91,7 +90,6 @@ export default function Sidebar() {
         { name: "Academic Performance", path: "/teacher/analytics", icon: "📊" },
         { name: "School Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
-        { name: "Administration & Audit", path: "/admin/dashboard", icon: "⚙️" },
       ];
     } else if (roleType === "accountant") {
       return [
@@ -122,7 +120,6 @@ export default function Sidebar() {
       ];
     } else if (roleType === "admin") {
       return [
-        { name: "Super Admin Hub", path: "/admin/dashboard", icon: "🛡️" },
         { name: "Principal Operations", path: "/principal/dashboard", icon: "🏛️" },
         { name: "Trustee Oversight", path: "/trustee/dashboard", icon: "📈" },
         { name: "Fee Treasury", path: "/accountant/dashboard", icon: "💰" },

@@ -1,3 +1,8 @@
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { supabase } from "../supabaseClient";
+import { safeStorage } from "./safeStorage.js";
+
 export function resolveInstitutionName(tenant = {}) {
   const isInvalid = (str) => !str || typeof str !== "string" || str.toLowerCase().includes("apex") || str.toLowerCase().includes("institutional node");
 
@@ -8,31 +13,20 @@ export function resolveInstitutionName(tenant = {}) {
   if (!isInvalid(tenant.school_name)) return tenant.school_name;
 
   try {
-    if (typeof window !== "undefined") {
-      const savedUser = localStorage.getItem("erp_session_user");
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
-        if (!isInvalid(parsed.institution_name)) return parsed.institution_name;
-        if (!isInvalid(parsed.school_name)) return parsed.school_name;
-        if (!isInvalid(parsed.schoolName)) return parsed.schoolName;
-        if (!isInvalid(parsed.name) && (parsed.role === "admin" || parsed.role === "principal")) return parsed.name;
-      }
-      const activeTenant = localStorage.getItem("erp_active_tenant_name");
-      if (!isInvalid(activeTenant)) return activeTenant;
+    const savedUser = safeStorage.getItem("erp_session_user");
+    if (savedUser) {
+      const parsed = JSON.parse(savedUser);
+      if (!isInvalid(parsed.institution_name)) return parsed.institution_name;
+      if (!isInvalid(parsed.school_name)) return parsed.school_name;
+      if (!isInvalid(parsed.schoolName)) return parsed.schoolName;
+      if (!isInvalid(parsed.name) && (parsed.role === "admin" || parsed.role === "principal")) return parsed.name;
     }
+    const activeTenant = safeStorage.getItem("erp_active_tenant_name");
+    if (!isInvalid(activeTenant)) return activeTenant;
   } catch {}
 
   return "INSTITUTION CAMPUS";
 }
-
-/**
- * Dynamic PDF Generator Utility
- * Uses jsPDF and jspdf-autotable to produce official institutional Tax Invoices and Academic Report Cards
- */
-
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
-import { supabase } from "../supabaseClient";
 
 /**
  * Draws an offline cryptographic anti-forgery seal and vector 21x21 QR pattern
@@ -149,21 +143,14 @@ export function generateFeeInvoicePDF({
   doc.setFillColor(59, 130, 246); // Blue 500
   doc.rect(0, 40, 210, 2.5, "F");
 
-  // --- CUSTOM WHITE-LABEL SCHOOL LOGO RENDERING ---
+  // --- CUSTOM WHITE-LABEL SCHOOL LOGO & TEMPLATE RENDERING ---
+  const customTemplate = safeStorage.getJSON(`erp_pdf_template_${institutionCode}`)?.feeReceipt || {};
   const schoolLogo =
     tenant.logoUrl ||
-    (() => {
-      try {
-        return (
-          localStorage.getItem(`erp_logo_${institutionCode}`) ||
-          localStorage.getItem(`erp_school_logo_${institutionCode}`) ||
-          localStorage.getItem("erp_school_logo_default") ||
-          null
-        );
-      } catch {
-        return null;
-      }
-    })();
+    safeStorage.getItem(`erp_logo_${institutionCode}`) ||
+    safeStorage.getItem(`erp_school_logo_${institutionCode}`) ||
+    safeStorage.getItem("erp_school_logo_default") ||
+    null;
 
   let titleOffset = 14;
   if (schoolLogo && typeof schoolLogo === "string" && schoolLogo.startsWith("data:image")) {
@@ -362,21 +349,14 @@ export function generateReportCardPDF({
   doc.setFillColor(168, 85, 247); // Purple 500
   doc.rect(0, 40, 210, 2.5, "F");
 
-  // --- CUSTOM WHITE-LABEL SCHOOL LOGO RENDERING ---
+  // --- CUSTOM WHITE-LABEL SCHOOL LOGO & TEMPLATE RENDERING ---
+  const customTemplate = safeStorage.getJSON(`erp_pdf_template_${institutionCode}`)?.feeReceipt || {};
   const schoolLogo =
     tenant.logoUrl ||
-    (() => {
-      try {
-        return (
-          localStorage.getItem(`erp_logo_${institutionCode}`) ||
-          localStorage.getItem(`erp_school_logo_${institutionCode}`) ||
-          localStorage.getItem("erp_school_logo_default") ||
-          null
-        );
-      } catch {
-        return null;
-      }
-    })();
+    safeStorage.getItem(`erp_logo_${institutionCode}`) ||
+    safeStorage.getItem(`erp_school_logo_${institutionCode}`) ||
+    safeStorage.getItem("erp_school_logo_default") ||
+    null;
 
   let titleOffset = 14;
   if (schoolLogo && typeof schoolLogo === "string" && schoolLogo.startsWith("data:image")) {
@@ -799,18 +779,10 @@ export function generatePayslipPDF({
   // --- SCHOOL LOGO RENDERING ---
   const schoolLogo =
     tenant.logoUrl ||
-    (() => {
-      try {
-        return (
-          localStorage.getItem(`erp_logo_${institutionCode}`) ||
-          localStorage.getItem(`erp_school_logo_${institutionCode}`) ||
-          localStorage.getItem("erp_school_logo_default") ||
-          null
-        );
-      } catch {
-        return null;
-      }
-    })();
+    safeStorage.getItem(`erp_logo_${institutionCode}`) ||
+    safeStorage.getItem(`erp_school_logo_${institutionCode}`) ||
+    safeStorage.getItem("erp_school_logo_default") ||
+    null;
 
   let titleOffset = 14;
   if (schoolLogo && typeof schoolLogo === "string" && schoolLogo.startsWith("data:image")) {

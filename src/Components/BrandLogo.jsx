@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
+import { safeStorage } from "../utils/safeStorage";
 
 /**
  * Visual SVG Icon: Premium Blue/Purple Gradient Book & Chart Vector Emblem
@@ -185,6 +186,7 @@ export default function BrandLogo({
   size = "md",
   showText = false,
   customLogoUrl = null,
+  schoolCode = null,
   className = "",
   iconClassName = "",
   ...props
@@ -209,17 +211,18 @@ export default function BrandLogo({
   // Resolve active school tenant code
   const getActiveSchoolCode = () => {
     return (
+      schoolCode ||
       user?.institution_code ||
       user?.school_id ||
       tenant?.code ||
-      localStorage.getItem("erp_active_tenant") ||
+      safeStorage.getItem("erp_active_tenant") ||
       "CAMPUS-01"
     )
       .trim()
       .toUpperCase();
   };
 
-  // Resolve custom logo from props, tenant, or localStorage (both erp_logo_ and erp_school_logo_ keys)
+  // Resolve custom logo from props, tenant, or safeStorage (both erp_logo_ and erp_school_logo_ keys)
   useEffect(() => {
     setImageError(false);
 
@@ -236,8 +239,8 @@ export default function BrandLogo({
     try {
       const activeCode = getActiveSchoolCode();
       const storedLogo =
-        localStorage.getItem(`erp_logo_${activeCode}`) ||
-        localStorage.getItem(`erp_school_logo_${activeCode}`);
+        safeStorage.getItem(`erp_logo_${activeCode}`) ||
+        safeStorage.getItem(`erp_school_logo_${activeCode}`);
       if (storedLogo) {
         setResolvedCustomLogo(storedLogo);
       } else {
@@ -246,7 +249,7 @@ export default function BrandLogo({
     } catch {
       setResolvedCustomLogo(null);
     }
-  }, [customLogoUrl, tenant?.logoUrl, tenant?.code, user?.institution_code, user?.school_id]);
+  }, [customLogoUrl, schoolCode, tenant?.logoUrl, tenant?.code, user?.institution_code, user?.school_id]);
 
   // Real-time listener for white-label logo updates across all windows/components
   useEffect(() => {

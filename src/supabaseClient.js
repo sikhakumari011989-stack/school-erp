@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { safeStorage } from './utils/safeStorage.js';
 
 const metaEnv = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
 const procEnv = typeof globalThis !== 'undefined' && globalThis.process && globalThis.process.env ? globalThis.process.env : {};
@@ -22,6 +23,7 @@ try {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
+      storage: safeStorage,
     },
   });
 } catch (err) {

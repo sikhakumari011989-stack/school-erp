@@ -327,7 +327,7 @@ export default function Login({ isDirectPortal = false }) {
         {/* Brand Header */}
         <div className="text-center mb-7">
           <div className="flex justify-center mb-4">
-            <BrandLogo size="lg" className="shadow-2xl shadow-cyan-500/20" />
+            <BrandLogo size="lg" schoolCode={formData.institutionCode} className="shadow-2xl shadow-cyan-500/20" />
           </div>
           <div className="inline-flex items-center gap-1.5 bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 text-[11px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full mb-2.5">
             <Sparkles className="w-3 h-3 text-cyan-400 animate-pulse" />
