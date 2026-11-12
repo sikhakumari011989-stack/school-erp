@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "crypto";
+import fs from "fs";
 
 process.env.NODE_ENV = "test";
 process.env.MASTER_SETUP_KEY = process.env.MASTER_SETUP_KEY || process.env.MASTER_SETUP_PASSKEY || "test-master-setup-passkey-2026";
@@ -573,67 +574,13 @@ test("Phase 2: Database Maker-Checker Contracts & Reversal Isolation", async (t)
   });
 });
 
-test("Phase 2: FinTech Razorpay Webhook Security Hardening", async (t) => {
-  const { default: razorpayHandler } = await import("../api/razorpay-webhook.js");
-
-  function mockRes() {
-    return {
-      statusCode: 200,
-      headers: {},
-      body: null,
-      setHeader(k, v) { this.headers[k] = v; },
-      status(code) { this.statusCode = code; return this; },
-      json(obj) { this.body = obj; return this; },
-      end() { return this; },
-    };
-  }
-
-  await t.test("Rejects webhook calls when RAZORPAY_WEBHOOK_SECRET is unconfigured (Fail Closed 500)", async () => {
-    const prevSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-    delete process.env.RAZORPAY_WEBHOOK_SECRET;
-
-    const req = {
-      method: "POST",
-      headers: { "x-razorpay-signature": "some_sig" },
-      body: { event: "payment.captured" },
-    };
-    const res = mockRes();
-    await razorpayHandler(req, res);
-
-    assert.strictEqual(res.statusCode, 500);
-    assert.strictEqual(res.body.error, "Server configuration error: Webhook secret unconfigured.");
-
-    if (prevSecret) process.env.RAZORPAY_WEBHOOK_SECRET = prevSecret;
+test("Phase 2: FinTech Razorpay Eradication & Ledger Integrity", async (t) => {
+  await t.test("Confirms api/razorpay-webhook.js is completely eradicated", () => {
+    assert.strictEqual(fs.existsSync("api/razorpay-webhook.js"), false, "api/razorpay-webhook.js must be deleted");
   });
 
-  await t.test("Rejects webhook calls missing x-razorpay-signature with 401 Unauthorized", async () => {
-    process.env.RAZORPAY_WEBHOOK_SECRET = "whsec_test_secret_2026";
-
-    const req = {
-      method: "POST",
-      headers: {},
-      body: { event: "payment.captured" },
-    };
-    const res = mockRes();
-    await razorpayHandler(req, res);
-
-    assert.strictEqual(res.statusCode, 401);
-    assert.strictEqual(res.body.error, "Missing required signature header.");
-  });
-
-  await t.test("Rejects tampered payloads or signature mismatch with 400 Bad Request", async () => {
-    process.env.RAZORPAY_WEBHOOK_SECRET = "whsec_test_secret_2026";
-
-    const req = {
-      method: "POST",
-      headers: { "x-razorpay-signature": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" },
-      body: { event: "payment.captured", payload: { payment: { entity: { id: "pay_1", amount: 500000 } } } },
-    };
-    const res = mockRes();
-    await razorpayHandler(req, res);
-
-    assert.strictEqual(res.statusCode, 400);
-    assert.strictEqual(res.body.error, "Invalid cryptographic signature.");
+  await t.test("Rejects webhook calls when route does not exist", () => {
+    assert.strictEqual(fs.existsSync("api/razorpay/create-order.js"), false);
   });
 });
 
@@ -678,118 +625,10 @@ test("Phase 2: Authentication Context Security & Profile Fail-Closed Enforcement
   });
 });
 
-test("Phase 3: Sales Readiness — Razorpay Order Generation & Signature Verification", async (t) => {
-  const { default: createOrderHandler } = await import("../api/razorpay/create-order.js");
-  const { default: verifyPaymentHandler } = await import("../api/razorpay/verify-payment.js");
-
-  function mockRes() {
-    return {
-      statusCode: 200,
-      headers: {},
-      body: null,
-      setHeader(k, v) { this.headers[k] = v; },
-      status(code) { this.statusCode = code; return this; },
-      json(obj) { this.body = obj; return this; },
-      end() { return this; },
-    };
-  }
-
-  await t.test("create-order rejects request when RAZORPAY_KEY_SECRET is unconfigured (Fail Closed 500)", async () => {
-    const prevSecret = process.env.RAZORPAY_KEY_SECRET;
-    delete process.env.RAZORPAY_KEY_SECRET;
-
-    const req = {
-      method: "POST",
-      body: { amount: 25000, schoolId: "TEST-CAMPUS" },
-    };
-    const res = mockRes();
-    await createOrderHandler(req, res);
-
-    assert.strictEqual(res.statusCode, 500);
-    assert.ok(res.body.error.includes("unconfigured"));
-
-    if (prevSecret) process.env.RAZORPAY_KEY_SECRET = prevSecret;
-  });
-
-  await t.test("create-order rejects missing or invalid amount with 400 Bad Request", async () => {
-    process.env.RAZORPAY_KEY_SECRET = "test_key_secret_2026";
-    process.env.RAZORPAY_KEY_ID = "rzp_test_12345";
-
-    const req = {
-      method: "POST",
-      body: { amount: -500, schoolId: "TEST-CAMPUS" },
-    };
-    const res = mockRes();
-    await createOrderHandler(req, res);
-
-    assert.strictEqual(res.statusCode, 400);
-    assert.strictEqual(res.body.error, "Valid payment amount is required.");
-  });
-
-  await t.test("verify-payment rejects missing signature parameters with 400 Bad Request", async () => {
-    process.env.RAZORPAY_KEY_SECRET = "test_key_secret_2026";
-
-    const req = {
-      method: "POST",
-      body: { razorpay_order_id: "order_123" },
-    };
-    const res = mockRes();
-    await verifyPaymentHandler(req, res);
-
-    assert.strictEqual(res.statusCode, 400);
-    assert.ok(res.body.error.includes("mandatory signature"));
-  });
-
-  await t.test("verify-payment rejects tampered signature with 400 Bad Request", async () => {
-    process.env.RAZORPAY_KEY_SECRET = "test_key_secret_2026";
-
-    const req = {
-      method: "POST",
-      body: {
-        razorpay_order_id: "order_abc_123",
-        razorpay_payment_id: "pay_xyz_456",
-        razorpay_signature: "tampered_signature_hex_0000000000000000000000000000000000000000000000000000000000000000",
-        schoolId: "TEST-CAMPUS",
-        amount: 15000,
-      },
-    };
-    const res = mockRes();
-    await verifyPaymentHandler(req, res);
-
-    assert.strictEqual(res.statusCode, 400);
-    assert.strictEqual(res.body.error, "Cryptographic signature verification failed. Untrusted payment assertion.");
-  });
-
-  await t.test("verify-payment accepts valid HMAC-SHA256 signature and returns verified receipt", async () => {
-    const secret = "test_key_secret_2026";
-    process.env.RAZORPAY_KEY_SECRET = secret;
-
-    const orderId = "order_valid_789";
-    const paymentId = "pay_valid_987";
-    const crypto = await import("crypto");
-    const validSignature = crypto
-      .createHmac("sha256", secret)
-      .update(`${orderId}|${paymentId}`)
-      .digest("hex");
-
-    const req = {
-      method: "POST",
-      body: {
-        razorpay_order_id: orderId,
-        razorpay_payment_id: paymentId,
-        razorpay_signature: validSignature,
-        schoolId: "TEST-CAMPUS",
-        amount: 25000,
-        studentName: "Aditya Verma",
-      },
-    };
-    const res = mockRes();
-    await verifyPaymentHandler(req, res);
-
-    assert.strictEqual(res.statusCode, 200);
-    assert.strictEqual(res.body.verified, true);
-    assert.strictEqual(res.body.payment_id, paymentId);
-    assert.ok(res.body.invoice_no.startsWith("INV-"));
+test("Phase 3: Sales Readiness — Razorpay Eradication & Ledger Protection", async (t) => {
+  await t.test("Confirms create-order and verify-payment are eradicated from codebase", () => {
+    assert.strictEqual(fs.existsSync("api/razorpay/create-order.js"), false, "create-order.js must be deleted");
+    assert.strictEqual(fs.existsSync("api/razorpay/verify-payment.js"), false, "verify-payment.js must be deleted");
   });
 });
 

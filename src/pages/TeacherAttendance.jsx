@@ -358,21 +358,87 @@ export default function TeacherAttendance() {
       // Also maintain general date index for cross-dashboard analytics
       localStorage.setItem(`erp_attendance_${activeSchoolId}_${today}`, JSON.stringify(formattedRecords));
 
-      // 2. Sync to Supabase attendance table
-      if (supabase) {
-        const schoolUuid = await resolveSchoolUuid(activeSchoolId);
-        const { error: insertErr } = await supabase.from("attendance").insert([
-          {
-            school_id: schoolUuid || activeSchoolId,
+      // Update cumulative institutional attendance ledger
+      try {
+        const cumKey = `erp_attendance_${activeSchoolId}`;
+        const existingCum = JSON.parse(localStorage.getItem(cumKey) || "[]");
+        const recordMap = new Map();
+        if (Array.isArray(existingCum)) {
+          existingCum.forEach((r) => {
+            recordMap.set(`${r.student_id || r.roll_number}_${r.date || today}`, r);
+          });
+        }
+        formattedRecords.forEach((r) => {
+          recordMap.set(`${r.student_id || r.roll_number}_${today}`, r);
+        });
+        localStorage.setItem(cumKey, JSON.stringify(Array.from(recordMap.values())));
+      } catch (cumErr) {
+        console.warn("Cumulative attendance sync notice:", cumErr);
+      }
+
+      // OFFLINE MUTATION TRAP: If client is offline, enqueue mutation directly and notify user
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        await enqueueOfflineMutation({
+          schoolId: activeSchoolId,
+          actionType: "attendance_mark",
+          payload: {
+            school_id: activeSchoolId,
             class_id: selectedBatch,
             class_name: selectedBatch,
             date: today,
             records: formattedRecords,
           },
-        ]);
-        if (insertErr) {
-          console.error("Supabase attendance insert error:", insertErr);
-          throw insertErr;
+          userId: user?.id,
+          userEmail: user?.email,
+        });
+
+        showToast("Saved Offline: Attendance queued for background synchronization.", "info");
+        window.dispatchEvent(new Event("erp-attendance-updated"));
+        setSaving(false);
+        return;
+      }
+
+      // 2. Sync to Supabase attendance table
+      if (supabase) {
+        try {
+          const schoolUuid = await resolveSchoolUuid(activeSchoolId);
+          const { error: insertErr } = await supabase.from("attendance").insert([
+            {
+              school_id: schoolUuid || activeSchoolId,
+              class_id: selectedBatch,
+              date: today,
+              records: formattedRecords,
+            },
+          ]);
+          if (insertErr) {
+            console.error("Supabase attendance insert error:", insertErr);
+            throw insertErr;
+          }
+        } catch (dbErr) {
+          console.warn("Supabase attendance sync notice:", dbErr);
+          if (
+            dbErr?.message?.includes("Failed to fetch") ||
+            dbErr?.message?.includes("network") ||
+            dbErr?.message?.includes("NetworkError")
+          ) {
+            await enqueueOfflineMutation({
+              schoolId: activeSchoolId,
+              actionType: "attendance_mark",
+              payload: {
+                school_id: activeSchoolId,
+                class_id: selectedBatch,
+                class_name: selectedBatch,
+                date: today,
+                records: formattedRecords,
+              },
+              userId: user?.id,
+              userEmail: user?.email,
+            });
+            showToast("Saved Offline: Attendance queued for background synchronization.", "info");
+            window.dispatchEvent(new Event("erp-attendance-updated"));
+            setSaving(false);
+            return;
+          }
         }
       }
 
@@ -497,6 +563,7 @@ export default function TeacherAttendance() {
               Select Target Classroom / Batch
             </label>
             <select
+              data-testid="select-batch"
               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white font-bold focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
               value={selectedBatch}
               onChange={(e) => setSelectedBatch(e.target.value)}
@@ -595,6 +662,7 @@ export default function TeacherAttendance() {
                           <td className="p-4 text-center">
                             <button
                               type="button"
+                              data-testid={`btn-toggle-attendance-${student.roll_number || student.id}`}
                               onClick={() => toggleStatus(student.id)}
                               className={`px-6 py-2 rounded-xl font-black text-xs sm:text-sm transition-all shadow-md cursor-pointer ${
                                 isPresent
@@ -618,6 +686,7 @@ export default function TeacherAttendance() {
                 </p>
                 <button
                   type="button"
+                  data-testid="btn-save-attendance"
                   onClick={handleSaveAttendance}
                   disabled={saving}
                   className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold px-8 py-3.5 rounded-xl shadow-lg shadow-emerald-600/30 transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"

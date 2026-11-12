@@ -1,23 +1,22 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { TableSkeleton } from "../Components/Skeleton";
 import { generateFeeInvoicePDF, generateReportCardPDF } from "../utils/pdfGenerator";
+import { FileText, QrCode, Building, CheckCircle2, Clock, AlertTriangle, ShieldCheck, Download } from "lucide-react";
 
 export default function StudentFees() {
   const { user } = useContext(AppContext);
   const { showToast } = useToast();
-  const navigate = useNavigate();
   const [fees, setFees] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [reportCards, setReportCards] = useState([]);
+
+  const schoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
 
   const fetchStudentLedger = async () => {
     setLoading(true);
-    const schoolId = (user?.institution_code || user?.school_id || "CAMPUS-01").toUpperCase();
 
     // Strict Data Isolation: Current Authenticated Student Identity Matcher
     const currentRoll = String(user?.personal_code || user?.roll_number || user?.id || "").trim().toUpperCase();
@@ -95,8 +94,8 @@ export default function StudentFees() {
               amount: Number(d.amount) || 0,
               date: d.date || new Date().toISOString().split("T")[0],
               status: displayStatus,
-              mode: d.payment_mode || "School UPI QR",
-              utr: d.razorpay_payment_id || d.utr || null,
+              mode: d.payment_mode || "School Counter / UPI QR",
+              utr: d.utr || null,
               invoice_no: d.invoice_no || null,
               is_partial: Boolean(d.is_partial || d.payment_mode?.includes("PARTIAL") || d.term?.includes("PARTIAL")),
               receipt_tag: d.receipt_tag || (d.payment_mode?.includes("PARTIAL") || d.term?.includes("PARTIAL") ? "PARTIAL" : "FULL"),
@@ -118,8 +117,8 @@ export default function StudentFees() {
             amount: Number(lr.amount) || 0,
             date: lr.date || new Date().toISOString().split("T")[0],
             status: displayStatus,
-            mode: lr.payment_mode || `School UPI QR (UTR: ${lr.utr || "Verified"})`,
-            utr: lr.utr || lr.razorpay_payment_id || null,
+            mode: lr.payment_mode || `School Counter / UPI QR (UTR: ${lr.utr || "Verified"})`,
+            utr: lr.utr || null,
             invoice_no: lr.invoice_no || null,
             is_partial: Boolean(lr.is_partial || lr.receipt_tag === "PARTIAL" || lr.payment_mode?.includes("PARTIAL") || lr.term?.includes("PARTIAL")),
             receipt_tag: lr.receipt_tag || (lr.payment_mode?.includes("PARTIAL") || lr.term?.includes("PARTIAL") ? "PARTIAL" : "FULL"),
@@ -174,7 +173,7 @@ export default function StudentFees() {
           amount: Number(lr.amount) || 0,
           date: lr.date || new Date().toISOString().split("T")[0],
           status: rawStatus === "paid" ? "Paid" : rawStatus === "pending_verification" ? "Pending Verification" : "Pending",
-          mode: lr.payment_mode || `School UPI QR (UTR: ${lr.utr || "Verified"})`,
+          mode: lr.payment_mode || `School Counter / UPI QR (UTR: ${lr.utr || "Verified"})`,
           utr: lr.utr || null,
           invoice_no: lr.invoice_no || null,
         };
@@ -207,7 +206,7 @@ export default function StudentFees() {
         title: fee.term,
         amount: fee.amount,
         date: fee.date,
-        payment_mode: fee.mode || "School UPI QR",
+        payment_mode: fee.mode || "School Counter / UPI QR",
         utr: fee.utr || null,
         transactionId: fee.utr || null,
         invoiceNo: fee.invoice_no || null,
@@ -232,40 +231,105 @@ export default function StudentFees() {
     showToast("Official Academic Transcript PDF generated & downloaded!", "success");
   };
 
-  return (
-    <div className="relative text-slate-200 min-h-full pb-10 font-sans">
-      <div className="fixed top-0 left-10 w-96 h-96 bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+  const totalPaid = fees
+    .filter((f) => f.status === "Paid")
+    .reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
 
-      <div className="relative z-10 max-w-5xl mx-auto">
+  const pendingDues = fees
+    .filter((f) => f.status === "Pending" || f.status === "Pending Verification")
+    .reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
+
+  return (
+    <div className="relative text-slate-100 min-h-full pb-10 font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* Background Ambience */}
+      <div className="fixed top-0 left-10 w-96 h-96 bg-cyan-600/10 rounded-full blur-[140px] pointer-events-none"></div>
+
+      <div className="relative z-10 max-w-5xl mx-auto space-y-8">
         {/* HEADER */}
-        <div className="mb-8 flex justify-between items-center flex-wrap gap-4">
+        <div className="flex justify-between items-start flex-wrap gap-4">
           <div>
-            <p className="text-emerald-300 text-sm font-semibold mb-1 uppercase tracking-widest">
-              Financial & Academic Documents
-            </p>
-            <h1 className="text-3xl font-extrabold text-white">Student Fee Vault & Transcripts 📜</h1>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-widest mb-2">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Verified Scholar Ledger</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
+              Fee Records & Official Transcripts
+            </h1>
             <p className="text-slate-400 text-sm mt-1">
-              Verified fee clearance certificates, tax invoices, and authenticated report cards
+              Live clearance status, authenticated institutional receipts, and signed academic grade transcripts
             </p>
           </div>
           <button
-            onClick={() => navigate("/student/pay")}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-6 py-3 rounded-2xl text-sm shadow-xl shadow-emerald-600/30 transition-all flex items-center gap-2"
+            onClick={fetchStudentLedger}
+            className="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white px-4 py-2.5 rounded-xl border border-slate-700/60 font-semibold text-xs transition-all duration-200 cursor-pointer shadow-sm"
           >
-            <span>💳</span> Settle New Fee (Razorpay)
+            <span>🔄</span> Refresh Ledger
           </button>
         </div>
 
-        {/* FEE LEDGER */}
-        <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl shadow-2xl overflow-hidden mb-10">
-          <div className="p-6 border-b border-slate-700/60 bg-slate-800/50 flex justify-between items-center">
-            <h2 className="text-lg font-bold text-white">Live Fee Payment History</h2>
-            <button
-              onClick={fetchStudentLedger}
-              className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-1.5 rounded-lg text-slate-300 font-bold transition-all"
-            >
-              🔄 Refresh
-            </button>
+        {/* SUMMARY CARDS & OFFLINE PAYMENT GUIDANCE */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Total Cleared */}
+          <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 p-6 rounded-3xl shadow-xl flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Cleared</span>
+              <span className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold">
+                ✓
+              </span>
+            </div>
+            <div className="mt-4">
+              <div className="text-3xl font-extrabold text-emerald-400">
+                ₹{totalPaid.toLocaleString()}
+              </div>
+              <p className="text-xs text-slate-400 mt-1">Settled and sealed by Accounts</p>
+            </div>
+          </div>
+
+          {/* Pending Clearance */}
+          <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 p-6 rounded-3xl shadow-xl flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pending Dues</span>
+              <span className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center font-bold">
+                !
+              </span>
+            </div>
+            <div className="mt-4">
+              <div className="text-3xl font-extrabold text-amber-400">
+                ₹{pendingDues.toLocaleString()}
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                {pendingDues > 0 ? "Awaiting institutional counter clearance" : "All terms fully settled"}
+              </p>
+            </div>
+          </div>
+
+          {/* Offline Payment Procedure Card */}
+          <div className="bg-gradient-to-br from-cyan-950/40 via-slate-900/80 to-slate-900/80 backdrop-blur-md border border-cyan-800/40 p-6 rounded-3xl shadow-xl flex flex-col justify-between">
+            <div className="flex items-center gap-2 text-cyan-400">
+              <QrCode className="w-5 h-5 shrink-0" />
+              <span className="text-xs font-bold uppercase tracking-wider">Campus Settlement Mode</span>
+            </div>
+            <div className="mt-3">
+              <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                To settle fees, visit the <span className="text-cyan-300 font-semibold">Campus Accounts Office</span> with Cash / Cheque or scan the official <span className="text-cyan-300 font-semibold">School UPI QR</span> at the counter.
+              </p>
+              <p className="text-[11px] text-slate-400 mt-2 font-mono">
+                The bursar verifies the UTR and immediately issues your authenticated Tax Receipt.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* FEE LEDGER TABLE */}
+        <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
+          <div className="p-6 border-b border-slate-800 bg-slate-950/40 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-cyan-400" />
+              <h2 className="text-base sm:text-lg font-bold text-slate-100">Live Fee Payment History</h2>
+            </div>
+            <span className="text-xs font-mono text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-700/60">
+              {fees.length} Records
+            </span>
           </div>
 
           {loading ? (
@@ -274,14 +338,14 @@ export default function StudentFees() {
             </div>
           ) : fees.length === 0 ? (
             <div className="p-12 text-center text-slate-400">
-              <p className="font-bold text-white text-base">No fee payment history found.</p>
-              <p className="text-xs mt-1">Receipts for fees settled via UPI QR or Razorpay will appear here with downloadable official tax invoices.</p>
+              <p className="font-bold text-slate-200 text-base">No fee payment history found.</p>
+              <p className="text-xs mt-1">Receipts for fees settled via Campus Counter or School UPI QR will appear here with downloadable official tax invoices.</p>
             </div>
           ) : (
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-700/60 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/40">
+                  <tr className="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wider bg-slate-950/60">
                     <th className="p-5">Fee Description / Component</th>
                     <th className="p-5">Amount</th>
                     <th className="p-5">Settlement Date</th>
@@ -289,14 +353,14 @@ export default function StudentFees() {
                     <th className="p-5 text-center">Tax Invoice</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700/50 text-sm">
+                <tbody className="divide-y divide-slate-800/60 text-sm">
                   {fees.map((f) => (
-                    <tr key={f.id} className="hover:bg-slate-800/30 transition-colors">
+                    <tr key={f.id} className="hover:bg-slate-800/40 transition-colors duration-150">
                       <td className="p-5">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-bold text-white">{f.term}</p>
+                          <p className="font-bold text-slate-100">{f.term}</p>
                           {(f.is_partial || f.receipt_tag === "PARTIAL" || String(f.term || "").includes("PARTIAL") || String(f.mode || "").includes("PARTIAL")) && (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase tracking-wider">
                               PARTIAL
                             </span>
                           )}
@@ -311,10 +375,10 @@ export default function StudentFees() {
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
                             f.status === "Paid"
-                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                               : f.status === "Pending Verification"
-                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse"
-                              : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                              ? "bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse"
+                              : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
                           }`}
                         >
                           {f.status}
@@ -324,13 +388,15 @@ export default function StudentFees() {
                         {f.status === "Paid" ? (
                           <button
                             onClick={() => handleDownloadInvoice(f)}
-                            className="bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border border-emerald-500/40 px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 mx-auto cursor-pointer"
+                            className="bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all duration-200 inline-flex items-center gap-1.5 mx-auto cursor-pointer"
                           >
-                            <span>📄</span> Download Invoice
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Download Invoice</span>
                           </button>
                         ) : f.status === "Pending Verification" ? (
                           <span className="text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-xl inline-flex items-center gap-1">
-                            <span>⏳</span> In Accountant Queue
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>In Accountant Queue</span>
                           </span>
                         ) : (
                           <span className="text-[11px] text-slate-500 font-medium">Unpaid</span>
@@ -345,41 +411,45 @@ export default function StudentFees() {
         </div>
 
         {/* REPORT CARD VAULT */}
-        <div className="bg-[#1E293B]/70 backdrop-blur-xl border border-slate-700/60 rounded-3xl shadow-2xl overflow-hidden">
-          <div className="p-6 border-b border-slate-700/60 bg-slate-800/50">
-            <h2 className="text-lg font-bold text-white">Academic Performance & Grade Vault</h2>
+        <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
+          <div className="p-6 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
+            <h2 className="text-base sm:text-lg font-bold text-slate-100">Academic Performance & Grade Vault</h2>
+            <span className="text-xs font-mono text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-700/60">
+              {reportCards.length} Transcripts
+            </span>
           </div>
           {reportCards.length === 0 ? (
             <div className="p-12 text-center text-slate-400">
-              <p className="font-bold text-white text-base">No examination transcripts published yet.</p>
+              <p className="font-bold text-slate-200 text-base">No examination transcripts published yet.</p>
               <p className="text-xs mt-1">Faculty and HOD signed term report cards will be archived here once evaluations are completed.</p>
             </div>
           ) : (
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-700/60 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/40">
+                  <tr className="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wider bg-slate-950/60">
                     <th className="p-5">Examination Term</th>
                     <th className="p-5">Percentage</th>
                     <th className="p-5">Grade</th>
                     <th className="p-5 text-center">Document Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700/50 text-sm">
+                <tbody className="divide-y divide-slate-800/60 text-sm">
                   {reportCards.map((rc) => (
-                    <tr key={rc.id} className="hover:bg-slate-800/30 transition-colors">
+                    <tr key={rc.id} className="hover:bg-slate-800/40 transition-colors duration-150">
                       <td className="p-5">
-                        <p className="font-bold text-white">{rc.term}</p>
-                        <p className="text-xs text-blue-400">{rc.status}</p>
+                        <p className="font-bold text-slate-100">{rc.term}</p>
+                        <p className="text-xs text-cyan-400">{rc.status}</p>
                       </td>
-                      <td className="p-5 font-extrabold text-blue-400">{rc.percentage}</td>
+                      <td className="p-5 font-extrabold text-cyan-400">{rc.percentage}</td>
                       <td className="p-5 font-mono font-bold text-emerald-400">{rc.grade}</td>
                       <td className="p-5 text-center">
                         <button
                           onClick={() => handleDownloadReportCard(rc)}
-                          className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/40 hover:text-white font-bold px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 mx-auto"
+                          className="bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 hover:text-white font-bold px-4 py-2 rounded-xl text-xs transition-all duration-200 inline-flex items-center gap-1.5 mx-auto cursor-pointer"
                         >
-                          <span>📥</span> Download PDF Transcript
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Download Transcript</span>
                         </button>
                       </td>
                     </tr>

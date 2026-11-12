@@ -120,6 +120,7 @@ test.describe("Tuition ERP - Multi-Tenant Institutional E2E Lifecycle", () => {
     // 1-Click login as student
     const studentBtn = page.locator('button:has-text("Student")');
     await studentBtn.click();
+    await page.click('[data-testid="btn-login-submit"]');
 
     await expect(page).toHaveURL(/\/student\/dashboard/, { timeout: 15000 });
 

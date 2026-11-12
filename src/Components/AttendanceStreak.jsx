@@ -319,7 +319,7 @@ export default function AttendanceStreak({
                       )}
                     </div>
                     <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate">
-                      {student.roll} &bull; {student.rate}% Attendance
+                      {isMe ? `${student.roll} • ${student.rate}% Attendance` : "Scholar • Verified Punctuality Tier"}
                     </p>
                   </div>
                 </div>

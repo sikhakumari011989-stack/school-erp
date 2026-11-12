@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
-import { useTheme } from "../context/ThemeContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import {
@@ -13,8 +12,6 @@ import {
   DollarSign,
   Calendar,
   FileText,
-  Sun,
-  Moon,
   Layers,
   Sparkles,
   X,
@@ -32,7 +29,6 @@ export default function CommandPalette() {
   const [students, setStudents] = useState([]);
 
   const { user } = useContext(AppContext) || {};
-  const { isDark, toggleTheme } = useTheme();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -110,19 +106,28 @@ export default function CommandPalette() {
     { id: "nav_crm", title: "Go to Admissions CRM & Enrollments", category: "Navigation", icon: GraduationCap, path: "/admin/admissions", keywords: "admissions enroll register new students leads" },
     { id: "nav_docs", title: "Go to AI Document Intelligence & OCR", category: "Navigation", icon: FileText, path: "/admin/documents", keywords: "ocr document scan marksheet admission upload parse" },
     { id: "nav_trans", title: "Go to Transport & Bus Fleet Intelligence", category: "Navigation", icon: Compass, path: "/admin/transport", keywords: "transport bus vehicle route stop driver fleet manifest" },
-    { id: "nav_accred", title: "Go to Institutional Accreditation Center", category: "Navigation", icon: Award, path: "/admin/accreditation", keywords: "accreditation cbse naac compliance audit criteria" },
-    { id: "nav_health", title: "Go to Clinic & Health Records Vault", category: "Navigation", icon: HeartPulse, path: "/admin/health", keywords: "health clinic medical doctor nurse allergy dpdp blood emergency triage" },
-    { id: "nav_payroll", title: "Go to Payroll & Faculty Compensation", category: "Navigation", icon: DollarSign, path: "/accountant/payroll", keywords: "payroll salary compensation payslip faculty" },
-    { id: "nav_exp", title: "Go to Institutional Expense Manager", category: "Navigation", icon: DollarSign, path: "/accountant/expenses", keywords: "expense costs operational budget spending" },
-    { id: "nav_diag", title: "Go to System Diagnostics & Telemetry", category: "Navigation", icon: Zap, path: "/system-check", keywords: "diagnostic telemetry health audit vercel database" },
+    { id: "nav_accred", title: "Go to Institutional Accreditation Center", category: "Navigation", icon: Award, path: "/admin/accreditation", keywords: "naac cbse nba audit compliance accreditation criterion evidence" },
+    { id: "nav_hr", title: "Go to HR & Staff Leave Management", category: "Navigation", icon: User, path: "/teacher/leave", keywords: "leave apply sick casual vacation hr permission" },
   ];
 
   const ACTION_COMMANDS = [
     {
-      id: "act_test",
-      title: "Record Class Assessment Marks",
+      id: "act_attendance",
+      title: "Quick Action: Mark Attendance for Class 10-A",
       category: "Quick Actions",
-      icon: Sparkles,
+      icon: CheckCircle2,
+      action: () => {
+        setIsOpen(false);
+        navigate("/teacher/attendance?batch=Class%2010-A");
+        showToast("Opening Class 10-A Attendance Register...", "info");
+      },
+      keywords: "attendance mark class 10 10-A quick roll",
+    },
+    {
+      id: "act_marks",
+      title: "Quick Action: Enter Class Test Scores",
+      category: "Quick Actions",
+      icon: Zap,
       action: () => {
         setIsOpen(false);
         navigate("/teacher/dashboard");
@@ -131,18 +136,6 @@ export default function CommandPalette() {
         }, 200);
       },
       keywords: "record marks test scores grades evaluation exam",
-    },
-    {
-      id: "act_theme",
-      title: `Toggle Theme (${isDark ? "Switch to Light Mode" : "Switch to Dark Mode"})`,
-      category: "Quick Actions",
-      icon: isDark ? Sun : Moon,
-      action: () => {
-        toggleTheme();
-        setIsOpen(false);
-        showToast(`Theme switched to ${isDark ? "Light" : "Dark"} mode`, "success");
-      },
-      keywords: "theme dark light mode color style switch toggle",
     },
     {
       id: "act_report",
@@ -154,48 +147,38 @@ export default function CommandPalette() {
         navigate("/accountant/dashboard");
         showToast("Generating Monthly Financial Report summary...", "info");
       },
-      keywords: "report pdf generate financial download summary",
+      keywords: "financial statement ledger pdf export collection summary",
     },
   ];
 
-  // 4. Search and Filter Logic
-  const cleanQ = query.trim().toLowerCase();
+  // Map students dynamically to commands
+  const STUDENT_COMMANDS = students.map((stu) => ({
+    id: `stu_${stu.id || stu.roll_number}`,
+    title: `${stu.name || "Scholar"} (${stu.roll_number || "No Roll"} · ${stu.class_name || stu.class || "General"})`,
+    category: "Scholar Profiles",
+    icon: GraduationCap,
+    action: () => {
+      setIsOpen(false);
+      navigate(`/accountant/dashboard?search=${encodeURIComponent(stu.name || stu.roll_number || "")}`);
+      showToast(`Inspecting records for ${stu.name}...`, "info");
+    },
+    keywords: `${stu.name} ${stu.roll_number} ${stu.class_name || ""} student scholar profile`,
+  }));
 
-  const filteredNav = NAV_COMMANDS.filter((cmd) => {
-    if (!cleanQ) return true;
-    return cmd.title.toLowerCase().includes(cleanQ) || cmd.keywords.toLowerCase().includes(cleanQ);
-  });
+  const allItems = [...NAV_COMMANDS, ...ACTION_COMMANDS, ...STUDENT_COMMANDS];
 
-  const filteredActions = ACTION_COMMANDS.filter((cmd) => {
-    if (!cleanQ) return true;
-    return cmd.title.toLowerCase().includes(cleanQ) || cmd.keywords.toLowerCase().includes(cleanQ);
-  });
+  // Filtering based on user input
+  const qLower = query.trim().toLowerCase();
+  const allFilteredItems = qLower
+    ? allItems.filter(
+        (item) =>
+          item.title.toLowerCase().includes(qLower) ||
+          item.category.toLowerCase().includes(qLower) ||
+          (item.keywords && item.keywords.toLowerCase().includes(qLower))
+      )
+    : allItems.slice(0, 15);
 
-  const filteredStudents = students
-    .filter((s) => {
-      if (!cleanQ) return false;
-      const name = (s.name || s.full_name || "").toLowerCase();
-      const roll = (s.roll_number || s.personal_code || s.id || "").toLowerCase();
-      const cls = (s.class_name || "").toLowerCase();
-      return name.includes(cleanQ) || roll.includes(cleanQ) || cls.includes(cleanQ);
-    })
-    .slice(0, 5)
-    .map((s) => ({
-      id: `stu_${s.id || s.roll_number}`,
-      title: `${s.name || s.full_name} (${s.roll_number || s.personal_code || "Scholar"}) - ${s.class_name || "Enrolled"}`,
-      category: "Students",
-      icon: User,
-      action: () => {
-        setIsOpen(false);
-        navigate(`/accountant/dashboard?search=${encodeURIComponent(s.roll_number || s.name)}`);
-        showToast(`Inspecting record for ${s.name || s.full_name}`, "info");
-      },
-      keywords: `${s.name} ${s.roll_number}`,
-    }));
-
-  const allFilteredItems = [...filteredNav, ...filteredStudents, ...filteredActions];
-
-  // Keep selected index bounded
+  // Keep index within bounds
   useEffect(() => {
     if (selectedIndex >= allFilteredItems.length) {
       setSelectedIndex(Math.max(0, allFilteredItems.length - 1));
@@ -232,15 +215,15 @@ export default function CommandPalette() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-start justify-center pt-16 sm:pt-24 px-4 p-4 animate-fade-in">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-start justify-center pt-16 sm:pt-24 px-4 p-4 animate-fade-in">
       {/* COMMAND PALETTE WINDOW */}
       <div
-        className="max-w-2xl w-full bg-white/95 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-scale-in"
+        className="max-w-2xl w-full bg-slate-900/95 backdrop-blur-2xl border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* TOP SEARCH BAR */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200 dark:border-slate-800">
-          <Search className="w-5 h-5 text-cyan-500 shrink-0" />
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-800">
+          <Search className="w-5 h-5 text-cyan-400 shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -251,7 +234,7 @@ export default function CommandPalette() {
             }}
             onKeyDown={handleInputKeyDown}
             placeholder="Type a command or search students, fee ledger, reports..."
-            className="w-full bg-transparent text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm sm:text-base font-medium focus:outline-none"
+            className="w-full bg-transparent text-slate-100 placeholder-slate-500 text-sm sm:text-base font-medium focus:outline-none"
           />
           {query && (
             <button
@@ -260,12 +243,12 @@ export default function CommandPalette() {
                 setQuery("");
                 inputRef.current?.focus();
               }}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1"
+              className="text-slate-400 hover:text-white p-1"
             >
               <X className="w-4 h-4" />
             </button>
           )}
-          <span className="hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+          <span className="hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">
             ESC
           </span>
         </div>
@@ -274,8 +257,8 @@ export default function CommandPalette() {
         <div ref={listRef} className="overflow-y-auto p-3 space-y-1 flex-1">
           {allFilteredItems.length === 0 ? (
             <div className="py-12 text-center text-slate-400 space-y-1">
-              <p className="text-sm font-bold text-slate-600 dark:text-slate-300">No matching commands or scholars found</p>
-              <p className="text-xs text-slate-400">Try searching "fee", "attendance", "calendar", or a student's name.</p>
+              <p className="text-sm font-bold text-slate-300">No matching commands or scholars found</p>
+              <p className="text-xs text-slate-500">Try searching "fee", "attendance", "calendar", or a student's name.</p>
             </div>
           ) : (
             allFilteredItems.map((item, index) => {
@@ -287,18 +270,18 @@ export default function CommandPalette() {
                   key={item.id}
                   onClick={() => executeItem(item)}
                   onMouseEnter={() => setSelectedIndex(index)}
-                  className={`flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all ${
+                  className={`flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all duration-200 ${
                     isSelected
-                      ? "bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 shadow-sm"
-                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60"
+                      ? "bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-sm"
+                      : "text-slate-200 hover:bg-slate-800/60"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div
                       className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                         isSelected
-                          ? "bg-cyan-500 text-white"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                          ? "bg-cyan-500 text-slate-950 font-bold"
+                          : "bg-slate-800 text-slate-400"
                       }`}
                     >
                       <Icon className="w-4 h-4" />
@@ -315,7 +298,7 @@ export default function CommandPalette() {
 
                   <div className="flex items-center gap-2 shrink-0">
                     {isSelected && (
-                      <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
+                      <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
                         <span>Select</span>
                         <ArrowRight className="w-3 h-3" />
                       </span>
@@ -328,25 +311,24 @@ export default function CommandPalette() {
         </div>
 
         {/* FOOTER SHORTCUT HINTS */}
-        <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+        <div className="px-5 py-3 border-t border-slate-800 bg-slate-950/70 flex items-center justify-between text-[11px] text-slate-400">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-[10px]">↑↓</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[10px]">↑↓</kbd>
               <span>Navigate</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-[10px]">↵</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[10px]">↵</kbd>
               <span>Execute</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-indigo-600 dark:text-cyan-400 font-bold">
+          <div className="flex items-center gap-1.5 text-cyan-400 font-bold">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Academic OS Global Search</span>
+            <span>ASTINEX Global Search</span>
           </div>
         </div>
       </div>
     </div>
   );
 }
-

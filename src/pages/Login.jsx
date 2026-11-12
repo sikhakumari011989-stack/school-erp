@@ -4,8 +4,8 @@ import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import BrandLogo from "../Components/BrandLogo";
-import ThemeToggle from "../Components/ThemeToggle";
 import { verifyCloudLogin, checkSchoolSubscriptionStatus } from "../utils/cloudSyncService";
+import { safeStorage } from "../utils/safeStorage";
 import {
   Building2,
   User,
@@ -30,7 +30,7 @@ export default function Login({ isDirectPortal = false }) {
 
   const searchParams = new URLSearchParams(location.search);
   const isDirect = isDirectPortal || location.pathname === "/portal";
-  const savedTenant = typeof localStorage !== "undefined" ? localStorage.getItem("erp_active_tenant") : "";
+  const savedTenant = safeStorage.getItem("erp_active_tenant") || "";
   const initialSchool =
     searchParams.get("school") ||
     searchParams.get("tenant") ||
@@ -56,7 +56,7 @@ export default function Login({ isDirectPortal = false }) {
       const active =
         user ||
         (() => {
-          const s = localStorage.getItem("erp_session_user");
+          const s = safeStorage.getItem("erp_session_user");
           return s ? JSON.parse(s) : null;
         })();
 
@@ -138,7 +138,7 @@ export default function Login({ isDirectPortal = false }) {
               explicitAuthError = "This account has been disabled. Please contact your campus administrator.";
               break;
             } else if (msg.includes("rate limit") || status === 429) {
-              explicitAuthError = "Too many failed attempts. Please wait a few moments before trying again.";
+              console.warn("Supabase auth rate-limited; falling back to institutional directory authentication");
               break;
             }
           }
@@ -198,8 +198,8 @@ export default function Login({ isDirectPortal = false }) {
 
         // Synchronously store session before routing
         try {
-          localStorage.setItem("erp_session_user", JSON.stringify(sessionPayload));
-          localStorage.setItem("erp_active_tenant", cleanInst || sessionPayload.institution_code);
+          safeStorage.setItem("erp_session_user", JSON.stringify(sessionPayload));
+          safeStorage.setItem("erp_active_tenant", cleanInst || sessionPayload.institution_code);
         } catch {}
 
         if (typeof setUser === "function") setUser(sessionPayload);
@@ -228,8 +228,8 @@ export default function Login({ isDirectPortal = false }) {
           authUid: authUser.id,
         };
         try {
-          localStorage.setItem("erp_session_user", JSON.stringify(fallbackPayload));
-          localStorage.setItem("erp_active_tenant", cleanInst || "CAMPUS-01");
+          safeStorage.setItem("erp_session_user", JSON.stringify(fallbackPayload));
+          safeStorage.setItem("erp_active_tenant", cleanInst || "CAMPUS-01");
         } catch {}
 
         if (typeof setUser === "function") setUser(fallbackPayload);
@@ -264,8 +264,8 @@ export default function Login({ isDirectPortal = false }) {
           };
 
           try {
-            localStorage.setItem("erp_session_user", JSON.stringify(sessionPayload));
-            localStorage.setItem("erp_active_tenant", cleanInst);
+            safeStorage.setItem("erp_session_user", JSON.stringify(sessionPayload));
+            safeStorage.setItem("erp_active_tenant", cleanInst);
           } catch {}
 
           if (typeof setUser === "function") setUser(sessionPayload);
@@ -317,27 +317,24 @@ export default function Login({ isDirectPortal = false }) {
       {/* Subtle Cosmic Grid Texture */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b18_1px,transparent_1px),linear-gradient(to_bottom,#1e293b18_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"></div>
 
-      {/* Top Controls: Stealth Theme Toggle */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-center gap-2">
-        <ThemeToggle />
-      </div>
+
 
       {/* Flagship Voyager Glassmorphic Card */}
       <div className="bg-slate-900/50 backdrop-blur-md border border-white/10 rounded-3xl p-6 sm:p-10 shadow-2xl shadow-cyan-500/5 max-w-lg w-full relative z-10 transition-all duration-300 ease-in-out">
         {/* Brand Header */}
         <div className="text-center mb-7">
-          <div className="flex justify-center mb-4">
-            <BrandLogo size="lg" schoolCode={formData.institutionCode} className="shadow-2xl shadow-cyan-500/20" />
+          <div className="flex flex-col items-center justify-center mb-3">
+            <BrandLogo size="hero" schoolCode={formData.institutionCode} className="drop-shadow-[0_0_25px_rgba(6,182,212,0.25)]" />
           </div>
           <div className="inline-flex items-center gap-1.5 bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 text-[11px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full mb-2.5">
             <Sparkles className="w-3 h-3 text-cyan-400 animate-pulse" />
-            <span>{isDirect ? "Dedicated Campus Node" : "Multi-Tenant Enterprise ERP"}</span>
+            <span>{isDirect ? "Dedicated Campus Node" : "ASTINEX Enterprise ERP"}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
             {isDirect ? "Campus Portal Access" : "Institutional OS Login"}
           </h1>
           <p className="text-slate-400 text-xs sm:text-sm mt-1.5 leading-relaxed">
-            Enter your institutional credentials to access your isolated role workspace
+            One Platform. Every School Operation.
           </p>
         </div>
 
@@ -502,10 +499,7 @@ export default function Login({ isDirectPortal = false }) {
               type="button"
               onClick={() => {
                 try {
-                  const savedTheme = localStorage.getItem("erp_theme_mode");
-                  localStorage.clear();
-                  sessionStorage.clear();
-                  if (savedTheme) localStorage.setItem("erp_theme_mode", savedTheme);
+                  safeStorage.clear();
                 } catch {}
                 window.location.href = "/login?reset=true";
               }}
@@ -516,7 +510,7 @@ export default function Login({ isDirectPortal = false }) {
             </button>
           </div>
           <p className="text-[10px] text-slate-400 pt-1">
-            &copy; 2026 Academic OS ERP. All rights reserved.
+            &copy; 2026 ASTINEX. All rights reserved. One Platform. Every School Operation.
           </p>
         </div>
       </div>
@@ -571,3 +565,4 @@ export default function Login({ isDirectPortal = false }) {
     </div>
   );
 }
+

@@ -135,7 +135,6 @@ test("MVP Regression: Type safety in cloudSyncService and TeacherAttendance", as
 test("MVP Regression: Secrets elimination and payment validation", async (t) => {
   const masterAuthSrc = fs.readFileSync("api/master/auth.js", "utf8").replace(/\r\n/g, "\n");
   const masterSetupSrc = fs.readFileSync("src/pages/MasterSchoolSetup.jsx", "utf8").replace(/\r\n/g, "\n");
-  const verifyPaySrc = fs.readFileSync("api/razorpay/verify-payment.js", "utf8").replace(/\r\n/g, "\n");
 
   // Removed fallback master provisioning secret
   assert.ok(
@@ -149,10 +148,10 @@ test("MVP Regression: Secrets elimination and payment validation", async (t) => 
     "MasterSchoolSetup must not default to password123"
   );
 
-  // verify-payment requires schoolId
+  // Razorpay payment endpoints eradicated
   assert.ok(
-    verifyPaySrc.includes("schoolId is required to reconcile payment"),
-    "api/razorpay/verify-payment.js must require schoolId"
+    !fs.existsSync("api/razorpay/verify-payment.js"),
+    "api/razorpay/verify-payment.js must be eradicated in favor of offline/manual counter ledger"
   );
 });
 

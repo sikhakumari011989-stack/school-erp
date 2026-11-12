@@ -295,7 +295,7 @@ export default function SchoolCalendar({
               <CalendarIcon className="w-4 h-4" />
             </span>
             <span className="text-[11px] font-extrabold uppercase tracking-widest text-cyan-600 dark:text-cyan-400">
-              Academic OS Calendar
+              ASTINEX Calendar
             </span>
             <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
               {activeMode === "teacher" ? `Faculty View (${resolvedClass})` : "Student Scholar View"}

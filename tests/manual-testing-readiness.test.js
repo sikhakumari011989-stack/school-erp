@@ -56,7 +56,7 @@ test("Screen Access: Routes in App.jsx protect and permit all 6 intended school 
   assert.ok(appSrc.includes('path="/teacher/class-tests"'), "Must have Class Tests");
   assert.ok(appSrc.includes('path="/accountant/payroll"'), "Must have Payroll");
   assert.ok(appSrc.includes('path="/student/fees"'), "Must have Student Fees");
-  assert.ok(appSrc.includes('path="/student/pay"'), "Must have Student Pay");
+  assert.ok(!appSrc.includes('path="/student/pay"'), "Must not have Student Pay route (Razorpay eradicated)");
 });
 
 test("Form Persistence: Sample data entry simulation and persistence across refresh", async () => {

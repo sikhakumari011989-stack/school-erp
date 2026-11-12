@@ -1,7 +1,6 @@
 import React from "react";
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AppProvider, AppContext, useAppContext } from "./context/AppContext";
-import { ThemeProvider } from "./context/ThemeContext";
 import { ToastProvider, useToast } from "./context/ToastContext";
 import ProtectedRoute from "./Components/ProtectedRoute";
 
@@ -34,7 +33,6 @@ const StudentCalendar = React.lazy(() => import("./pages/StudentCalendar"));
 const StudentGallery = React.lazy(() => import("./pages/StudentGallery"));
 const StudentConduct = React.lazy(() => import("./pages/StudentConduct"));
 const StudentFees = React.lazy(() => import("./pages/StudentFees"));
-const StudentRazorpayCheckout = React.lazy(() => import("./pages/StudentRazorpayCheckout"));
 
 const TermsOfService = React.lazy(() => import("./pages/TermsOfService"));
 const PrivacyPolicy = React.lazy(() => import("./pages/PrivacyPolicy"));
@@ -61,6 +59,8 @@ const Reports = React.lazy(() => import("./pages/Reports"));
 const Analytics = React.lazy(() => import("./pages/Analytics"));
 const Classes = React.lazy(() => import("./pages/Classes"));
 const TimeTable = React.lazy(() => import("./pages/TimeTable"));
+const QaWorkbench = React.lazy(() => import("./pages/QaWorkbench"));
+const LeaveManagement = React.lazy(() => import("./pages/LeaveManagement"));
 import OfflineBanner from "./Components/OfflineBanner";
 import ErrorBoundary from "./Components/ErrorBoundary";
 import CommandPalette from "./Components/CommandPalette";
@@ -82,6 +82,7 @@ const PUBLIC_ROUTES = [
   "/refund-policy",
   "/contact",
   "/verify-credential",
+  "/qa-workbench",
 ];
 
 const AppLayout = ({ children }) => {
@@ -148,7 +149,7 @@ const AppLayout = ({ children }) => {
   };
 
   return (
-    <div className="h-[100dvh] w-screen overflow-hidden flex bg-slate-50 dark:bg-[#0A0E1A] text-slate-900 dark:text-slate-100 font-sans relative transition-colors duration-200">
+    <div className="h-[100dvh] w-screen overflow-hidden flex bg-slate-950 text-slate-100 font-sans relative selection:bg-cyan-500/30 selection:text-cyan-200">
       {!isPublicPage && <Sidebar />}
       <main
         className={`flex-1 h-full overflow-y-auto ${
@@ -169,7 +170,7 @@ const AppLayout = ({ children }) => {
 
       {/* PERSISTENT SLEEK PWA INSTALL FLOATING PILL */}
       {!isInstalled && showInstallPill && (
-        <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 flex items-center gap-2 bg-gradient-to-r from-blue-600/95 via-indigo-600/95 to-purple-600/95 backdrop-blur-xl border border-white/20 text-white px-4 py-2.5 rounded-full shadow-2xl shadow-blue-500/40 text-xs font-bold transition-all hover:scale-105">
+        <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40 flex items-center gap-2 bg-gradient-to-r from-blue-600/95 via-indigo-600/95 to-purple-600/95 backdrop-blur-xl border border-white/20 text-white px-4 py-2.5 rounded-full shadow-2xl shadow-blue-500/40 text-xs font-bold transition-all hover:scale-105">
           <button
             onClick={handleInstallClick}
             className="flex items-center gap-2 cursor-pointer"
@@ -197,14 +198,36 @@ const AppLayout = ({ children }) => {
 const RouteLoadingFallback = () => (
   <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 space-y-3">
     <div className="w-8 h-8 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
-    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Loading Academic OS workspace...</span>
+    <span className="text-xs font-medium text-slate-400">Loading ASTINEX workspace...</span>
   </div>
 );
+
+const MasterRouteGuard = ({ children }) => {
+  const { user, loading } = useAppContext();
+  const { showToast } = useToast();
+  const canonical = user ? normalizeRole(user.role, user.role_code || user.roll_number || user.id) : null;
+  const isUnauthorized = Boolean(user && canonical !== "MASTER_OWNER");
+
+  React.useEffect(() => {
+    if (isUnauthorized) {
+      showToast("Access Denied: Master Setup is restricted from student and faculty accounts.", "error");
+    }
+  }, [isUnauthorized]);
+
+  if (loading) {
+    return <RouteLoadingFallback />;
+  }
+
+  if (isUnauthorized) {
+    return <Navigate to={dashboardFor(user.role || canonical)} replace />;
+  }
+
+  return children;
+};
 
 export default function App() {
   return (
     <SentryErrorBoundary>
-      <ThemeProvider>
         <AppProvider>
           <ToastProvider>
         <AppLayout>
@@ -212,11 +235,19 @@ export default function App() {
             <React.Suspense fallback={<RouteLoadingFallback />}>
               <Routes>
               {/* ENTERPRISE PORTAL AUTHENTICATION & LEGAL ROUTES */}
-              <Route path="/" element={<Login />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/portal" element={<Login isDirectPortal={true} />} />
               <Route path="/system-check" element={<SystemDiagnosticPage />} />
-              <Route path="/master-setup" element={<MasterSchoolSetup />} />
+              <Route path="/qa-workbench" element={<QaWorkbench />} />
+              <Route
+                path="/master-setup"
+                element={
+                  <MasterRouteGuard>
+                    <MasterSchoolSetup />
+                  </MasterRouteGuard>
+                }
+              />
               <Route path="/register" element={<Navigate to="/login" replace />} />
               <Route path="/join" element={<Navigate to="/login" replace />} />
               <Route path="/terms" element={<TermsOfService />} />
@@ -466,6 +497,22 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/teacher/leave"
+              element={
+                <ProtectedRoute allowedRoles={["teacher", "admin", "trustee", "principal", "staff"]}>
+                  <LeaveManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/leave"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin", "teacher", "trustee", "principal"]}>
+                  <LeaveManagement />
+                </ProtectedRoute>
+              }
+            />
 
             {/* STUDENT & PARENT SUITE */}
             <Route
@@ -497,14 +544,6 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={["student", "admin"]}>
                   <StudentFees />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/student/pay"
-              element={
-                <ProtectedRoute allowedRoles={["student", "admin"]}>
-                  <StudentRazorpayCheckout />
                 </ProtectedRoute>
               }
             />
@@ -581,7 +620,6 @@ export default function App() {
         </AppLayout>
       </ToastProvider>
     </AppProvider>
-    </ThemeProvider>
     </SentryErrorBoundary>
   );
 }

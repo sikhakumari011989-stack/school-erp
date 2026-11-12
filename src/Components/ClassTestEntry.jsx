@@ -261,6 +261,21 @@ export default function ClassTestEntry({ isOpen = true, onClose, onTestSaved, is
       return;
     }
 
+    // Pre-validation: ensure no scores exceed maxScore or are negative
+    const invalidEntry = students.find((s) => {
+      const sc = scores[s.id];
+      if (!sc || sc.isAbsent || sc.marks === "" || sc.marks === undefined || sc.marks === null) return false;
+      const num = Number(sc.marks);
+      return isNaN(num) || num < 0 || num > maxScore;
+    });
+
+    if (invalidEntry) {
+      const invalidMarks = scores[invalidEntry.id]?.marks;
+      showToast(`Marks entered for ${invalidEntry.name} (${invalidMarks}) exceed maximum allowable score (${maxScore}).`, "error");
+      setSavingState("error");
+      return;
+    }
+
     setSavingState("saving");
 
     try {
@@ -286,11 +301,15 @@ export default function ClassTestEntry({ isOpen = true, onClose, onTestSaved, is
       // 2. Prepare score list
       const scorePayload = students.map((s) => {
         const sc = scores[s.id] || {};
+        const raw = sc.marks;
+        const resolvedMarks = sc.isAbsent
+          ? 0
+          : (raw === "" || raw === null || raw === undefined ? 0 : raw);
         return {
           student_id: s.id,
           student_name: s.name,
           roll_number: s.roll_number,
-          marks_obtained: sc.isAbsent ? 0 : sc.marks,
+          marks_obtained: resolvedMarks,
           is_absent: Boolean(sc.isAbsent),
           remarks: sc.remarks || (sc.isAbsent ? "Absent" : "Completed"),
         };
@@ -514,6 +533,7 @@ export default function ClassTestEntry({ isOpen = true, onClose, onTestSaved, is
                     type="number"
                     min="1"
                     max="200"
+                    data-testid="input-max-score"
                     value={maxScore}
                     onChange={(e) => handleMaxScoreChange(e.target.value)}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
@@ -664,6 +684,7 @@ export default function ClassTestEntry({ isOpen = true, onClose, onTestSaved, is
                                   max={maxScore}
                                   step="0.5"
                                   placeholder="0.0"
+                                  data-testid={`input-score-${student.id}`}
                                   value={val}
                                   onChange={(e) => handleScoreChange(student.id, e.target.value)}
                                   onKeyDown={(e) => handleKeyDown(e, idx)}
@@ -674,7 +695,7 @@ export default function ClassTestEntry({ isOpen = true, onClose, onTestSaved, is
                                   }`}
                                 />
                                 {hasError && (
-                                  <span className="block text-[10px] text-rose-500 font-semibold mt-0.5">
+                                  <span data-testid="error-marks-boundary" className="block text-[10px] text-rose-500 font-semibold mt-0.5">
                                     {isOverCeiling ? `Max is ${maxScore}` : "Cannot be < 0"}
                                   </span>
                                 )}
@@ -738,7 +759,10 @@ export default function ClassTestEntry({ isOpen = true, onClose, onTestSaved, is
                 </span>
               )}
               {savingState === "saved" && (
-                <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                <span
+                  data-testid="status-marks-saved"
+                  className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold"
+                >
                   <Check className="w-4 h-4" />
                   <span>Marks saved securely.</span>
                 </span>
@@ -755,6 +779,7 @@ export default function ClassTestEntry({ isOpen = true, onClose, onTestSaved, is
               {/* SAVE AS DRAFT */}
               <button
                 type="button"
+                data-testid="btn-save-draft"
                 disabled={savingState === "saving" || students.length === 0}
                 onClick={() => handleSaveMarks(false)}
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
@@ -766,6 +791,7 @@ export default function ClassTestEntry({ isOpen = true, onClose, onTestSaved, is
               {/* PUBLISH RESULTS (TRIGGERS CONFIRMATION) */}
               <button
                 type="button"
+                data-testid="btn-publish-test"
                 disabled={savingState === "saving" || students.length === 0}
                 onClick={() => setShowPublishConfirm(true)}
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md shadow-cyan-500/20 disabled:opacity-50"

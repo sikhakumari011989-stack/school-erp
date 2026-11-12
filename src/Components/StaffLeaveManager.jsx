@@ -57,9 +57,11 @@ export default function StaffLeaveManager({ schoolId: propSchoolId }) {
   const loadLeaves = () => {
     setLoading(true);
     try {
+      const savedStaff = localStorage.getItem(`erp_staff_leaves_${schoolId}`);
       const saved = localStorage.getItem(`erp_leave_requests_${schoolId}`);
-      if (saved) {
-        setLeaves(JSON.parse(saved));
+      const raw = savedStaff || saved;
+      if (raw) {
+        setLeaves(JSON.parse(raw));
       } else {
         setLeaves([]);
       }
@@ -84,9 +86,11 @@ export default function StaffLeaveManager({ schoolId: propSchoolId }) {
       loadRelief();
     };
     window.addEventListener("erp-leaves-updated", handleUpdate);
+    window.addEventListener("erp-staff-leaves-updated", handleUpdate);
     window.addEventListener("erp-substitutes-updated", handleUpdate);
     return () => {
       window.removeEventListener("erp-leaves-updated", handleUpdate);
+      window.removeEventListener("erp-staff-leaves-updated", handleUpdate);
       window.removeEventListener("erp-substitutes-updated", handleUpdate);
     };
   }, [schoolId]);
@@ -166,7 +170,9 @@ export default function StaffLeaveManager({ schoolId: propSchoolId }) {
     const updated = leaves.map((l) => (l.id === id ? { ...l, status: newStatus } : l));
     setLeaves(updated);
     try {
+      localStorage.setItem(`erp_staff_leaves_${schoolId}`, JSON.stringify(updated));
       localStorage.setItem(`erp_leave_requests_${schoolId}`, JSON.stringify(updated));
+      window.dispatchEvent(new Event("erp-staff-leaves-updated"));
       window.dispatchEvent(new Event("erp-leaves-updated"));
     } catch (e) {}
 
@@ -202,14 +208,16 @@ export default function StaffLeaveManager({ schoolId: propSchoolId }) {
       startDate: form.startDate,
       endDate: form.endDate,
       reason: form.reason.trim(),
-      status: "Pending Principal Review",
+      status: "Pending",
       appliedOn: new Date().toISOString().split("T")[0],
     };
 
     const updated = [newReq, ...leaves];
     setLeaves(updated);
     try {
+      localStorage.setItem(`erp_staff_leaves_${schoolId}`, JSON.stringify(updated));
       localStorage.setItem(`erp_leave_requests_${schoolId}`, JSON.stringify(updated));
+      window.dispatchEvent(new Event("erp-staff-leaves-updated"));
       window.dispatchEvent(new Event("erp-leaves-updated"));
     } catch (e) {}
 

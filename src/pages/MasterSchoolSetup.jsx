@@ -20,7 +20,9 @@ export default function MasterSchoolSetup() {
   const navigate = useNavigate();
 
   const [isUnlocked, setIsUnlocked] = useState(
-    () => sessionStorage.getItem("erp_master_gate_unlocked") === "true"
+    () =>
+      sessionStorage.getItem("erp_master_gate_unlocked") === "true" &&
+      Boolean(sessionStorage.getItem("erp_master_token"))
   );
   const [passkeyInput, setPasskeyInput] = useState("");
   const [passkeyError, setPasskeyError] = useState("");
@@ -59,6 +61,13 @@ export default function MasterSchoolSetup() {
             "x-master-token": token || undefined,
           },
         });
+        if (resp.status === 401) {
+          sessionStorage.removeItem("erp_master_gate_unlocked");
+          sessionStorage.removeItem("erp_master_token");
+          setIsUnlocked(false);
+          setPasskeyError("Access Denied: Valid Master Session Token required.");
+          return;
+        }
         if (resp.ok) {
           const resData = await resp.json();
           if (resData.success && Array.isArray(resData.schools)) {
@@ -434,7 +443,7 @@ export default function MasterSchoolSetup() {
   const handleCopyCredentials = () => {
     if (!successData) return;
     const creds = [
-      `🏛️ EduSaaS ERP - Master Institutional Credentials`,
+      `🏛️ ASTINEX - Master Institutional Credentials`,
       `================================================`,
       `Institution Name: ${successData.institutionName}`,
       `Architecture Mode: ${successData.institutionMode === "tuition" ? "Tuition / Coaching Institute" : "Full K-12 School"}`,
@@ -461,11 +470,11 @@ export default function MasterSchoolSetup() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <BrandLogo size="lg" className="shadow-2xl shadow-indigo-600/40" />
+              <BrandLogo size="hero" className="drop-shadow-[0_0_25px_rgba(99,102,241,0.25)]" />
             </div>
             <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-[10px] font-black uppercase tracking-widest px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 inline-block">
-                🔐 Secret Master Route &bull; Platform Owner Only
+              <span className="text-[10px] font-black uppercase tracking-widest px-3.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 inline-block">
+                ASTINEX &bull; Platform Master Gateway
               </span>
               {isUnlocked && (
                 <button
@@ -479,10 +488,10 @@ export default function MasterSchoolSetup() {
               )}
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Institution Provisioning Engine
+              ASTINEX Provisioning Engine
             </h1>
             <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-md mx-auto">
-              Create high-security institutional nodes, initialize clean-slate partitions, and issue Master HOD keys.
+              One Platform. Every School Operation. Create high-security institutional nodes and initialize clean-slate partitions.
             </p>
           </div>
 

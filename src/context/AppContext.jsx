@@ -3,6 +3,7 @@ import { supabase } from "../supabaseClient";
 import { purgeOfflineQueue } from "../utils/offlineSyncQueue";
 import { getSchoolSubscription } from "../utils/cloudSyncService";
 import { normalizeRole } from "../utils/credentials";
+import { safeStorage } from "../utils/safeStorage";
 
 export const AppContext = createContext({
   session: null,
@@ -40,7 +41,7 @@ function resolveTenantCode() {
     const paramTenant = params.get("tenant") || params.get("institution");
     if (paramTenant) {
       const clean = paramTenant.trim().toUpperCase();
-      localStorage.setItem("erp_active_tenant", clean);
+      safeStorage.setItem("erp_active_tenant", clean);
       return clean;
     }
 
@@ -51,12 +52,12 @@ function resolveTenantCode() {
       return parts[0].toUpperCase();
     }
 
-    // 3. Check LocalStorage active tenant
-    const saved = localStorage.getItem("erp_active_tenant");
+    // 3. Check SafeStorage active tenant
+    const saved = safeStorage.getItem("erp_active_tenant");
     if (saved) return saved.trim().toUpperCase();
 
     // 4. Check locally registered institutions
-    const rawSchools = localStorage.getItem("erp_registered_schools");
+    const rawSchools = safeStorage.getItem("erp_registered_schools");
     if (rawSchools) {
       const list = JSON.parse(rawSchools);
       if (Array.isArray(list) && list.length > 0 && list[0]?.code) {
@@ -75,7 +76,7 @@ export const AppProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(() => {
     try {
-      const s = typeof localStorage !== "undefined" ? localStorage.getItem("erp_session_user") : null;
+      const s = safeStorage.getItem("erp_session_user");
       return s ? JSON.parse(s) : null;
     } catch {
       return null;
@@ -94,6 +95,7 @@ export const AppProvider = ({ children }) => {
     accentColor: "#8B5CF6",
     logoUrl: null,
     tagline: "Premier Multi-Tenant Academic Institution",
+    institution_type: "school",
   });
 
   const [subscription, setSubscription] = useState({
@@ -111,11 +113,18 @@ export const AppProvider = ({ children }) => {
     try {
       const { data } = await supabase
         .from("schools")
-        .select("id, name, code, city, state, primary_color, accent_color, logo_url, tagline, status, subscription_status, subscription_tier, subscription_expires_at")
+        .select("id, name, code, city, state, primary_color, accent_color, logo_url, tagline, status, subscription_status, subscription_tier, subscription_expires_at, institution_mode, institution_type")
         .ilike("code", code)
         .maybeSingle();
 
       if (data) {
+        const resolvedType = (
+          data.institution_mode ||
+          data.institution_type ||
+          safeStorage.getItem(`erp_institution_type_${data.code || code}`) ||
+          "school"
+        ).toLowerCase();
+
         const resolved = {
           id: data.id,
           name: data.name || "Institutional Campus",
@@ -130,6 +139,7 @@ export const AppProvider = ({ children }) => {
           subscriptionStatus: data.subscription_status || "active",
           subscriptionTier: data.subscription_tier || "enterprise",
           subscriptionExpiresAt: data.subscription_expires_at,
+          institution_type: resolvedType,
         };
         setTenant(resolved);
         document.title = `${resolved.name} | Multi-Tenant Tuition ERP`;
@@ -160,7 +170,7 @@ export const AppProvider = ({ children }) => {
 
         // Sync evaluated subscription to tenant storage for offline resilience
         try {
-          localStorage.setItem(
+          safeStorage.setItem(
             `erp_school_sub_${resolved.code.toUpperCase()}`,
             JSON.stringify({
               status: evaluatedSub.status,
@@ -200,7 +210,20 @@ export const AppProvider = ({ children }) => {
     try {
       if (!currentSession?.user) {
         setSession(null);
-        setUser(null);
+        let cachedUser = null;
+        try {
+          const cached = safeStorage.getItem("erp_session_user");
+          if (cached) cachedUser = JSON.parse(cached);
+        } catch {}
+
+        if (cachedUser && (cachedUser.id || cachedUser.role_code)) {
+          setUser(cachedUser);
+          if (cachedUser.institution_code || cachedUser.school_id) {
+            loadTenantDetails(cachedUser.institution_code || cachedUser.school_id);
+          }
+        } else {
+          setUser(null);
+        }
         return;
       }
 
@@ -241,7 +264,7 @@ export const AppProvider = ({ children }) => {
       // Check cached session if available
       let cachedUser = null;
       try {
-        const cached = localStorage.getItem("erp_session_user");
+        const cached = safeStorage.getItem("erp_session_user");
         if (cached) cachedUser = JSON.parse(cached);
       } catch {}
 
@@ -249,7 +272,7 @@ export const AppProvider = ({ children }) => {
       if (profileData && (profileData.status === "inactive" || profileData.status === "suspended" || profileData.is_active === false)) {
         console.warn("[AuthSecurity] User account is deactivated or suspended. Failing closed.");
         await supabase.auth.signOut().catch(() => {});
-        localStorage.removeItem("erp_session_user");
+        safeStorage.removeItem("erp_session_user");
         setSession(null);
         setUser(null);
         setLoading(false);
@@ -308,8 +331,8 @@ export const AppProvider = ({ children }) => {
 
       setUser(userObj);
       try {
-        localStorage.setItem("erp_session_user", JSON.stringify(userObj));
-        localStorage.setItem("erp_active_tenant", tenantCode);
+        safeStorage.setItem("erp_session_user", JSON.stringify(userObj));
+        safeStorage.setItem("erp_active_tenant", tenantCode);
       } catch {}
 
       if (tenantCode) {
@@ -345,12 +368,33 @@ export const AppProvider = ({ children }) => {
     // 3. Listen to live Supabase Auth state changes (SIGN_IN, SIGN_OUT, TOKEN_REFRESH)
     const { data: listener } = supabase?.auth?.onAuthStateChange
       ? supabase.auth.onAuthStateChange((event, currentSession) => {
-          if (event === "SIGNED_OUT" || !currentSession) {
+          if (event === "SIGNED_OUT") {
             setSession(null);
             setUser(null);
             try {
-              localStorage.removeItem("erp_session_user");
+              safeStorage.removeItem("erp_session_user");
             } catch {}
+            setLoading(false);
+            return;
+          }
+
+          if (!currentSession) {
+            let cachedUser = null;
+            try {
+              const cached = safeStorage.getItem("erp_session_user");
+              if (cached) cachedUser = JSON.parse(cached);
+            } catch {}
+
+            if (cachedUser && (cachedUser.id || cachedUser.role_code)) {
+              setSession(null);
+              setUser(cachedUser);
+              if (cachedUser.institution_code || cachedUser.school_id) {
+                loadTenantDetails(cachedUser.institution_code || cachedUser.school_id);
+              }
+            } else {
+              setSession(null);
+              setUser(null);
+            }
             setLoading(false);
             return;
           }
@@ -367,7 +411,7 @@ export const AppProvider = ({ children }) => {
   const login = (userData) => {
     setUser(userData);
     try {
-      localStorage.setItem("erp_session_user", JSON.stringify(userData));
+      safeStorage.setItem("erp_session_user", JSON.stringify(userData));
       if (userData?.institution_code) {
         loadTenantDetails(userData.institution_code);
       }
@@ -384,13 +428,13 @@ export const AppProvider = ({ children }) => {
       console.warn("IndexedDB offline queue purge notice:", idbErr);
     }
 
-    // 1. Explicitly purge localStorage & sessionStorage, preserving theme preference
+    // 1. Explicitly purge storage, preserving theme preference
     try {
-      const savedTheme = localStorage.getItem("erp_theme_mode");
-      localStorage.clear();
-      sessionStorage.clear();
+      const savedTheme = safeStorage.getItem("erp_theme_mode");
+      safeStorage.removeItem("erp_session_user");
+      safeStorage.removeItem("erp_active_tenant");
       if (savedTheme) {
-        localStorage.setItem("erp_theme_mode", savedTheme);
+        safeStorage.setItem("erp_theme_mode", savedTheme);
       }
     } catch (e) {
       console.warn("Storage clear error:", e);
@@ -441,9 +485,16 @@ export const AppProvider = ({ children }) => {
   const switchTenant = (code) => {
     if (!code) return;
     const clean = code.trim().toUpperCase();
-    localStorage.setItem("erp_active_tenant", clean);
+    safeStorage.setItem("erp_active_tenant", clean);
     loadTenantDetails(clean);
   };
+
+  const effectiveInstitutionType = (
+    tenant?.institution_type ||
+    user?.institution_type ||
+    (typeof safeStorage !== "undefined" && safeStorage.getItem(`erp_institution_type_${(user?.institution_code || tenant?.code || "").toUpperCase()}`)) ||
+    "school"
+  ).toLowerCase();
 
   return (
     <AppContext.Provider
@@ -452,6 +503,7 @@ export const AppProvider = ({ children }) => {
         user,
         setUser,
         tenant,
+        institution_type: effectiveInstitutionType,
         subscription,
         refreshTenant: loadTenantDetails,
         loading,

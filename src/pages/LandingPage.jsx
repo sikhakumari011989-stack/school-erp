@@ -110,15 +110,19 @@ export default function LandingPage() {
       </nav>
 
       {/* HERO SECTION */}
-      <div className="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center relative z-10">
-        <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 px-5 py-2 rounded-full text-blue-400 text-xs font-black uppercase tracking-widest mb-6 shadow-inner">
-          <span className="animate-pulse">⚡</span> Next-Generation Multi-Tenant Tuition & School ERP
+      <div className="max-w-5xl mx-auto px-6 pt-16 pb-16 text-center relative z-10">
+        <div className="flex justify-center mb-6">
+          <BrandLogo size="hero" className="drop-shadow-[0_0_35px_rgba(6,182,212,0.35)]" />
+        </div>
+
+        <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/30 px-5 py-2 rounded-full text-cyan-400 text-xs font-black uppercase tracking-widest mb-6 shadow-inner">
+          <span className="animate-pulse">⚡</span> ASTINEX — One Platform. Every School Operation.
         </div>
 
         <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-white tracking-tight mb-8 leading-[1.1]">
           Run Your Entire Institution on{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">
-            One Unified Engine
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-indigo-400">
+            ASTINEX
           </span>
         </h1>
 
@@ -263,25 +267,17 @@ export default function LandingPage() {
             {/* Col 1: Brand Info */}
             <div className="lg:col-span-2 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30 text-xl border border-white/10">
-                  🏫
-                </div>
+                <BrandLogo size="md" />
                 <div>
-                  <span className="text-xl font-black text-white tracking-tight block">EduSaaS ERP</span>
-                  <span className="text-[10px] text-blue-400 font-extrabold uppercase tracking-widest block">
-                    Multi-Tenant Institution OS
+                  <span className="text-xl font-black text-white tracking-wider block">ASTINEX</span>
+                  <span className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-widest block">
+                    One Platform. Every School Operation.
                   </span>
                 </div>
               </div>
               <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
-                Next-generation multi-tenant school and tuition operating platform. Cryptographic institutional tenant isolation, real-time Razorpay financial ledgers, and zero-latency attendance synchronization.
+                Next-generation multi-tenant school and tuition operating platform. Complete institutional isolation, real-time financial ledgers, and zero-latency attendance synchronization.
               </p>
-              <div className="pt-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
-                  <span className="text-emerald-400 text-sm font-bold">✓</span>
-                  <span>Razorpay Verified Merchant Partner</span>
-                </div>
-              </div>
             </div>
 
             {/* Col 2: Platform Portals */}
@@ -368,7 +364,7 @@ export default function LandingPage() {
               </h4>
               <address className="not-italic text-sm text-slate-400 space-y-2 leading-relaxed">
                 <p className="text-slate-300 font-medium">
-                  EduSaaS ERP
+                  ASTINEX
                 </p>
                 <p>
                   Flat number 201, Jivdani Chaya, near Rajshree Hospital, beside Kalavati Mandir, Mahim Manohar Highway, Palghar 401404
@@ -390,7 +386,7 @@ export default function LandingPage() {
           {/* Bottom Bar */}
           <div className="pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
             <div>
-              &copy; 2026 EduSaaS ERP. All rights reserved.
+              &copy; 2026 ASTINEX. All rights reserved. One Platform. Every School Operation.
             </div>
             <div className="flex flex-wrap items-center gap-4 text-slate-400">
               <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>

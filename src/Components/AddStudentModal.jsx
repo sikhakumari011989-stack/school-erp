@@ -26,22 +26,30 @@ export default function AddStudentModal({ isOpen, onClose, onRefresh }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const cleanName = (formData.name || "").trim();
+    const cleanRoll = (formData.roll_number || "").trim();
+
+    if (!cleanName || !cleanRoll) {
+      showToast("Please enter a valid student name and roll number.", "error");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const { error } = await supabase.from("students").insert([{
         school_id: activeSchoolId,
-        name: formData.name,
-        roll_number: formData.roll_number,
-        class_id: formData.class_id
+        name: cleanName,
+        roll_number: cleanRoll,
+        class_id: formData.class_id || null
       }]);
 
       if (error) throw error;
 
       showToast("Student added successfully!", "success");
       setFormData({ name: "", roll_number: "", class_id: "" });
-      onRefresh(); // Updates the dashboard numbers
-      onClose();   // Closes the popup
+      onRefresh?.(); // Updates the dashboard numbers safely
+      onClose?.();   // Closes the popup safely
     } catch (error) {
       console.error("Database Error:", error);
       showToast(error.message || "Failed to add student. Please verify database connectivity.", "error");
@@ -51,17 +59,17 @@ export default function AddStudentModal({ isOpen, onClose, onRefresh }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-[#1E293B] border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="bg-[#1E293B] border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col">
         
-        <div className="bg-slate-800/50 p-6 border-b border-slate-700 flex justify-between items-center">
+        <div className="bg-slate-800/50 p-6 border-b border-slate-700 flex justify-between items-center shrink-0">
           <h2 className="text-xl font-bold text-white">Add New Student</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors text-2xl leading-none">
+          <button onClick={() => onClose?.()} className="text-slate-400 hover:text-white transition-colors text-2xl leading-none">
             &times;
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Full Name</label>
             <input 
@@ -95,7 +103,7 @@ export default function AddStudentModal({ isOpen, onClose, onRefresh }) {
           </div>
 
           <div className="pt-4 flex gap-3">
-            <button type="button" onClick={onClose} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg">
+            <button type="button" onClick={() => onClose?.()} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg">
               Cancel
             </button>
             <button type="submit" disabled={loading} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-blue-600/20 disabled:opacity-50">

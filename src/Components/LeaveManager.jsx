@@ -2,11 +2,15 @@ import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { logSecurityAction } from "../utils/auditLogger";
+import { normalizeRole } from "../utils/credentials";
 
 export default function LeaveManager({ schoolId: propSchoolId }) {
   const { user } = useContext(AppContext) || {};
   const { showToast } = useToast();
-  const schoolId = propSchoolId || user?.school_id || user?.institution_code || "CAMPUS-01";
+  const schoolId = String(propSchoolId || user?.school_id || user?.institution_code || "CAMPUS-01").toUpperCase();
+
+  const userRole = normalizeRole(user?.role, user?.role_code || user?.personal_code || user?.roll_number);
+  const canAdjudicate = userRole === "PRIN" || userRole === "HOD" || userRole === "MASTER_OWNER";
 
   const [leaves, setLeaves] = useState([]);
   const [filter, setFilter] = useState("ALL"); // ALL | Pending | Approved | Rejected
@@ -16,7 +20,7 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
     applicantName: "",
     applicantRole: "Teacher", // Teacher | Non-Teaching Staff (NTS)
     personalCode: "",
-    leaveType: "Casual Leave", // Casual Leave | Medical Leave | Unpaid Leave
+    leaveType: "Sick Leave", // Casual Leave | Sick Leave | Medical Leave | Unpaid Leave
     startDate: "",
     endDate: "",
     reason: "",
@@ -25,7 +29,9 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
 
   const loadLeaves = () => {
     try {
-      const saved = localStorage.getItem(`erp_leave_requests_${schoolId}`);
+      const savedStaff = localStorage.getItem(`erp_staff_leaves_${schoolId}`);
+      const savedReq = localStorage.getItem(`erp_leave_requests_${schoolId}`);
+      const saved = savedStaff || savedReq;
       if (saved) {
         setLeaves(JSON.parse(saved));
       } else {
@@ -40,13 +46,19 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
     loadLeaves();
     const handleUpdate = () => loadLeaves();
     window.addEventListener("erp-leaves-updated", handleUpdate);
-    return () => window.removeEventListener("erp-leaves-updated", handleUpdate);
+    window.addEventListener("erp-staff-leaves-updated", handleUpdate);
+    return () => {
+      window.removeEventListener("erp-leaves-updated", handleUpdate);
+      window.removeEventListener("erp-staff-leaves-updated", handleUpdate);
+    };
   }, [schoolId]);
 
   const saveLeaves = (updated) => {
     setLeaves(updated);
     try {
+      localStorage.setItem(`erp_staff_leaves_${schoolId}`, JSON.stringify(updated));
       localStorage.setItem(`erp_leave_requests_${schoolId}`, JSON.stringify(updated));
+      window.dispatchEvent(new Event("erp-staff-leaves-updated"));
       window.dispatchEvent(new Event("erp-leaves-updated"));
     } catch (e) {
       console.warn("Save leaves error:", e);
@@ -104,6 +116,26 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
       isUnpaid: false,
     });
     setShowApplyModal(false);
+  };
+
+  const openApplyModal = () => {
+    const today = new Date().toISOString().split("T")[0];
+    setForm({
+      applicantName: user?.name || user?.full_name || "",
+      applicantRole:
+        user?.role === "teacher" || userRole === "TCH"
+          ? "Teacher"
+          : user?.role === "staff" || userRole === "NTS"
+          ? "Non-Teaching Staff (NTS)"
+          : "Teacher",
+      personalCode: user?.personal_code || user?.role_code || "",
+      leaveType: "Sick Leave",
+      startDate: today,
+      endDate: today,
+      reason: "",
+      isUnpaid: false,
+    });
+    setShowApplyModal(true);
   };
 
   const handleDecision = (leaveId, decision, withDeduction = false) => {
@@ -179,7 +211,8 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
           </p>
         </div>
         <button
-          onClick={() => setShowApplyModal(true)}
+          onClick={openApplyModal}
+          data-testid="btn-submit-leave-petition"
           className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black px-5 py-3 rounded-2xl text-xs sm:text-sm shadow-xl shadow-cyan-500/20 transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer flex items-center gap-2 border border-white/20"
         >
           <span>➕</span>
@@ -297,27 +330,38 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
                     </td>
                     <td className="p-4 text-right pr-6">
                       {l.status === "Pending" ? (
-                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                          <button
-                            onClick={() => handleDecision(l.id, "Approved", false)}
-                            className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer"
+                        canAdjudicate ? (
+                          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                            <button
+                              onClick={() => handleDecision(l.id, "Approved", false)}
+                              data-testid={`btn-approve-leave-${l.id}`}
+                              className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer"
+                            >
+                              ✓ Approve
+                            </button>
+                            <button
+                              onClick={() => handleDecision(l.id, "Approved", true)}
+                              title="Approve with Payroll Salary Deduction"
+                              className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-lg text-xs font-bold transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer"
+                            >
+                              Deduct Pay
+                            </button>
+                            <button
+                              onClick={() => handleDecision(l.id, "Rejected")}
+                              data-testid={`btn-reject-leave-${l.id}`}
+                              className="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer"
+                            >
+                              ✕ Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <span
+                            data-testid="status-pending-non-adjudicator"
+                            className="text-xs text-amber-400 font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20"
                           >
-                            ✓ Approve
-                          </button>
-                          <button
-                            onClick={() => handleDecision(l.id, "Approved", true)}
-                            title="Approve with Payroll Salary Deduction"
-                            className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-lg text-xs font-bold transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer"
-                          >
-                            Deduct Pay
-                          </button>
-                          <button
-                            onClick={() => handleDecision(l.id, "Rejected")}
-                            className="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-300 ease-in-out hover:scale-[1.02] cursor-pointer"
-                          >
-                            ✕ Reject
-                          </button>
-                        </div>
+                            Awaiting Principal Decision
+                          </span>
+                        )
                       ) : (
                         <span className="text-xs text-slate-400 italic">
                           Decided on {l.decidedAt || l.requestedAt}
@@ -356,6 +400,7 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
                     type="text"
                     required
                     placeholder="e.g., Mrs. Archana K."
+                    data-testid="input-applicant-name"
                     value={form.applicantName}
                     onChange={(e) => setForm({ ...form, applicantName: e.target.value })}
                     className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400"
@@ -369,6 +414,7 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
                   <input
                     type="text"
                     placeholder="e.g., TCH-101 / NTS-102"
+                    data-testid="input-personal-code"
                     value={form.personalCode}
                     onChange={(e) => setForm({ ...form, personalCode: e.target.value })}
                     className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400 font-mono uppercase"
@@ -383,6 +429,7 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
                   </label>
                   <select
                     value={form.applicantRole}
+                    data-testid="select-applicant-role"
                     onChange={(e) => setForm({ ...form, applicantRole: e.target.value })}
                     className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400"
                   >
@@ -398,11 +445,13 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
                   </label>
                   <select
                     value={form.leaveType}
+                    data-testid="select-leave-type"
                     onChange={(e) => setForm({ ...form, leaveType: e.target.value })}
                     className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400"
                   >
-                    <option value="Casual Leave">Casual Leave (Paid)</option>
+                    <option value="Sick Leave">Sick Leave</option>
                     <option value="Medical Leave">Medical / Sick Leave</option>
+                    <option value="Casual Leave">Casual Leave (Paid)</option>
                     <option value="Emergency Leave">Emergency Leave</option>
                     <option value="Unpaid Leave">Unpaid Leave (Salary Deduction)</option>
                   </select>
@@ -417,6 +466,7 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
                   <input
                     type="date"
                     required
+                    data-testid="input-start-date"
                     value={form.startDate}
                     onChange={(e) => setForm({ ...form, startDate: e.target.value })}
                     className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
@@ -430,6 +480,7 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
                   <input
                     type="date"
                     required
+                    data-testid="input-end-date"
                     value={form.endDate}
                     onChange={(e) => setForm({ ...form, endDate: e.target.value })}
                     className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
@@ -445,6 +496,7 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
                   rows={3}
                   required
                   placeholder="Detail circumstances of leave..."
+                  data-testid="textarea-reason"
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
                   className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400"
@@ -474,6 +526,7 @@ export default function LeaveManager({ schoolId: propSchoolId }) {
                 </button>
                 <button
                   type="submit"
+                  data-testid="btn-submit-leave-form"
                   className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black px-5 py-2.5 rounded-xl text-xs shadow-lg shadow-cyan-500/20 transition-all duration-300 ease-in-out hover:scale-[1.02]"
                 >
                   Submit Application 🏖️

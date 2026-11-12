@@ -2,13 +2,11 @@ import React, { useContext, useState, useEffect } from "react";
 import { AppContext } from "../context/AppContext";
 import { EduSaaSVectorEmblem } from "./BrandLogo";
 import { getPendingQueueCount, syncOfflineQueue } from "../utils/offlineSync";
-import ThemeToggle from "./ThemeToggle";
 import { Search } from "lucide-react";
 
 /**
- * Top Institutional Navigation Bar - Voyager Tier
- * Features high-contrast Light mode and immersive Glassmorphic Dark mode.
- * Contains the Stealth Theme Toggle, offline sync status, and active user profile.
+ * Top Institutional Navigation Bar - Voyager Dark Enterprise Tier
+ * Glassmorphic deep slate/charcoal header with high contrast typography and subtle cyan glows.
  */
 export default function Navbar({ onMenuToggle, title, subtitle, className = "" }) {
   const { user, tenant } = useContext(AppContext) || {};
@@ -83,14 +81,14 @@ export default function Navbar({ onMenuToggle, title, subtitle, className = "" }
 
   return (
     <header
-      className={`w-full bg-white/95 dark:bg-slate-950/85 backdrop-blur-2xl border-b border-slate-200 dark:border-white/10 px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between sticky top-0 z-30 shadow-sm dark:shadow-2xl dark:shadow-cyan-500/5 transition-colors duration-200 ${className}`}
+      className={`w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between sticky top-0 z-30 shadow-2xl transition-all duration-200 ${className}`}
     >
       <div className="flex items-center gap-3">
         {onMenuToggle && (
           <button
             type="button"
             onClick={onMenuToggle}
-            className="md:hidden p-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10 transition-all duration-200 ease-in-out cursor-pointer"
+            className="md:hidden p-2 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-300 hover:text-white hover:bg-slate-700/60 transition-all duration-200 ease-in-out cursor-pointer"
             aria-label="Toggle navigation menu"
           >
             ☰
@@ -100,7 +98,7 @@ export default function Navbar({ onMenuToggle, title, subtitle, className = "" }
         {/* Dynamic School Brand / Master Brand Icon */}
         <div className="flex items-center gap-3">
           {schoolLogo && !logoError ? (
-            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-1 flex items-center justify-center overflow-hidden shadow-sm dark:shadow-lg">
+            <div className="w-10 h-10 rounded-xl bg-slate-800/60 border border-slate-700/60 p-1 flex items-center justify-center overflow-hidden shadow-lg">
               <img
                 src={schoolLogo}
                 alt={`${tenant?.name || schoolCode} Logo`}
@@ -109,16 +107,16 @@ export default function Navbar({ onMenuToggle, title, subtitle, className = "" }
               />
             </div>
           ) : (
-            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm dark:shadow-lg dark:shadow-cyan-500/10">
+            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-cyan-500/10">
               <EduSaaSVectorEmblem className="w-full h-full" />
             </div>
           )}
 
           <div>
-            <h1 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white tracking-tight truncate max-w-[180px] sm:max-w-xs transition-colors">
-              {title || tenant?.name || "EduSaaS ERP"}
+            <h1 className="text-sm sm:text-base font-extrabold text-slate-100 tracking-tight truncate max-w-[180px] sm:max-w-xs transition-colors">
+              {title || tenant?.name || "ASTINEX"}
             </h1>
-            <p className="text-[10px] font-mono font-bold text-indigo-600 dark:text-cyan-400 uppercase tracking-wider">
+            <p className="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-wider">
               {subtitle || schoolCode}
             </p>
           </div>
@@ -130,26 +128,23 @@ export default function Navbar({ onMenuToggle, title, subtitle, className = "" }
         <button
           type="button"
           onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-cyan-500/40 text-xs font-semibold transition-all shadow-sm cursor-pointer"
-          title="Search anything across Academic OS (Ctrl + K)"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-300 hover:text-white hover:border-cyan-500/40 text-xs font-semibold transition-all duration-200 shadow-sm cursor-pointer"
+          title="Search anything across ASTINEX (Ctrl + K)"
         >
-          <Search className="w-3.5 h-3.5 text-cyan-500" />
+          <Search className="w-3.5 h-3.5 text-cyan-400" />
           <span className="hidden md:inline">Search ERP...</span>
-          <kbd className="hidden sm:inline-flex text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700">
+          <kbd className="hidden sm:inline-flex text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-700">
             Ctrl+K
           </kbd>
         </button>
 
-        {/* Stealth Theme Toggle */}
-        <ThemeToggle />
-
         {user && (
-          <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-1.5 rounded-full backdrop-blur-xl transition-colors">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 hidden sm:inline">
+          <div className="flex items-center gap-2 bg-slate-800/60 border border-slate-700/60 px-3 py-1.5 rounded-full backdrop-blur-xl transition-all">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-xs font-semibold text-slate-200 hidden sm:inline">
               {user.name || user.full_name}
             </span>
-            <span className="text-[10px] uppercase font-bold text-indigo-700 dark:text-cyan-300 px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-cyan-500/20 border border-indigo-200 dark:border-cyan-400/30">
+            <span className="text-[10px] uppercase font-bold text-cyan-300 px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-400/30">
               {user.role}
             </span>
           </div>

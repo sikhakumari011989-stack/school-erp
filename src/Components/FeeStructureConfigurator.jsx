@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { logSecurityAction } from "../utils/auditLogger";
+import { safeStorage } from "../utils/safeStorage";
 import { Plus, Trash2, CheckCircle2, ShieldCheck, IndianRupee, Layers } from "lucide-react";
 
 export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", institutionName = "Institutional Campus" }) {
@@ -28,9 +29,9 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
     setLoading(true);
     let loaded = [];
 
-    // 1. Read from localStorage
+    // 1. Read from safeStorage
     try {
-      const raw = localStorage.getItem(storageKey);
+      const raw = safeStorage.getItem(storageKey);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) loaded = parsed;
@@ -73,7 +74,7 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
 
   const loadUniqueClasses = () => {
     try {
-      const raw = localStorage.getItem(`erp_directory_${activeCode}`);
+      const raw = safeStorage.getItem(`erp_directory_${activeCode}`);
       if (raw) {
         const dir = JSON.parse(raw);
         const unique = Array.from(
@@ -108,15 +109,15 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
   }, [activeCode]);
 
   const handleAddFeeComponent = async (e) => {
-    e.preventDefault();
-    const cleanTitle = form.title.trim();
+    e?.preventDefault?.();
+    const cleanTitle = (form.title || "").trim();
     const numAmount = Number(form.amount);
 
     if (!cleanTitle) {
       showToast("Please enter a fee component title.", "error");
       return;
     }
-    if (!numAmount || numAmount <= 0) {
+    if (isNaN(numAmount) || numAmount <= 0) {
       showToast("Please enter a valid fee amount in ₹.", "error");
       return;
     }
@@ -131,7 +132,7 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
       target_classes: targetClassesPayload,
       gstStatus: form.gstStatus || "GST_EXEMPT",
       amount: numAmount,
-      description: form.description.trim() || `${form.term} Official Institutional Dues`,
+      description: (form.description || "").trim() || `${form.term} Official Institutional Dues`,
       school_id: activeCode,
       created_at: new Date().toISOString(),
       status: "Active",
@@ -154,16 +155,16 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
       console.warn("Fee structure Supabase insert notice:", err);
     }
 
-    // 2. Save to tenant-scoped localStorage
+    // 2. Save to tenant-scoped safeStorage
     try {
       const updated = [newComponent, ...feeComponents.filter((f) => f.id !== newComponent.id)];
-      localStorage.setItem(storageKey, JSON.stringify(updated));
+      safeStorage.setItem(storageKey, JSON.stringify(updated));
       setFeeComponents(updated);
 
       // Dispatch global broadcast event for /student/pay live update
       window.dispatchEvent(new Event("erp-fee-structure-updated"));
     } catch (storageErr) {
-      console.warn("LocalStorage fee structure sync notice:", storageErr);
+      console.warn("SafeStorage fee structure sync notice:", storageErr);
     }
 
     // 3. Security audit log
@@ -193,12 +194,12 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
 
     try {
       const updated = feeComponents.filter((f) => f.id !== id);
-      localStorage.setItem(storageKey, JSON.stringify(updated));
+      safeStorage.setItem(storageKey, JSON.stringify(updated));
       setFeeComponents(updated);
       window.dispatchEvent(new Event("erp-fee-structure-updated"));
       showToast("Fee head removed from student payment portal.", "info");
     } catch (err) {
-      console.warn("LocalStorage fee delete notice:", err);
+      console.warn("SafeStorage fee delete notice:", err);
     }
   };
 

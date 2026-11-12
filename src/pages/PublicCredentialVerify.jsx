@@ -69,7 +69,7 @@ export default function PublicCredentialVerify() {
           </div>
           <h1 className="text-xl font-black tracking-tight">Institutional Credential Verification</h1>
           <p className="text-xs text-slate-400">
-            Cryptographic verification gateway for Academic OS issued transcripts & certificates.
+            Cryptographic verification gateway for ASTINEX issued transcripts & certificates.
           </p>
         </div>
 
@@ -134,7 +134,7 @@ export default function PublicCredentialVerify() {
             to="/login"
             className="text-xs font-semibold text-slate-400 hover:text-white transition-colors"
           >
-            &larr; Return to Academic OS Portal
+            &larr; Return to ASTINEX Portal
           </Link>
         </div>
       </div>

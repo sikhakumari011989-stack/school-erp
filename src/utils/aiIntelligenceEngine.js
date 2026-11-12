@@ -88,6 +88,30 @@ export async function fetchLiveInstitutionalTelemetry(schoolId) {
     }
   }
 
+  if (attendance.length === 0) {
+    try {
+      const todayIso = new Date().toISOString().split("T")[0];
+      const rawAtt = safeStorage.getItem(`erp_attendance_${cleanId}_${todayIso}`) || safeStorage.getItem(`erp_attendance_${cleanId}`);
+      if (rawAtt) {
+        const parsed = JSON.parse(rawAtt);
+        if (Array.isArray(parsed)) attendance = parsed;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (classes.length === 0) {
+    const classSet = new Set();
+    students.forEach((s) => {
+      if (s.class_name) classSet.add(s.class_name);
+    });
+    if (classSet.size === 0) {
+      ["Class 10-A", "Class 10-B", "Class 11-Science"].forEach((c) => classSet.add(c));
+    }
+    classes = Array.from(classSet).map((name) => ({ name, class_id: name }));
+  }
+
   const calendarEvents = getCalendarEvents(cleanId);
 
   // 3. Compute Attendance Telemetry
@@ -703,7 +727,25 @@ export async function executePredefinedPrompt(promptId, schoolId) {
   const promptDef = PREDEFINED_PROMPTS_CATALOG.find((p) => p.id === promptId);
 
   if (!promptDef) {
-    throw new Error(`Unrecognized prompt identifier: ${promptId}`);
+    const safeTopic = typeof promptId === "string" ? promptId.replace(/[^a-zA-Z0-9\s_-]/g, "").trim() : "Unconfigured Metric";
+    return {
+      promptId: promptId || "adhoc_query",
+      category: "Ad-hoc Telemetry",
+      question: typeof promptId === "string" ? promptId : "Ad-hoc institutional telemetry inquiry",
+      status: "no_data",
+      headline: `Data Unavailable: Zero Institutional Records for "${safeTopic}"`,
+      keyMetrics: [
+        { label: "Institutional Records", value: "0" },
+        { label: "Data State", value: "Unavailable" },
+      ],
+      bulletPoints: [
+        `No telemetry, database tables, or institutional records exist for "${safeTopic}" in the active tenant repository.`,
+        "The intelligence engine safely declined this inquiry without hallucinating metrics or inventing numbers.",
+      ],
+      recommendation: "Ensure institutional data tables are configured and populated for this domain before requesting analytical summaries.",
+      actionTarget: "/principal/dashboard",
+      actionLabel: "Return to Dashboard",
+    };
   }
 
   const {

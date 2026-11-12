@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
@@ -8,6 +8,47 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   const { user, session, loading, subscription, tenant, logout } = useContext(AppContext) || {};
   const { showToast } = useToast();
   const location = useLocation();
+
+  const resolvedUser = user;
+  const userCanonicalRole = resolvedUser
+    ? normalizeRole(resolvedUser.role, resolvedUser.role_code || resolvedUser.roll_number || resolvedUser.id)
+    : "";
+  const isMasterUser = userCanonicalRole === "MASTER_OWNER";
+
+  const hasAllowedRoles = Boolean(!loading && resolvedUser && allowedRoles && allowedRoles.length > 0);
+  const isMasterRoute = hasAllowedRoles && allowedRoles.some((r) => normalizeRole(r) === "MASTER_OWNER");
+  const isBlockedMaster = isMasterRoute && !isMasterUser;
+
+  const normalizedAllowedRoles = hasAllowedRoles ? allowedRoles.map((r) => normalizeRole(r)) : [];
+  const hasDirectRole = normalizedAllowedRoles.includes(userCanonicalRole);
+  const isExecutive = userCanonicalRole === "HOD" || userCanonicalRole === "PRIN";
+  const allowsExecutive = normalizedAllowedRoles.includes("HOD") || normalizedAllowedRoles.includes("PRIN");
+  const isAnalyticsRoute =
+    location.pathname.startsWith("/teacher/analytics") ||
+    location.pathname.includes("/analytics");
+
+  const hasRole =
+    !hasAllowedRoles ||
+    hasDirectRole ||
+    (isExecutive && (allowsExecutive || isAnalyticsRoute));
+
+  const isUnauthorized = hasAllowedRoles && !isMasterRoute && !hasRole;
+
+  useEffect(() => {
+    if (!loading && resolvedUser) {
+      if (isBlockedMaster) {
+        showToast(
+          `Unauthorized access to ${location.pathname}. Master Owner authority required.`,
+          "error"
+        );
+      } else if (isUnauthorized) {
+        showToast(
+          `Unauthorized access to ${location.pathname}. Redirecting to your portal.`,
+          "error"
+        );
+      }
+    }
+  }, [loading, resolvedUser, isBlockedMaster, isUnauthorized, location.pathname]);
 
   // If session is still resolving on initial visit, render verified loading spinner rather than premature bounce
   if (loading) {
@@ -21,19 +62,10 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     );
   }
 
-  // Authoritative session user from React context
-  const resolvedUser = user;
-
   // Fail closed: Not authenticated -> redirect to login
   if (!resolvedUser) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-
-  const userCanonicalRole = normalizeRole(
-    resolvedUser.role,
-    resolvedUser.role_code || resolvedUser.roll_number || resolvedUser.id
-  );
-  const isMasterUser = userCanonicalRole === "MASTER_OWNER";
 
   // INSTITUTIONAL SUBSCRIPTION & SUSPENSION ENFORCEMENT:
   // If the campus subscription has expired or is marked suspended, AppLayout renders
@@ -42,44 +74,8 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     return children;
   }
 
-  // If specific roles are required and user does not have required role
-  if (allowedRoles && allowedRoles.length > 0) {
-    // STRICT GUARD FOR MASTER_OWNER: Only verified MASTER_OWNER can access /master-setup
-    const isMasterRoute = allowedRoles.some((r) => normalizeRole(r) === "MASTER_OWNER");
-
-    if (isMasterRoute) {
-      if (!isMasterUser) {
-        showToast(
-          `Unauthorized access to ${location.pathname}. Master Owner authority required.`,
-          "error"
-        );
-        return <Navigate to={dashboardFor(resolvedUser.role || userCanonicalRole)} replace />;
-      }
-      return children;
-    }
-
-    const normalizedAllowedRoles = allowedRoles.map((r) => normalizeRole(r));
-    const hasDirectRole = normalizedAllowedRoles.includes(userCanonicalRole);
-
-    // Executive Suite: HOD & PRIN cross-access and executive authority
-    // HOD and PRIN have authorized cross-access across all executive pages and academic analytics (/teacher/analytics)
-    const isExecutive = userCanonicalRole === "HOD" || userCanonicalRole === "PRIN";
-    const allowsExecutive = normalizedAllowedRoles.includes("HOD") || normalizedAllowedRoles.includes("PRIN");
-    const isAnalyticsRoute =
-      location.pathname.startsWith("/teacher/analytics") ||
-      location.pathname.includes("/analytics");
-
-    const hasRole =
-      hasDirectRole ||
-      (isExecutive && (allowsExecutive || isAnalyticsRoute));
-
-    if (!hasRole) {
-      showToast(
-        `Unauthorized access to ${location.pathname}. Redirecting to your portal.`,
-        "error"
-      );
-      return <Navigate to={dashboardFor(resolvedUser.role || userCanonicalRole)} replace />;
-    }
+  if (isBlockedMaster || isUnauthorized) {
+    return <Navigate to={dashboardFor(resolvedUser.role || userCanonicalRole)} replace />;
   }
 
   return children;

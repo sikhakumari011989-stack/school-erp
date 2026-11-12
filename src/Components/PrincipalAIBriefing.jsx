@@ -175,11 +175,11 @@ export default function PrincipalAIBriefing({ schoolCode, onNavigateTab }) {
   // Filter 25 Prompts
   const filteredPrompts = PREDEFINED_PROMPTS_CATALOG.filter((p) => {
     const matchesCat = selectedCategory === "all" || p.categoryKey === selectedCategory;
+    const searchTokens = (promptSearch || "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const textToMatch = `${p.question} ${p.description} ${p.category}`.toLowerCase();
     const matchesSearch =
-      !promptSearch ||
-      p.question.toLowerCase().includes(promptSearch.toLowerCase()) ||
-      p.description.toLowerCase().includes(promptSearch.toLowerCase()) ||
-      p.category.toLowerCase().includes(promptSearch.toLowerCase());
+      searchTokens.length === 0 ||
+      searchTokens.every((token) => textToMatch.includes(token));
     return matchesCat && matchesSearch;
   });
 
@@ -383,6 +383,7 @@ export default function PrincipalAIBriefing({ schoolCode, onNavigateTab }) {
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
+              data-testid="input-prompt-search"
               placeholder="Search 25 prompts..."
               value={promptSearch}
               onChange={(e) => setPromptSearch(e.target.value)}
@@ -423,6 +424,7 @@ export default function PrincipalAIBriefing({ schoolCode, onNavigateTab }) {
             return (
               <button
                 key={p.id}
+                data-testid={`btn-prompt-${p.id}`}
                 onClick={() => handleRunPrompt(p.id)}
                 className={`p-3.5 text-left rounded-2xl border transition-all duration-200 flex flex-col justify-between space-y-2 cursor-pointer ${
                   isSelected
@@ -450,9 +452,30 @@ export default function PrincipalAIBriefing({ schoolCode, onNavigateTab }) {
           })}
         </div>
 
+        {/* Ad-hoc Query Action when search has no predefined catalog match */}
+        {filteredPrompts.length === 0 && (
+          <div className="p-8 text-center space-y-3 rounded-2xl bg-white dark:bg-[#0E1526] border border-slate-200 dark:border-slate-800">
+            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              No pre-configured catalog prompt matching "{promptSearch}"
+            </p>
+            <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+              You can query the telemetry engine directly to evaluate institutional records.
+            </p>
+            <button
+              type="button"
+              data-testid="btn-run-adhoc-prompt"
+              onClick={() => handleRunPrompt(promptSearch)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Query AI Engine for "{promptSearch}"</span>
+            </button>
+          </div>
+        )}
+
         {/* ACTIVE PROMPT RESULT DRAWER / CARD */}
         {activePromptId && (
-          <div className="mt-4 p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#0E1526] border-2 border-cyan-500/40 shadow-xl space-y-4 animate-fade-in relative">
+          <div data-testid="ai-prompt-result" className="mt-4 p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#0E1526] border-2 border-cyan-500/40 shadow-xl space-y-4 animate-fade-in relative">
             <button
               onClick={() => {
                 setActivePromptId(null);
@@ -501,7 +524,7 @@ export default function PrincipalAIBriefing({ schoolCode, onNavigateTab }) {
                   <h3 className="text-base font-black text-slate-900 dark:text-white">
                     {promptResult.question}
                   </h3>
-                  <p className="text-sm font-bold text-cyan-700 dark:text-cyan-300 mt-1">
+                  <p data-testid="ai-prompt-headline" className="text-sm font-bold text-cyan-700 dark:text-cyan-300 mt-1">
                     {promptResult.headline}
                   </p>
                 </div>

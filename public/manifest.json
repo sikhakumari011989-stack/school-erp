@@ -1,13 +1,19 @@
 {
-  "name": "EduSaaS ERP - Multi-Tenant Tuition & School OS",
-  "short_name": "EduSaaS ERP",
-  "description": "Enterprise Multi-Tenant SaaS Platform for Schools, Tuitions, and Academic Institutions",
+  "name": "ASTINEX",
+  "short_name": "ASTINEX",
+  "description": "One Platform. Every School Operation.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#0b0f19",
-  "theme_color": "#0b0f19",
+  "background_color": "#020617",
+  "theme_color": "#020617",
   "icons": [
+    {
+      "src": "/astinex-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "/logo192.png",
       "sizes": "192x192",
@@ -28,14 +34,14 @@
       "short_name": "Attendance",
       "description": "Log classroom daily roll call offline",
       "url": "/teacher/attendance",
-      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/astinex-icon.png", "sizes": "512x512" }]
     },
     {
       "name": "Student Homework",
       "short_name": "Homework",
       "description": "View assignments and learning tasks",
       "url": "/student/homework",
-      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/astinex-icon.png", "sizes": "512x512" }]
     }
   ]
 }
