@@ -837,12 +837,18 @@ export default function StudentDashboard() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex flex-col sm:flex-row items-center gap-2 mt-3">
               <button
                 onClick={() => navigate("/student/fees")}
-                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs transition-all duration-200 shadow-lg flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs transition-all duration-200 shadow-lg flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span>🧾 View Fee Records & Invoices</span>
+              </button>
+              <button
+                onClick={handleDownloadTranscript}
+                className="flex-1 w-full py-2.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-white/10 text-cyan-300 hover:text-white font-bold text-xs transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <span>📜 Download Certified Transcript (PDF)</span>
               </button>
             </div>
           </div>

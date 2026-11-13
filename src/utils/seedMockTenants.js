@@ -473,6 +473,29 @@ export const SCHOOL_A_ATTENDANCE = [
   { student_id: "stu-a-10", roll_number: "STU-10", name: "Diya Joshi", status: "present" },
 ];
 
+export const SCHOOL_A_EXAM_MARKS = [
+  {
+    id: "em-a-01",
+    roll_number: "STU-01",
+    student_name: "Alexander Bartholomew Montgomery-Featherstonehaugh III",
+    class_name: "Class 10-A",
+    term: "Term II Final Examination (2026-27)",
+    maths: 98,
+    science: 95,
+    english: 92,
+  },
+  {
+    id: "em-a-02",
+    roll_number: "STU-02",
+    student_name: "Liam Chen",
+    class_name: "Class 10-A",
+    term: "Term II Final Examination (2026-27)",
+    maths: 88,
+    science: 90,
+    english: 85,
+  },
+];
+
 export const SCHOOL_B_MEMBERS = [
   {
     id: "prin-b-01",
@@ -626,6 +649,8 @@ export function seedMockTenants(force = false) {
     const today = new Date().toISOString().split("T")[0];
     safeStorage.setItem(`erp_attendance_SCHOOL-A_${today}`, JSON.stringify(SCHOOL_A_ATTENDANCE));
     safeStorage.setItem("erp_attendance_SCHOOL-A", JSON.stringify(SCHOOL_A_ATTENDANCE));
+    safeStorage.setItem("erp_exam_marks_SCHOOL-A", JSON.stringify(SCHOOL_A_EXAM_MARKS));
+    safeStorage.setItem("erp_exam_marks_OASIS-TUTORIALS", JSON.stringify(SCHOOL_A_EXAM_MARKS));
 
     // 5. Seed School A Active Subscription & Fee Structures & Logo
     safeStorage.setItem(

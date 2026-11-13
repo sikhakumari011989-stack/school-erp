@@ -117,9 +117,10 @@ test.describe("Tuition ERP - Multi-Tenant Institutional E2E Lifecycle", () => {
   });
 
   test("Dynamic PDF Invoices & Transcript Vault", async ({ page }) => {
-    // 1-Click login as student
-    const studentBtn = page.locator('button:has-text("Student")');
-    await studentBtn.click();
+    // Fill credentials for student
+    await page.fill('[data-testid="input-institution-code"]', "OASIS-TUTORIALS");
+    await page.fill('[data-testid="input-personal-code"]', "STU-01");
+    await page.fill('[data-testid="input-password"]', "password123");
     await page.click('[data-testid="btn-login-submit"]');
 
     await expect(page).toHaveURL(/\/student\/dashboard/, { timeout: 15000 });

@@ -30,12 +30,10 @@ export default function Login({ isDirectPortal = false }) {
 
   const searchParams = new URLSearchParams(location.search);
   const isDirect = isDirectPortal || location.pathname === "/portal";
-  const savedTenant = safeStorage.getItem("erp_active_tenant") || "";
   const initialSchool =
     searchParams.get("school") ||
     searchParams.get("tenant") ||
     searchParams.get("code") ||
-    savedTenant ||
     "";
 
   const [formData, setFormData] = useState({
@@ -297,16 +295,6 @@ export default function Login({ isDirectPortal = false }) {
     setLoading(false);
   };
 
-  // Quick fill role credential ID for testing
-  const setDemoCredentials = (roleCode) => {
-    setFormData((prev) => ({
-      ...prev,
-      personalCode: roleCode,
-      password: "password123",
-    }));
-    setError("");
-  };
-
   return (
     <div className="flex min-h-[100dvh] w-full items-center justify-center bg-slate-950 text-slate-100 relative overflow-hidden font-sans p-4 sm:p-6 selection:bg-cyan-500/30 selection:text-cyan-200">
       {/* Flagship Cosmic Ambient Glow Nodes */}
@@ -366,6 +354,7 @@ export default function Login({ isDirectPortal = false }) {
                 data-testid="input-institution-code"
                 name="institutionCode"
                 type="text"
+                autoComplete="organization"
                 required
                 placeholder="e.g. PALGHAR-01"
                 className="w-full bg-slate-950/80 border border-slate-800 text-white placeholder-slate-600 rounded-xl pl-11 pr-4 py-3.5 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/40 focus:ring-offset-2 focus:ring-offset-slate-950 transition-all font-mono uppercase tracking-wider text-sm font-semibold"
@@ -392,6 +381,7 @@ export default function Login({ isDirectPortal = false }) {
                 data-testid="input-personal-code"
                 name="personalCode"
                 type="text"
+                autoComplete="username"
                 required
                 placeholder="PRIN-01 or user@school.com"
                 className="w-full bg-slate-950/80 border border-slate-800 text-white placeholder-slate-600 rounded-xl pl-11 pr-4 py-3.5 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/40 focus:ring-offset-2 focus:ring-offset-slate-950 transition-all font-mono uppercase tracking-wider text-sm font-semibold"
@@ -417,6 +407,7 @@ export default function Login({ isDirectPortal = false }) {
                 data-testid="input-password"
                 name="password"
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 required
                 placeholder="••••••••••••"
                 className="w-full bg-slate-950/80 border border-slate-800 text-white placeholder-slate-600 rounded-xl pl-11 pr-11 py-3.5 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/40 focus:ring-offset-2 focus:ring-offset-slate-950 transition-all text-sm font-medium"
@@ -432,31 +423,6 @@ export default function Login({ isDirectPortal = false }) {
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
-            </div>
-          </div>
-
-          {/* Quick Role Tester Pills */}
-          <div className="pt-1">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-              Quick Role Test Logins (Password: password123)
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {[
-                { label: "Principal", code: "PRIN-01", color: "hover:border-cyan-500/50 hover:bg-cyan-500/10" },
-                { label: "Trustee (HOD)", code: "HOD-01", color: "hover:border-purple-500/50 hover:bg-purple-500/10" },
-                { label: "Accountant", code: "ACC-01", color: "hover:border-emerald-500/50 hover:bg-emerald-500/10" },
-                { label: "Teacher", code: "TCH-01", color: "hover:border-blue-500/50 hover:bg-blue-500/10" },
-                { label: "Student", code: "STU-01", color: "hover:border-amber-500/50 hover:bg-amber-500/10" },
-              ].map((role) => (
-                <button
-                  key={role.code}
-                  type="button"
-                  onClick={() => setDemoCredentials(role.code)}
-                  className={`text-[11px] font-mono font-medium px-2.5 py-1 rounded-lg bg-slate-950/70 border border-slate-800 text-slate-300 transition-all cursor-pointer ${role.color}`}
-                >
-                  {role.label} <span className="text-slate-400">({role.code})</span>
-                </button>
-              ))}
             </div>
           </div>
 
