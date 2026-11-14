@@ -29,8 +29,8 @@ export default function LandingPage() {
       title: "Real-Time Financial Ledger",
       badge: "FinTech & Payments",
       icon: "💰",
-      desc: "End-to-end fee accounting with native Razorpay payment gateway integration. Live transaction tracking, automated digital receipt generation, and encrypted defaulter audit vaults.",
-      highlights: ["Razorpay Automated Sync", "Instant Fee Status Reconciliation", "Certified PDF Audit Vault"],
+      desc: "End-to-end fee accounting with native digital payment gateway integration. Live transaction tracking, automated digital receipt generation, and encrypted defaulter audit vaults.",
+      highlights: ["Automated Gateway Sync", "Instant Fee Status Reconciliation", "Certified PDF Audit Vault"],
       color: "from-emerald-500/20 to-teal-500/10 border-emerald-500/30 text-emerald-400",
     },
     {
@@ -128,7 +128,7 @@ export default function LandingPage() {
 
         <p className="text-slate-300 text-base sm:text-lg max-w-3xl mx-auto mb-10 leading-relaxed font-medium">
           Eliminate fragmented tools. Empower HODs, trustees, accountants, teachers, and students with
-          ultra-fast role-based suites, bank-grade Razorpay fee settlements, and instant Supabase attendance sync.
+          ultra-fast role-based suites, bank-grade direct fee settlements, and instant Supabase attendance sync.
         </p>
 
         <div className="flex justify-center items-center gap-4 flex-wrap">
@@ -168,7 +168,7 @@ export default function LandingPage() {
           </div>
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fee Settlements</p>
-            <p className="text-2xl font-black text-purple-400 mt-1">Razorpay</p>
+            <p className="text-2xl font-black text-purple-400 mt-1">Instant UPI</p>
             <p className="text-xs text-slate-400 mt-0.5">Automated ledger posting</p>
           </div>
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5">
@@ -241,7 +241,7 @@ export default function LandingPage() {
             Ready to Modernize Your Educational Infrastructure?
           </h2>
           <p className="text-slate-300 text-sm sm:text-base max-w-xl mx-auto mb-8 font-medium">
-            Join forward-thinking academy chains and institutions streamlining student admissions, Razorpay fee collections, and real-time faculty attendance.
+            Join forward-thinking academy chains and institutions streamlining student admissions, digital fee collections, and real-time faculty attendance.
           </p>
           <div className="flex justify-center gap-4 flex-wrap">
             <button
@@ -260,7 +260,7 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* FOOTER & RAZORPAY COMPLIANCE SECTION */}
+      {/* FOOTER & PAYMENT COMPLIANCE SECTION */}
       <footer className="border-t border-slate-800 bg-slate-950/80 backdrop-blur-xl relative z-10 mt-16 pt-16 pb-12">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
@@ -322,7 +322,7 @@ export default function LandingPage() {
               </ul>
             </div>
 
-            {/* Col 3: Legal & Razorpay Compliance */}
+            {/* Col 3: Legal & Institutional Compliance */}
             <div>
               <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-4">
                 Legal & Compliance

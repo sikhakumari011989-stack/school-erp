@@ -465,7 +465,7 @@ export default function CustomPdfTemplateManager({ schoolCode }) {
                   </div>
                 </div>
                 <div className="text-right text-[10px] text-slate-400 font-mono">
-                  <span>CAMPUS NODE: {activeSchoolCode}</span>
+                  <span>INSTITUTION CODE: {activeSchoolCode}</span>
                 </div>
               </div>
 

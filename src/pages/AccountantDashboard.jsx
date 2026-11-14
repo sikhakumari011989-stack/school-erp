@@ -22,8 +22,6 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import FeeRiskRadar from "../Components/FeeRiskRadar";
-import BankReconciliationWorkbench from "../Components/BankReconciliationWorkbench";
 
 export default function AccountantDashboard() {
   const navigate = useNavigate();
@@ -52,6 +50,8 @@ export default function AccountantDashboard() {
     status: "paid",
     payment_mode: "Cash / Cheque",
   });
+  const [enrolledStudents, setEnrolledStudents] = useState([]);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
 
   // Maker-Checker Credit Note & Reversal State
   const [reversalTarget, setReversalTarget] = useState(null);
@@ -388,6 +388,61 @@ export default function AccountantDashboard() {
     return () => window.removeEventListener("erp-fee-ledger-updated", handleUpdate);
   }, [schoolId]);
 
+  useEffect(() => {
+    async function loadEnrolledStudents() {
+      try {
+        let list = [];
+        if (supabase) {
+          const { data } = await supabase
+            .from("students")
+            .select("id, name, full_name, roll_number, class_name, roll_no")
+            .limit(100);
+          if (data && data.length > 0) {
+            list = data.map((s) => ({
+              id: s.id || s.roll_number || s.roll_no,
+              name: s.full_name || s.name || "Enrolled Scholar",
+              roll_number: s.roll_number || s.roll_no || s.id,
+              class_name: s.class_name || "General",
+            }));
+          }
+        }
+        if (list.length === 0) {
+          const rawDir = localStorage.getItem(`erp_directory_${schoolId}`) || localStorage.getItem("erp_active_roster");
+          if (rawDir) {
+            const parsed = JSON.parse(rawDir);
+            list = parsed
+              .filter((m) => (m.role || "").toLowerCase() === "student")
+              .map((s) => ({
+                id: s.id || s.role_code || s.roll_number,
+                name: s.full_name || s.name,
+                roll_number: s.role_code || s.roll_number || "STU-01",
+                class_name: s.class_name || "General",
+              }));
+          }
+        }
+        if (list.length === 0) {
+          list = [
+            { id: "STU-01", name: "Aarav S. Sharma", roll_number: "STU-01", class_name: "Class 10-A" },
+            { id: "STU-02", name: "Priya V. Deshmukh", roll_number: "STU-02", class_name: "Class 12-Science" },
+          ];
+        }
+        setEnrolledStudents(list);
+        if (list.length > 0) {
+          setFormData((prev) => ({
+            ...prev,
+            student_name: prev.student_name || list[0].name,
+            class_name: prev.class_name || list[0].class_name,
+            student_roll: prev.student_roll || list[0].roll_number,
+          }));
+          setSelectedStudentId((prev) => prev || list[0].id);
+        }
+      } catch (e) {
+        console.warn("Could not load enrolled students:", e);
+      }
+    }
+    loadEnrolledStudents();
+  }, [schoolId]);
+
   const handleAddTransaction = async (e) => {
     e.preventDefault();
     if (!formData.student_name || !formData.amount) {
@@ -477,7 +532,7 @@ export default function AccountantDashboard() {
     const upi = getSchoolUpi();
     const instName = user?.school_name || schoolId;
     const totalPending = pendingRows.reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
-    const msg = `📢 *Institutional Fee Dues Advisory - ${instName}*\n\nAttention Parents and Guardians,\n\nOur treasury reconciliation shows pending fee balances across *${pendingRows.length} student records* totaling *₹${totalPending.toLocaleString()}*.\n\n💳 *Direct Settlement Mode:*\n• School UPI ID: \`${upi}\`\n• Online Portal: Pay via Razorpay SSL Gateway\n\nPlease ensure pending dues are cleared promptly to maintain uninterrupted academic portal access.\n\n*Accounts & Treasury Office*\n${instName}`;
+    const msg = `📢 *Institutional Fee Dues Advisory - ${instName}*\n\nAttention Parents and Guardians,\n\nOur treasury reconciliation shows pending fee balances across *${pendingRows.length} student records* totaling *₹${totalPending.toLocaleString()}*.\n\n💳 *Direct Settlement Mode:*\n• School UPI ID: \`${upi}\`\n• Online Portal: Pay via Verified Institutional Gateway\n\nPlease ensure pending dues are cleared promptly to maintain uninterrupted academic portal access.\n\n*Accounts & Treasury Office*\n${instName}`;
     const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   };
@@ -593,7 +648,7 @@ export default function AccountantDashboard() {
         console.warn("Auto-PDF generation notice:", pdfErr);
       }
 
-      // 4. Send payment confirmed WhatsApp notification
+      // 4. Send payment confirmed notification
       try {
         notifyFeePaymentConfirmed({
           studentName: item.student_name,
@@ -689,7 +744,7 @@ export default function AccountantDashboard() {
             </p>
             <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Accountant Command Center 💰</h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-              Live tuition fee reconciliation, Razorpay settlements, and defaulter tracking
+              Live tuition fee reconciliation, automated settlements, and defaulter tracking
             </p>
           </div>
           <div className="flex items-center gap-2.5 flex-wrap">
@@ -1073,29 +1128,43 @@ export default function AccountantDashboard() {
             <form onSubmit={handleAddTransaction} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
-                  Student Full Name *
+                  Select Enrolled Student *
                 </label>
-                <input
-                  type="text"
+                <select
                   required
-                  placeholder="e.g., Rohan Mehta"
-                  className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 text-sm transition-all focus:ring-2 focus:ring-emerald-500/20"
-                  value={formData.student_name}
-                  onChange={(e) => setFormData({ ...formData, student_name: e.target.value })}
-                />
+                  className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 text-sm font-semibold transition-all focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+                  value={selectedStudentId}
+                  onChange={(e) => {
+                    const sid = e.target.value;
+                    setSelectedStudentId(sid);
+                    const stu = enrolledStudents.find((s) => s.id === sid);
+                    if (stu) {
+                      setFormData({
+                        ...formData,
+                        student_name: stu.name,
+                        class_name: stu.class_name,
+                        student_roll: stu.roll_number,
+                      });
+                    }
+                  }}
+                >
+                  {enrolledStudents.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.roll_number}) &bull; {s.class_name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
-                  Class / Section
+                  Enrolled Class / Batch
                 </label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g., 10-A, 12-Sci"
-                  className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 text-sm transition-all focus:ring-2 focus:ring-emerald-500/20"
-                  value={formData.class_name}
-                  onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
+                  readOnly
+                  className="w-full bg-slate-100 dark:bg-slate-900/60 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-500 dark:text-slate-400 text-sm font-medium cursor-not-allowed"
+                  value={formData.class_name || ""}
                 />
               </div>
 
@@ -1138,7 +1207,7 @@ export default function AccountantDashboard() {
                 >
                   <option value="School UPI QR">School UPI QR</option>
                   <option value="Cash / Cheque">Cash / Cheque</option>
-                  <option value="Online (Razorpay)">Online (Razorpay)</option>
+                  <option value="Online (UPI / NetBanking)">Online (UPI / NetBanking)</option>
                   <option value="Bank Transfer (NEFT/UPI)">Bank Transfer (NEFT/UPI)</option>
                 </select>
               </div>
@@ -1167,11 +1236,11 @@ export default function AccountantDashboard() {
                   </div>
                   <button
                     onClick={handleBroadcastWhatsApp}
-                    title="Send WhatsApp notice to all pending fee defaulters"
+                    title="Broadcast fee notice to all pending fee defaulters"
                     className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 dark:bg-emerald-600/15 dark:hover:bg-emerald-600/25 dark:border-emerald-500/30 dark:text-emerald-300 font-bold px-3 py-1.5 rounded-xl text-xs transition-all duration-200 flex items-center gap-1.5 shadow-sm cursor-pointer hover:-translate-y-0.5"
                   >
                     <span>📢</span>
-                    <span>Broadcast WhatsApp</span>
+                    <span>Broadcast Notice</span>
                   </button>
                 </div>
                 <div className="flex gap-2 flex-wrap">
@@ -1232,7 +1301,7 @@ export default function AccountantDashboard() {
             ) : filteredLedger.length === 0 ? (
               <div className="p-12 text-center text-slate-400 bg-tech-grid">
                 <p className="font-bold text-slate-900 dark:text-white text-base">No transactions found.</p>
-                <p className="text-xs text-slate-500 mt-1">Transactions recorded here or paid online via Razorpay appear live.</p>
+                <p className="text-xs text-slate-500 mt-1">Transactions recorded here or paid online via verified portal appear live.</p>
               </div>
             ) : (
               <div className="overflow-x-auto w-full">
@@ -1352,10 +1421,10 @@ export default function AccountantDashboard() {
                               <button
                                 onClick={() => handleSendWhatsAppReminder(item)}
                                 className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:border-emerald-500/40 dark:text-emerald-300 text-xs font-bold transition-all duration-200 cursor-pointer inline-flex items-center gap-1 shadow-sm hover:-translate-y-0.5"
-                                title="Send Reminder via WhatsApp"
+                                title="Send Fee Reminder Notice"
                               >
                                 <span>📲</span>
-                                <span>Remind WhatsApp</span>
+                                <span>Send Reminder</span>
                               </button>
                             )}
                           </td>
@@ -1368,12 +1437,6 @@ export default function AccountantDashboard() {
             )}
           </div>
         </div>
-
-        {/* PREDICTIVE FEE DEFAULTER RISK RADAR */}
-        <FeeRiskRadar schoolCode={schoolId} />
-
-        {/* 3-COLUMN BANK RECONCILIATION WORKBENCH & TALLY/GST ENGINE */}
-        <BankReconciliationWorkbench schoolCode={schoolId} />
       </div>
 
       {/* MAKER-CHECKER REVERSAL & CREDIT NOTE REQUEST MODAL */}

@@ -955,7 +955,7 @@ export default function ClinicHealthVault() {
                     className="rounded text-emerald-500 focus:ring-0"
                   />
                   <span className="font-bold text-emerald-300">
-                    Dispatch Automated WhatsApp / SMS Alert to Parent
+                    Dispatch Automated Emergency Alert to Parent
                   </span>
                 </label>
                 {visitForm.parent_notified && (

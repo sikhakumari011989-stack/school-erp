@@ -65,7 +65,7 @@ export default function ContactUs() {
             Contact Official Support & Grievance Desk
           </h1>
           <p className="text-slate-400 text-sm">
-            Razorpay Merchant Underwriting Verified &bull; Official Indian Corporate Entity
+            PCI-DSS Level 1 Underwriting Verified &bull; Official Indian Corporate Entity
           </p>
           <div className="mt-4 flex flex-wrap gap-2 items-center text-xs text-slate-300 bg-slate-900/60 border border-slate-800 rounded-xl p-3">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -131,7 +131,7 @@ export default function ContactUs() {
                       Support Hotline: <span className="font-mono text-white font-bold">+91 9518388499</span>
                     </p>
                     <p className="text-slate-200 text-sm">
-                      WhatsApp Helpdesk: <span className="font-mono text-white font-bold">+91 9518388499</span>
+                      Direct Helpdesk Hotline: <span className="font-mono text-white font-bold">+91 9518388499</span>
                     </p>
                   </div>
                 </div>
@@ -154,14 +154,14 @@ export default function ContactUs() {
               </div>
             </div>
 
-            {/* Razorpay Trust Badge Card */}
+            {/* Verified Merchant Trust Badge Card */}
             <div className="bg-slate-950/60 border border-slate-800 rounded-3xl p-6 text-xs text-slate-400 space-y-2">
               <div className="flex items-center gap-2 text-white font-bold text-sm">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 Verified Merchant KYC Profile
               </div>
               <p>
-                Our payment gateway is operated in certified partnership with Razorpay Software Pvt. Ltd. All transactions are securely processed according to standard RBI guidelines.
+                Our payment gateway is operated in certified partnership with PCI-DSS Level 1 banking partners. All transactions are securely processed according to standard RBI guidelines.
               </p>
             </div>
           </div>
@@ -272,7 +272,7 @@ export default function ContactUs() {
                       onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     >
                       <option value="General Support">General Support & Technical Help</option>
-                      <option value="Billing & Refunds">Billing, Razorpay Payments & Refunds</option>
+                      <option value="Billing & Refunds">Billing, Online Payments & Refunds</option>
                       <option value="Institutional Sales">Institutional Sales & Multi-Branch Enterprise</option>
                       <option value="Grievance">Grievance / Regulatory Inquiries</option>
                     </select>

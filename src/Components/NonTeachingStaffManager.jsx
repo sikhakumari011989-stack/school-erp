@@ -222,7 +222,7 @@ export default function NonTeachingStaffManager({ schoolId: propSchoolId }) {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Ramesh K. Shinde"
+                  placeholder="Enter full name"
                   value={form.fullName}
                   onChange={(e) => setForm({ ...form, fullName: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
@@ -249,11 +249,11 @@ export default function NonTeachingStaffManager({ schoolId: propSchoolId }) {
 
               <div>
                 <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
-                  Direct Telephone / WhatsApp *
+                  DIRECT MOBILE NUMBER *
                 </label>
                 <input
                   type="tel"
-                  placeholder="e.g. +91 98200 45678"
+                  placeholder="Enter mobile number"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
@@ -316,7 +316,7 @@ export default function NonTeachingStaffManager({ schoolId: propSchoolId }) {
                 disabled={submitting}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-1.5"
               >
-                <span>{submitting ? "Onboarding..." : "Onboard Staff Member"}</span>
+                <span>{submitting ? "Adding..." : "Add Staff Member"}</span>
               </button>
             </div>
           </form>
@@ -328,7 +328,7 @@ export default function NonTeachingStaffManager({ schoolId: propSchoolId }) {
         <div className="p-6 border-b border-slate-700/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800/40">
           <div>
             <h3 className="text-lg font-bold text-white">Campus Operational Personnel Roster</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Roster node: {schoolId}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Institution Code: {schoolId}</p>
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-1">

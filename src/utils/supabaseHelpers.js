@@ -38,11 +38,12 @@ export async function resolveSchoolUuid(codeOrUuid = "CAMPUS-01") {
 /**
  * Formats tuition role code nicely (e.g. 'HOD-01' -> 'Head of Department / Trustee')
  */
-export function formatRoleTitle(role = "") {
+export function formatRoleTitle(role = "", institutionType = "school") {
+  const isTuition = (institutionType || "").toLowerCase() === "tuition";
   const map = {
-    trustee: "HOD / Board Trustee",
-    teacher: "Faculty / Tutor",
-    accountant: "Tuition Accountant",
+    trustee: isTuition ? "HOD / Board Trustee" : "Principal / Trustee",
+    teacher: isTuition ? "Faculty / Tutor" : "Faculty / Teacher",
+    accountant: isTuition ? "Tuition Accountant" : "School Accountant",
     student: "Enrolled Student",
     admin: "Super Administrator",
     staff: "Operations Staff",

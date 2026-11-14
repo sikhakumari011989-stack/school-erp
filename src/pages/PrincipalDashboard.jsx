@@ -24,9 +24,7 @@ import PrincipalAIBriefing from "../Components/PrincipalAIBriefing";
 import SchoolUpiQrConfig from "../Components/SchoolUpiQrConfig";
 import CertificateManagementCard from "../Components/CertificateManagementCard";
 import NonTeachingStaffManager from "../Components/NonTeachingStaffManager";
-import CctvFeedManager from "../Components/CctvFeedManager";
 import StaffLeaveManager from "../Components/StaffLeaveManager";
-import MasterTimetableManager from "../Components/MasterTimetableManager";
 import StaffEvaluationManager from "../Components/StaffEvaluationManager";
 import InventoryAssetManager from "../Components/InventoryAssetManager";
 import DisciplinaryLogManager from "../Components/DisciplinaryLogManager";
@@ -140,6 +138,63 @@ export default function PrincipalDashboard() {
         : `Parental DPDP 2023 Consent marked pending for ${studentName} ⚠️`,
       "info"
     );
+  };
+
+  const handleArchiveMember = async (m) => {
+    const personalCode = (m.role_code || m.roll_number || m.personal_code || m.id || "").toUpperCase();
+    const isStudent = (m.role || "").toLowerCase() === "student";
+
+    try {
+      if (supabase) {
+        const { error: profileErr } = await supabase
+          .from("profiles")
+          .update({ status: "ARCHIVED" })
+          .eq("school_id", institutionCode)
+          .or(`role_code.eq.${personalCode},id.eq.${m.id}`);
+
+        if (profileErr) throw profileErr;
+
+        if (isStudent) {
+          const { error: stuErr } = await supabase
+            .from("students")
+            .update({ status: "ARCHIVED" })
+            .eq("school_id", institutionCode)
+            .or(`roll_number.eq.${personalCode},id.eq.${m.id}`);
+
+          if (stuErr) throw stuErr;
+        }
+      }
+
+      // 2. Real-time UI removal: immediately filter out of local React state
+      setRosterMembers((prev) =>
+        prev.filter((item) => {
+          const code = (item.role_code || item.roll_number || item.personal_code || item.id || "").toUpperCase();
+          return code !== personalCode && item.id !== m.id;
+        })
+      );
+
+      // Also remove from safeStorage
+      const dirKey = `erp_directory_${institutionCode}`;
+      const raw = localStorage.getItem(dirKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const updated = parsed.filter((item) => {
+          const code = (item.role_code || item.roll_number || item.personal_code || item.id || "").toUpperCase();
+          return code !== personalCode && item.id !== m.id;
+        });
+        localStorage.setItem(dirKey, JSON.stringify(updated));
+        window.dispatchEvent(new Event("erp-directory-updated"));
+      }
+
+      // 3. Dynamic Success Toast (Only after Supabase confirms update was successful)
+      showToast(
+        `Safely archived ${m.full_name || m.name || personalCode}. Historical audit and fee records preserved.`,
+        "success"
+      );
+    } catch (err) {
+      console.error("Archive error:", err);
+      showToast(err.message || "Failed to archive member in cloud database.", "error");
+    }
   };
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
   const [comprehensiveModalRole, setComprehensiveModalRole] = useState("student");
@@ -652,8 +707,8 @@ export default function PrincipalDashboard() {
     setShowQuickAddModal(false);
   };
 
-  // Export WhatsApp Credentials
-  const handleExportWhatsAppSheet = () => {
+  // Export Login Credentials Sheet
+  const handleExportCredentialsSheet = () => {
     if (rosterMembers.length === 0) {
       showToast("No members on file to export.", "info");
       return;
@@ -670,7 +725,7 @@ export default function PrincipalDashboard() {
     const text = lines.join("\n");
     if (navigator?.clipboard?.writeText) {
       navigator.clipboard.writeText(text);
-      showToast("WhatsApp credential sheet copied to clipboard! Paste into your school broadcast group.", "success");
+      showToast("Login credential sheet copied to clipboard! Paste into your school broadcast channel.", "success");
     }
   };
 
@@ -768,16 +823,13 @@ export default function PrincipalDashboard() {
     );
   });
 
-  // THE 12 CONSOLIDATED EXECUTIVE MASTER MODULES
+  // THE CONSOLIDATED EXECUTIVE MASTER MODULES
   const modules12 = [
     { id: 1, name: "Master Revenue & Fee Treasury", icon: "💰", category: "Treasury", desc: "Configure school UPI QR codes, view live fee ledgers, log manual cash payments, and generate tax invoices." },
-    { id: 2, name: "User & Roster Management", icon: "👥", category: "Directory", desc: "Bulk CSV import wizard, single-member quick add, and WhatsApp credential sheet exporter." },
+    { id: 2, name: "User & Roster Management", icon: "👥", category: "Directory", desc: "Bulk CSV import wizard, single-member quick add, and login credential sheet exporter." },
     { id: 3, name: "Non-Teaching Staff Directory & Payroll", icon: "🧹", category: "Operations", desc: "Complete CRUD for drivers, cleaners, gardeners, security guards, helpers, and cafeteria personnel." },
-    { id: 4, name: "Live Campus CCTV Feed Hub", icon: "📹", category: "Surveillance", desc: "Camera feed configuration manager (Camera Name, IP/Stream URL, Location, Status: Online/Offline)." },
     { id: 5, name: "Staff Leave Rules & Approvals", icon: "📝", category: "Human Resources", desc: "Review faculty/staff leave applications with functional Approve and Reject action buttons." },
     { id: 6, name: "Global Institutional Broadcasts", icon: "📢", category: "Broadcast", desc: "Emergency and event notice composer to push alerts across all connected student and faculty portals." },
-    { id: 7, name: "Academic Monitoring & Pass/Fail Ratios", icon: "📊", category: "Academics", desc: "Track class averages, attendance trends, and manage weak student support watchlists." },
-    { id: 8, name: "Master Timetable & Period Scheduler", icon: "⏰", category: "Curriculum", desc: "Monday–Saturday curriculum timeline configuration grid (Period timings, room numbers, subjects)." },
     { id: 9, name: "Staff Evaluation & Syllabus Progress", icon: "⭐", category: "Pedagogy", desc: "Monitor faculty teaching milestones and lesson plan completion status." },
     { id: 10, name: "Academic Calendar & Daily Pulse Studio", icon: "📅", category: "Calendar", desc: "Manage sparse special dates (holidays, exams, functions) with automatic working day fallbacks." },
     { id: 11, name: "Inventory & Asset Master", icon: "📦", category: "Plant & Assets", desc: "Track school uniforms, textbooks, library books, laboratory chemicals, and computer hardware." },
@@ -802,7 +854,7 @@ export default function PrincipalDashboard() {
               Principal & Trustee Master Suite
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-              15 Consolidated Enterprise Modules &bull; Live Institutional Ledger & Student Governance
+              Consolidated Enterprise Modules &bull; Live Institutional Ledger & Student Governance
             </p>
           </div>
 
@@ -840,14 +892,6 @@ export default function PrincipalDashboard() {
               <span>Staff Messenger</span>
             </button>
             <button
-              onClick={() => navigate("/admin/admissions")}
-              className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-md shadow-blue-600/20 hover:-translate-y-0.5"
-              title="Manage admissions pipeline & prospective leads"
-            >
-              <span>🎯</span>
-              <span>Admissions CRM</span>
-            </button>
-            <button
               onClick={() => navigate("/admin/id-cards")}
               className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-md shadow-cyan-600/20 hover:-translate-y-0.5"
               title="Generate batch student & staff ID cards"
@@ -858,7 +902,7 @@ export default function PrincipalDashboard() {
             <button
               onClick={handleCopyPortalLink}
               className="px-3.5 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-600/20 dark:hover:bg-blue-600/30 dark:text-blue-300 dark:border-blue-500/30 font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-sm hover:-translate-y-0.5"
-              title="Copy direct member portal link to share on WhatsApp"
+              title="Copy direct member portal link to share with scholars & parents"
             >
               <span>🔗</span>
               <span>Copy Portal Link</span>
@@ -868,13 +912,13 @@ export default function PrincipalDashboard() {
                 onClick={() => setActiveModuleId(null)}
                 className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white dark:border-slate-700 font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 hover:-translate-y-0.5 shadow-sm"
               >
-                <span>← Back to 12 Modules</span>
+                <span>← Back to All Modules</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* 15 CONSOLIDATED MODULES NAVIGATION TILES OR ACTIVE MODULE */}
+        {/* CONSOLIDATED MODULES NAVIGATION TILES OR ACTIVE MODULE */}
         {activeModuleId ? (
           <div>
             <div className="mb-4">
@@ -926,8 +970,8 @@ export default function PrincipalDashboard() {
                   </div>
                   <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Gateway Status</p>
-                    <p className="text-2xl font-black text-emerald-400">Active Node</p>
-                    <span className="text-[11px] text-slate-400 mt-1 block">Razorpay & UPI Instant</span>
+                    <p className="text-2xl font-black text-emerald-400">Active Online</p>
+                    <span className="text-[11px] text-slate-400 mt-1 block">Instant Bank UPI & Online</span>
                   </div>
                 </div>
 
@@ -954,7 +998,7 @@ export default function PrincipalDashboard() {
                       <span className="text-5xl block opacity-60">💰</span>
                       <h4 className="text-lg font-bold text-white">No Fee Transactions Logged (Clean Slate)</h4>
                       <p className="text-xs text-slate-400 max-w-md mx-auto">
-                        Student fee collections via Razorpay, UPI QR, or manual cash receipts will stream live into this ledger.
+                        Student fee collections via online gateway, UPI QR, or manual cash receipts will stream live into this ledger.
                       </p>
                       <button
                         onClick={() => setShowManualPayModal(true)}
@@ -1012,7 +1056,7 @@ export default function PrincipalDashboard() {
                     </div>
                     <h2 className="text-2xl font-black text-white">User & Roster Management</h2>
                     <p className="text-slate-400 text-sm mt-1 max-w-xl">
-                      Add students and teachers, bulk onboard from CSV spreadsheets, and export WhatsApp credential sheets.
+                      Add students and teachers, bulk onboard from CSV spreadsheets, and export credentials sheets.
                     </p>
                   </div>
                   <div className="flex items-center gap-2.5 flex-wrap">
@@ -1044,11 +1088,11 @@ export default function PrincipalDashboard() {
                       <span>Bulk CSV</span>
                     </button>
                     <button
-                      onClick={handleExportWhatsAppSheet}
+                      onClick={handleExportCredentialsSheet}
                       className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-purple-600/30 transition-all cursor-pointer flex items-center gap-1.5"
                     >
-                      <span>📲</span>
-                      <span>WhatsApp Credentials</span>
+                      <span>📋</span>
+                      <span>Export Login Credentials Sheet</span>
                     </button>
                   </div>
                 </div>
@@ -1057,7 +1101,7 @@ export default function PrincipalDashboard() {
                   <div className="p-6 border-b border-slate-700/60 bg-slate-800/40 flex justify-between items-center">
                     <div>
                       <h3 className="text-lg font-bold text-white">Active Institutional Directory Roster</h3>
-                      <p className="text-xs text-slate-400 mt-0.5">Directory for Node: {institutionCode}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Directory for Institution: {institutionCode}</p>
                     </div>
                     <span className="text-xs bg-slate-900 border border-slate-700 text-blue-300 font-bold px-3 py-1 rounded-full">
                       {rosterMembers.length} Members Listed
@@ -1106,6 +1150,7 @@ export default function PrincipalDashboard() {
                             <th className="p-4">Login Email</th>
                             <th className="p-4 text-center">Default PIN</th>
                             <th className="p-4 text-center">DPDP 2023 Consent</th>
+                            <th className="p-4 text-right pr-6">Action</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/60 text-sm">
@@ -1113,7 +1158,7 @@ export default function PrincipalDashboard() {
                             <tr key={m.id || i} className="hover:bg-slate-800/30 transition-colors">
                               <td className="p-4 pl-6 font-bold text-white">{m.full_name || m.name}</td>
                               <td className="p-4">
-                                <span className="text-xs font-mono font-bold text-blue-400">{m.role_code || m.roll_number || m.personal_code}</span>
+                                <span className="text-xs font-mono font-bold text-blue-400 truncate max-w-[180px] block">{m.role_code || m.roll_number || m.personal_code}</span>
                                 <span className="block text-[11px] text-slate-400 uppercase font-semibold">{m.role}</span>
                               </td>
                               <td className="p-4 text-xs text-slate-200">{m.class_name || "General"}</td>
@@ -1143,6 +1188,16 @@ export default function PrincipalDashboard() {
                                   <span className="text-[10px] text-slate-500 font-mono">N/A (Staff)</span>
                                 )}
                               </td>
+                              <td className="p-4 text-right pr-6">
+                                <button
+                                  type="button"
+                                  onClick={() => handleArchiveMember(m)}
+                                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40 cursor-pointer hover:-translate-y-0.5"
+                                  title="Safely deactivate and archive member (historical audit logs preserved)"
+                                >
+                                  Archive
+                                </button>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -1156,9 +1211,6 @@ export default function PrincipalDashboard() {
             {/* MODULE 3: NON-TEACHING STAFF */}
             {activeModuleId === 3 && <NonTeachingStaffManager schoolId={institutionCode} />}
 
-            {/* MODULE 4: LIVE CAMPUS CCTV FEED HUB */}
-            {activeModuleId === 4 && <CctvFeedManager schoolId={institutionCode} />}
-
             {/* MODULE 5: STAFF LEAVE RULES & APPROVALS */}
             {activeModuleId === 5 && <LeaveManager schoolId={institutionCode} />}
 
@@ -1168,131 +1220,6 @@ export default function PrincipalDashboard() {
                 <BroadcastManager institutionCode={institutionCode} />
               </div>
             )}
-
-            {/* MODULE 7: ACADEMIC MONITORING & PASS/FAIL RATIOS */}
-            {activeModuleId === 7 && (
-              <div className="space-y-6">
-                <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-slate-700/70 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-bold uppercase tracking-wider mb-2">
-                      <span>📊</span> Scholastic Analytics & Retention
-                    </div>
-                    <h2 className="text-2xl font-black text-white">Academic Monitoring & Pass/Fail Ratios</h2>
-                    <p className="text-slate-400 text-sm mt-1 max-w-xl">
-                      Monitor class grade averages, pass/fail trends, and maintain remedial intervention watchlists for struggling students.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowWatchlistModal(true)}
-                    className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm shadow-lg shadow-purple-600/30 transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <span>➕</span>
-                    <span>Add Scholar to Watchlist</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Class Average Score</p>
-                    <p className="text-3xl font-black text-emerald-400">
-                      {stats.hasGrades && stats.enrolledStudents > 0 ? stats.avgScore : "0%"}
-                    </p>
-                    <span className="text-xs text-slate-400 mt-1 block">
-                      {stats.hasGrades && stats.enrolledStudents > 0 ? "Term evaluation standing" : "No grades recorded"}
-                    </span>
-                  </div>
-                  <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Overall Pass Ratio</p>
-                    <p className="text-3xl font-black text-blue-400">
-                      {stats.hasGrades && stats.enrolledStudents > 0 ? stats.passRatio : "0%"}
-                    </p>
-                    <span className="text-xs text-slate-400 mt-1 block">
-                      {stats.hasGrades && stats.enrolledStudents > 0 ? "Board benchmark exceeded" : "No grades recorded"}
-                    </span>
-                  </div>
-                  <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Active Remedial Watchlist</p>
-                    <p className="text-3xl font-black text-orange-400">{watchlist.length} Scholars</p>
-                    <span className="text-xs text-slate-400 mt-1 block">
-                      {watchlist.length > 0 ? "Targeted coaching active" : "0 under watch"}
-                    </span>
-                  </div>
-                </div>
-
-                {(!stats.hasGrades || stats.enrolledStudents === 0) && (
-                  <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 text-center text-slate-400 space-y-2">
-                    <span className="text-3xl block opacity-60">📊</span>
-                    <h4 className="text-base font-bold text-white">No student performance or grade data recorded yet.</h4>
-                    <p className="text-xs text-slate-400 max-w-md mx-auto">
-                      No student performance or grade data recorded yet. Import students and record exam scores to populate analytics.
-                    </p>
-                  </div>
-                )}
-
-                {/* WATCHLIST TABLE */}
-                <div className="bg-[#1E293B]/80 backdrop-blur-xl border border-slate-700/70 rounded-3xl shadow-2xl overflow-hidden">
-                  <div className="p-6 border-b border-slate-700/60 bg-slate-800/40 flex justify-between items-center">
-                    <div>
-                      <h3 className="text-lg font-bold text-white">Academic Remedial Support Watchlist</h3>
-                      <p className="text-xs text-slate-400 mt-0.5">Students flagged for low exam scores or attendance deficits</p>
-                    </div>
-                    <span className="text-xs bg-slate-900 border border-slate-700 text-orange-400 font-bold px-3 py-1 rounded-full">
-                      {watchlist.length} Under Watch
-                    </span>
-                  </div>
-
-                  {watchlist.length === 0 ? (
-                    <div className="p-12 text-center text-slate-400 space-y-2">
-                      <span className="text-4xl block mb-2 opacity-60">🎯</span>
-                      <h4 className="text-base font-bold text-white">No scholars on remedial watchlist (Clean Slate).</h4>
-                      <p className="text-xs text-slate-400">All students are meeting baseline benchmarks. Click "Add Scholar to Watchlist" to log concerns.</p>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto w-full">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="border-b border-slate-700/70 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/40">
-                            <th className="p-4 pl-6">Scholar & Class</th>
-                            <th className="p-4">Academic Concern</th>
-                            <th className="p-4">Remedial Action</th>
-                            <th className="p-4 text-center">Status</th>
-                            <th className="p-4 text-right pr-6">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800/60 text-sm">
-                          {watchlist.map((w) => (
-                            <tr key={w.id} className="hover:bg-slate-800/30 transition-colors">
-                              <td className="p-4 pl-6 font-bold text-white">
-                                {w.name}
-                                <span className="block text-xs text-slate-400 font-normal">{w.class}</span>
-                              </td>
-                              <td className="p-4 text-xs text-orange-400 font-medium">{w.concern}</td>
-                              <td className="p-4 text-xs text-slate-200">{w.action}</td>
-                              <td className="p-4 text-center">
-                                <span className="bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2.5 py-0.5 rounded-full text-xs font-bold">
-                                  {w.status}
-                                </span>
-                              </td>
-                              <td className="p-4 text-right pr-6">
-                                <button
-                                  onClick={() => handleResolveWatchlist(w.id)}
-                                  className="bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500 hover:text-white border border-emerald-500/30 px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                                >
-                                  ✓ Mark Resolved
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* MODULE 8: MASTER TIMETABLE */}
-            {activeModuleId === 8 && <MasterTimetableManager schoolId={institutionCode} />}
 
             {/* MODULE 9: STAFF EVALUATION */}
             {activeModuleId === 9 && <StaffEvaluationManager schoolId={institutionCode} />}
@@ -1780,7 +1707,7 @@ export default function PrincipalDashboard() {
                         <span>⚠️</span> Fee Recovery & Arrears
                       </div>
                       <h3 className="text-lg font-black text-slate-900 dark:text-white">Highest Overdue Defaulters</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Prioritized by outstanding unpaid balance. 1-Click WhatsApp reminder notification dispatch.</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Prioritized by outstanding unpaid balance. 1-Click reminder notification dispatch.</p>
                     </div>
 
                     <div className="w-full md:w-80">
@@ -1877,11 +1804,11 @@ export default function PrincipalDashboard() {
                       <span>+ Enroll Student</span>
                     </button>
                     <button
-                      onClick={handleExportWhatsAppSheet}
+                      onClick={handleExportCredentialsSheet}
                       className="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 dark:text-purple-300 dark:border-purple-500/40 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 cursor-pointer flex items-center gap-1.5 shadow-sm"
                     >
-                      <span>📲</span>
-                      <span>Export WhatsApp Sheet</span>
+                      <span>📋</span>
+                      <span>Export Credentials Sheet</span>
                     </button>
                   </div>
                 </div>
@@ -1916,7 +1843,7 @@ export default function PrincipalDashboard() {
             {activeTab === "modules" && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">15 Consolidated Institutional Modules</h3>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">Consolidated Institutional Modules</h3>
                   <span className="text-xs text-slate-500 dark:text-slate-400">Click any module to launch live CRUD controls</span>
                 </div>
 

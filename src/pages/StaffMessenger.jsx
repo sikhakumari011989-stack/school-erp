@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { normalizeRole } from "../utils/credentials";
+import { supabase } from "../supabaseClient";
 import {
   MessageSquare,
   Send,
@@ -29,6 +30,53 @@ const CANNED_RESPONSES = [
   "Approved for administrative processing."
 ];
 
+// Clean display name mapper: transforms raw email prefixes (e.g. j.jeklin.mm.m) into Title Case with clean role designation
+export function formatStaffDisplayName(contactOrName, fallbackRole = "") {
+  if (!contactOrName) return "Staff Member";
+  let raw = "";
+  let role = fallbackRole;
+
+  if (typeof contactOrName === "object" && contactOrName !== null) {
+    raw = contactOrName.name || contactOrName.full_name || contactOrName.display_name || contactOrName.email || "";
+    role = contactOrName.role || contactOrName.class_name || fallbackRole;
+  } else {
+    raw = String(contactOrName || "");
+    role = fallbackRole;
+  }
+
+  // Strip email domain if present
+  if (raw.includes("@")) {
+    raw = raw.split("@")[0];
+  }
+
+  // Clean raw email / username prefixes like j.jeklin.mm.m or ramesh_shinde
+  if (raw.includes(".") || raw.includes("_") || raw.includes("-")) {
+    const parts = raw.split(/[._-]+/).filter(Boolean);
+    raw = parts.map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(" ");
+  }
+
+  if (!raw.trim()) {
+    raw = "Staff Member";
+  }
+
+  // Clean role suffix
+  let cleanRole = "";
+  const lower = (role || "").toLowerCase();
+  if (lower.includes("prin") || lower.includes("hod") || lower.includes("trustee") || lower === "admin") {
+    cleanRole = "Principal";
+  } else if (lower.includes("acc") || lower.includes("treasur")) {
+    cleanRole = "Accountant";
+  } else if (lower.includes("teach") || lower.includes("faculty")) {
+    cleanRole = "Teacher";
+  } else if (lower.includes("staff") || lower.includes("nts") || lower.includes("non") || lower.includes("stf")) {
+    cleanRole = "Staff";
+  } else if (role && !role.includes(" ")) {
+    cleanRole = role.charAt(0).toUpperCase() + role.slice(1);
+  }
+
+  return cleanRole && !raw.includes("•") ? `${raw} • ${cleanRole}` : raw;
+}
+
 export default function StaffMessenger() {
   const { user, tenant } = useContext(AppContext) || {};
   const { showToast } = useToast();
@@ -49,9 +97,10 @@ export default function StaffMessenger() {
     "HOD-01"
   ).toUpperCase().trim();
 
-  const userName = user?.name || user?.full_name || "Faculty Member";
+  const rawUserName = user?.name || user?.full_name || "Faculty Member";
   const userRole = (user?.role || "").toLowerCase().trim();
   const canonicalRole = normalizeRole(user?.role, userCode);
+  const userName = formatStaffDisplayName(rawUserName, userRole);
 
   // 1. STRICT SECURITY GATE FOR STUDENTS
   const isStudent = canonicalRole === "STU" || userRole === "student" || userCode.startsWith("STU-");
@@ -74,25 +123,134 @@ export default function StaffMessenger() {
 
   const messagesEndRef = useRef(null);
 
-  // Load Contacts and Message Thread
+  // Fetch two-way messages strictly scoped to activeContactId (preventing cross-thread leaks)
+  const fetchSupabaseMessages = async (targetId) => {
+    const contactId = (targetId || activeContactId || "").trim();
+    if (!contactId || !schoolCode) return;
+
+    try {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from("staff_messages")
+          .select("*")
+          .eq("institution_id", schoolCode)
+          .or(`and(sender_id.eq.${userCode},recipient_id.eq.${contactId}),and(sender_id.eq.${contactId},recipient_id.eq.${userCode})`)
+          .order("created_at", { ascending: true });
+
+        if (!error && Array.isArray(data)) {
+          const mapped = data.map((row) => ({
+            id: row.id,
+            senderId: row.sender_id,
+            recipientId: row.recipient_id,
+            text: row.body,
+            body: row.body,
+            timestamp: row.created_at,
+            read: row.is_read,
+          }));
+          setMessages(mapped);
+
+          // Mark unread messages sent to me as read
+          const unreadToMe = data.filter((r) => r.recipient_id === userCode && !r.is_read);
+          if (unreadToMe.length > 0) {
+            await supabase
+              .from("staff_messages")
+              .update({ is_read: true })
+              .in("id", unreadToMe.map((r) => r.id));
+          }
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Supabase staff_messages fetch fallback:", err);
+    }
+
+    // LocalStorage fallback strictly scoped to the active conversation
+    try {
+      const storageKey = `erp_staff_messages_${schoolCode}`;
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const all = JSON.parse(raw);
+        const filtered = all.filter(
+          (m) =>
+            (m.senderId === userCode && m.recipientId === contactId) ||
+            (m.senderId === contactId && m.recipientId === userCode)
+        );
+        setMessages(filtered);
+      } else {
+        setMessages([]);
+      }
+    } catch (e) {
+      setMessages([]);
+    }
+  };
+
+  // Load Contacts
   useEffect(() => {
     if (isStudent) return;
     loadStaffContacts();
-    loadMessages();
 
-    const handleMessagesUpdate = () => loadMessages();
     const handleDirUpdate = () => loadStaffContacts();
-
-    window.addEventListener("erp-staff-messages-updated", handleMessagesUpdate);
     window.addEventListener("erp-directory-updated", handleDirUpdate);
+
+    return () => {
+      window.removeEventListener("erp-directory-updated", handleDirUpdate);
+    };
+  }, [schoolCode, userCode, isStudent]);
+
+  // Two-way messaging sync with polling & Supabase subscription
+  useEffect(() => {
+    if (isStudent || !activeContactId) return;
+
+    fetchSupabaseMessages(activeContactId);
+
+    // Refresh every 3 seconds for active sync
+    const interval = setInterval(() => {
+      fetchSupabaseMessages(activeContactId);
+    }, 3000);
+
+    let channel = null;
+    if (supabase) {
+      try {
+        channel = supabase
+          .channel(`public:staff_messages:${schoolCode}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "staff_messages",
+              filter: `institution_id=eq.${schoolCode}`,
+            },
+            (payload) => {
+              const row = payload.new;
+              if (
+                row &&
+                ((row.sender_id === userCode && row.recipient_id === activeContactId) ||
+                  (row.sender_id === activeContactId && row.recipient_id === userCode))
+              ) {
+                fetchSupabaseMessages(activeContactId);
+              }
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn("Realtime subscription fallback:", err);
+      }
+    }
+
+    const handleMessagesUpdate = () => fetchSupabaseMessages(activeContactId);
+    window.addEventListener("erp-staff-messages-updated", handleMessagesUpdate);
     window.addEventListener("storage", handleMessagesUpdate);
 
     return () => {
+      clearInterval(interval);
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
       window.removeEventListener("erp-staff-messages-updated", handleMessagesUpdate);
-      window.removeEventListener("erp-directory-updated", handleDirUpdate);
       window.removeEventListener("storage", handleMessagesUpdate);
     };
-  }, [schoolCode, userCode, isStudent]);
+  }, [activeContactId, schoolCode, userCode, isStudent]);
 
   // Auto-scroll to bottom of active conversation
   useEffect(() => {
@@ -101,7 +259,7 @@ export default function StaffMessenger() {
     }
   }, [messages, activeContactId, mobileShowChat]);
 
-  // Load and Filter Staff Directory (Strictly excluding students)
+  // Load and Filter Staff Directory (Strictly excluding students, cleanly formatting names)
   const loadStaffContacts = () => {
     try {
       let dir = [];
@@ -139,22 +297,30 @@ export default function StaffMessenger() {
         );
       });
 
-      // Starter fallback nodes if newly provisioned clean-slate institution
-      let finalContacts = staffOnly;
+      // Map clean display names (Point 27)
+      let finalContacts = staffOnly.map((m) => ({
+        ...m,
+        displayName: formatStaffDisplayName(m, m.role),
+        name: formatStaffDisplayName(m, m.role),
+      }));
+
+      // Fallbacks if newly provisioned clean-slate institution
       if (finalContacts.length === 0) {
         finalContacts = [
           {
             id: userCode.startsWith("HOD-") ? "TCH-01" : "HOD-01",
             role_code: userCode.startsWith("HOD-") ? "TCH-01" : "HOD-01",
-            name: userCode.startsWith("HOD-") ? "Dr. Vikram Joshi" : "Principal & Executive Trustee",
+            name: userCode.startsWith("HOD-") ? "Dr. Vikram Joshi • Teacher" : "Executive Trustee • Principal",
+            displayName: userCode.startsWith("HOD-") ? "Dr. Vikram Joshi • Teacher" : "Executive Trustee • Principal",
             role: userCode.startsWith("HOD-") ? "teacher" : "trustee",
-            class_name: userCode.startsWith("HOD-") ? "Senior Physics Faculty" : "Head of Institution",
+            class_name: userCode.startsWith("HOD-") ? "Senior Faculty" : "Head of Institution",
             phone: "+91 98111 22334",
           },
           {
             id: "ACC-01",
             role_code: "ACC-01",
-            name: "Ramesh Kulkarni",
+            name: "Ramesh Kulkarni • Accountant",
+            displayName: "Ramesh Kulkarni • Accountant",
             role: "accountant",
             class_name: "Chief Treasury Officer",
             phone: "+91 98222 33445",
@@ -166,40 +332,13 @@ export default function StaffMessenger() {
 
       // Select first contact by default on wide screens
       if (!activeContactId && finalContacts.length > 0) {
-        setActiveContactId(finalContacts[0].role_code || finalContacts[0].id);
+        const firstId = finalContacts[0].role_code || finalContacts[0].id;
+        setActiveContactId(firstId);
+        fetchSupabaseMessages(firstId);
       }
     } catch (e) {
       console.warn("Could not load staff contacts:", e);
       setContacts([]);
-    }
-  };
-
-  // Load Messages from Storage
-  const loadMessages = () => {
-    try {
-      const storageKey = `erp_staff_messages_${schoolCode}`;
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        setMessages(JSON.parse(raw));
-      } else {
-        // Initial welcome coordination message if thread is empty
-        const initialSeed = [
-          {
-            id: "seed_1",
-            senderId: "HOD-01",
-            senderName: "Principal / HOD",
-            recipientId: "TCH-01",
-            recipientName: "Dr. Vikram Joshi",
-            text: "Welcome to the internal faculty coordination channel. All academic memos and approvals are logged here.",
-            timestamp: new Date(Date.now() - 3600000).toISOString(),
-            read: true,
-          },
-        ];
-        setMessages(initialSeed);
-        localStorage.setItem(storageKey, JSON.stringify(initialSeed));
-      }
-    } catch (e) {
-      console.warn("Could not load staff messages:", e);
     }
   };
 
@@ -210,7 +349,7 @@ export default function StaffMessenger() {
     );
   }, [contacts, activeContactId]);
 
-  // Current Thread Messages (1-to-1 between userCode and activeContactId)
+  // Current Thread Messages strictly between userCode and activeContactId
   const currentThread = useMemo(() => {
     if (!activeContactId) return [];
     return messages.filter(
@@ -220,39 +359,76 @@ export default function StaffMessenger() {
     );
   }, [messages, userCode, activeContactId]);
 
-  // Send Message (Supports direct targeted delivery for NTS workflows)
-  const handleSendMessage = (textToSend, targetRecipientId) => {
+  // Send Message (Point 26: Recipient ID saved reliably on insert, Point 24: persistent Supabase insert)
+  const handleSendMessage = async (textToSend, targetRecipientId) => {
     const text = (textToSend || inputText).trim();
-    const recipient = targetRecipientId || activeContactId;
+    const recipient = (targetRecipientId || activeContactId || "").trim();
     if (!text || !recipient) return;
 
     const targetContact = contacts.find((c) => (c.role_code || c.id) === recipient) || activeContact;
+    const tempId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
     const newMsg = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      id: tempId,
       senderId: userCode,
       senderName: userName,
       senderRole: userRole,
       recipientId: recipient,
       recipientName: targetContact?.name || "Staff Member",
       text,
+      body: text,
       timestamp: new Date().toISOString(),
       read: false,
     };
 
-    const updated = [...messages, newMsg];
-    setMessages(updated);
+    if (recipient === activeContactId) {
+      setMessages((prev) => [...prev, newMsg]);
+    }
     setInputText("");
 
+    // 1. Supabase database insert
     try {
-      localStorage.setItem(`erp_staff_messages_${schoolCode}`, JSON.stringify(updated));
+      if (supabase) {
+        const { data, error } = await supabase
+          .from("staff_messages")
+          .insert([
+            {
+              institution_id: schoolCode,
+              sender_id: userCode,
+              recipient_id: recipient,
+              body: text,
+              is_read: false,
+            },
+          ])
+          .select()
+          .single();
+
+        if (!error && data) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === tempId ? { ...m, id: data.id, timestamp: data.created_at } : m
+            )
+          );
+        }
+      }
+    } catch (err) {
+      console.warn("Supabase staff_messages insert fallback:", err);
+    }
+
+    // 2. Synchronize to localStorage for offline cache
+    try {
+      const storageKey = `erp_staff_messages_${schoolCode}`;
+      const raw = localStorage.getItem(storageKey);
+      const existing = raw ? JSON.parse(raw) : [];
+      existing.push(newMsg);
+      localStorage.setItem(storageKey, JSON.stringify(existing));
       window.dispatchEvent(new Event("erp-staff-messages-updated"));
     } catch (e) {
       console.error("Storage error:", e);
     }
   };
 
-  // NTS Workflow: Dedicated reporting to Principal or HOD
+  // NTS Operations Quick Dispatch
   const findExecutiveContact = () => {
     return contacts.find((c) => {
       const code = (c.role_code || c.roll_number || c.id || "").toUpperCase();
@@ -270,6 +446,7 @@ export default function StaffMessenger() {
     const execId = exec.role_code || exec.id;
     setActiveContactId(execId);
     setMobileShowChat(true);
+    fetchSupabaseMessages(execId);
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -292,19 +469,7 @@ export default function StaffMessenger() {
   const handleSelectContact = (contactId) => {
     setActiveContactId(contactId);
     setMobileShowChat(true);
-
-    // Mark unread messages from this contact as read
-    const updated = messages.map((m) => {
-      if (m.senderId === contactId && m.recipientId === userCode && !m.read) {
-        return { ...m, read: true };
-      }
-      return m;
-    });
-
-    setMessages(updated);
-    try {
-      localStorage.setItem(`erp_staff_messages_${schoolCode}`, JSON.stringify(updated));
-    } catch (e) {}
+    fetchSupabaseMessages(contactId);
   };
 
   // Role Badge Styling Helper
@@ -447,7 +612,7 @@ export default function StaffMessenger() {
               </span>
               <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Encrypted Peer Network
+                Two-Way Scoped Network
               </span>
             </div>
 
@@ -477,19 +642,6 @@ export default function StaffMessenger() {
                 const isSelected = id === activeContactId;
                 const badge = getRoleBadge(contact.role, id);
 
-                // Count unread messages from this contact
-                const unreadCount = messages.filter(
-                  (m) => m.senderId === id && m.recipientId === userCode && !m.read
-                ).length;
-
-                // Find last message snippet
-                const thread = messages.filter(
-                  (m) =>
-                    (m.senderId === userCode && m.recipientId === id) ||
-                    (m.senderId === id && m.recipientId === userCode)
-                );
-                const lastMsg = thread[thread.length - 1];
-
                 return (
                   <div
                     key={id}
@@ -509,7 +661,7 @@ export default function StaffMessenger() {
                       <div className="overflow-hidden">
                         <div className="flex items-center gap-1.5">
                           <h4 className="text-xs font-bold text-white truncate">
-                            {contact.name || contact.full_name}
+                            {contact.displayName || contact.name}
                           </h4>
                         </div>
 
@@ -519,20 +671,8 @@ export default function StaffMessenger() {
                           </span>
                           <span className="text-[10px] font-mono text-slate-400">{id}</span>
                         </div>
-
-                        {lastMsg && (
-                          <p className="text-[11px] text-slate-400 truncate mt-1 max-w-[170px]">
-                            {lastMsg.senderId === userCode ? "You: " : ""}{lastMsg.text}
-                          </p>
-                        )}
                       </div>
                     </div>
-
-                    {unreadCount > 0 && (
-                      <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center flex-shrink-0 shadow-md shadow-blue-600/30">
-                        {unreadCount}
-                      </span>
-                    )}
                   </div>
                 );
               })
@@ -565,7 +705,7 @@ export default function StaffMessenger() {
 
                   <div>
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      {activeContact.name || activeContact.full_name}
+                      {activeContact.displayName || activeContact.name}
                       <span className="text-[10px] font-mono text-blue-300 font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30">
                         {activeContact.role_code || activeContact.id}
                       </span>
@@ -578,7 +718,7 @@ export default function StaffMessenger() {
 
                 <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Verified Staff Channel</span>
+                  <span>Two-Way Persistent Channel</span>
                 </div>
               </div>
 
@@ -588,7 +728,7 @@ export default function StaffMessenger() {
                   <div className="h-full flex flex-col items-center justify-center text-center py-12 text-slate-500 space-y-2">
                     <MessageSquare className="w-10 h-10 text-slate-600 mb-1" />
                     <p className="text-sm font-semibold text-slate-300">
-                      Direct thread with {activeContact.name} initiated.
+                      Direct thread with {activeContact.displayName || activeContact.name} initiated.
                     </p>
                     <p className="text-xs text-slate-500 max-w-sm">
                       Messages sent here are recorded strictly for internal institutional faculty coordination.
@@ -616,10 +756,10 @@ export default function StaffMessenger() {
                         >
                           {!isMe && (
                             <p className="text-[10px] font-bold text-blue-300 mb-0.5">
-                              {msg.senderName} ({msg.senderId})
+                              {formatStaffDisplayName(activeContact.name, activeContact.role)} ({msg.senderId})
                             </p>
                           )}
-                          <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                          <p className="leading-relaxed whitespace-pre-wrap">{msg.text || msg.body}</p>
                           <div
                             className={`flex items-center justify-end gap-1 text-[9px] pt-1 ${
                               isMe ? "text-blue-200" : "text-slate-400"
@@ -663,7 +803,7 @@ export default function StaffMessenger() {
               >
                 <input
                   type="text"
-                  placeholder={`Message ${activeContact.name || "colleague"} (Enter to send)...`}
+                  placeholder={`Message ${activeContact.displayName || activeContact.name || "colleague"} (Enter to send)...`}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500 placeholder-slate-500"
@@ -693,4 +833,3 @@ export default function StaffMessenger() {
     </div>
   );
 }
-

@@ -30,7 +30,7 @@ export default function CustomReportBuilder({ schoolId: propSchoolId }) {
       id: "fees",
       title: "Fee Treasury & Tax Compliance Audit",
       icon: "💰",
-      desc: "Complete accounting log of settled tuition installments, Razorpay transaction IDs, and pending defaulter balances.",
+      desc: "Complete accounting log of settled tuition installments, online transaction IDs, and pending defaulter balances.",
       storageKey: `erp_fee_ledger_${schoolId}`,
       headers: ["Transaction ID", "Student Name", "Class", "Amount (INR)", "Payment Mode", "Status", "Date"],
       formatter: (data) =>

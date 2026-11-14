@@ -94,20 +94,24 @@ export default function FeeRiskRadar({ schoolCode = "CAMPUS-01" }) {
     }
   };
 
-  const handleSendWhatsApp = (item) => {
-    const text = encodeURIComponent(
+  const handleSendReminder = (item) => {
+    const text =
       `*Institutional Tuition Notice - Action Required*\n` +
       `Scholar: ${item.name} (${item.rollNumber})\n` +
       `Class: ${item.className}\n` +
       `Overdue Balance: ₹${item.overdueBalance.toLocaleString()}\n` +
       `Risk Assessment: Early payment assistance notice.\n` +
-      `Please clear dues via portal or contact accounts desk.`
-    );
-    const cleanPhone = (item.phone || "").replace(/[^0-9]/g, "");
-    const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${text}` : `https://wa.me/?text=${text}`;
-    window.open(waUrl, "_blank");
-    showToast(`WhatsApp reminder dispatched for ${item.name}! 📲`, "success");
+      `Please clear dues via portal or contact accounts desk.`;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+      showToast(`Fee reminder copied to clipboard for ${item.name}! 📋`, "success");
+    }
   };
+
+  const totalPendingDues = riskList.reduce((sum, item) => sum + (Number(item.overdueBalance) || 0), 0);
+  if (totalPendingDues <= 0) {
+    return null;
+  }
 
   const filtered = riskList.filter((item) => {
     if (filterTier !== "all" && item.riskTier.toLowerCase() !== filterTier.toLowerCase()) {
@@ -240,11 +244,11 @@ export default function FeeRiskRadar({ schoolCode = "CAMPUS-01" }) {
                   </td>
                   <td className="p-3 text-right whitespace-nowrap">
                     <button
-                      onClick={() => handleSendWhatsApp(item)}
+                      onClick={() => handleSendReminder(item)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:border-emerald-500/40 dark:text-emerald-300 text-xs font-bold transition-all cursor-pointer shadow-sm hover:-translate-y-0.5"
                     >
                       <Send className="w-3.5 h-3.5" />
-                      <span>Trigger Early WhatsApp</span>
+                      <span>Trigger Early Notice</span>
                     </button>
                   </td>
                 </tr>

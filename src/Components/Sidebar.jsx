@@ -63,41 +63,24 @@ export default function Sidebar() {
 
   // Streamlined Navigation strictly centered on Core MVP School Management Areas
   const getLinks = () => {
-    if (roleType === "principal") {
+    if (roleType === "principal" || roleType === "trustee") {
       return [
         { name: "Executive Command", path: "/principal/dashboard", icon: "🏛️" },
-        { name: "Trustee Oversight", path: "/trustee/dashboard", icon: "📈" },
-        { name: "School Analytics", path: "/admin/analytics", icon: "📊" },
-        { name: "Executive Reports", path: "/admin/reports", icon: "📑" },
-        { name: "Students & Admissions", path: "/admin/admissions", icon: "🎯" },
-        { name: "Classes & Sections", path: "/admin/classes", icon: "🏫" },
-        { name: "Master Timetable", path: "/admin/timetable", icon: "🗓️" },
-        { name: "Fee Collection & Dues", path: "/accountant/dashboard", icon: "💰" },
-        { name: "Examinations & Marks", path: "/teacher/analytics", icon: "📊" },
-        { name: "Attendance & Calendar", path: "/admin/calendar", icon: "📅" },
-        { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
-      ];
-    } else if (roleType === "trustee") {
-      return [
-        { name: "Trustee Command", path: "/trustee/dashboard", icon: "📈" },
-        { name: "Principal Operations", path: "/principal/dashboard", icon: "🏛️" },
-        { name: "School Analytics", path: "/admin/analytics", icon: "📊" },
-        { name: "Executive Reports", path: "/admin/reports", icon: "📑" },
-        { name: "Students & Admissions", path: "/admin/admissions", icon: "🎯" },
-        { name: "Classes & Sections", path: "/admin/classes", icon: "🏫" },
-        { name: "Master Timetable", path: "/admin/timetable", icon: "🗓️" },
+        { name: "Task Delegation", path: "/principal/dashboard?tab=tasks", icon: "📋" },
+        { name: "Asset & Inventory", path: "/principal/dashboard?tab=assets", icon: "📦" },
+        { name: "Behavior & Merits", path: "/principal/dashboard?tab=behavior", icon: "⭐" },
+        { name: "Grievance Ticketing", path: "/principal/dashboard?tab=grievances", icon: "🎫" },
+        { name: "Meeting Scheduler", path: "/principal/dashboard?tab=scheduler", icon: "🤝" },
+        { name: "Alumni Directory", path: "/principal/dashboard?tab=alumni", icon: "🎓" },
         { name: "Fee Treasury & Dues", path: "/accountant/dashboard", icon: "💰" },
-        { name: "Academic Performance", path: "/teacher/analytics", icon: "📊" },
         { name: "School Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
       ];
     } else if (roleType === "accountant") {
       return [
         { name: "Fee Treasury & Receipts", path: "/accountant/dashboard", icon: "💰" },
-        { name: "Financial Reports", path: "/admin/reports", icon: "📑" },
         { name: "Staff Payroll", path: "/accountant/payroll", icon: "💵" },
         { name: "Expense Ledger", path: "/accountant/expenses", icon: "🧾" },
-        { name: "Admissions & Dues", path: "/admin/admissions", icon: "🎯" },
         { name: "Academic Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Staff Messages", path: "/admin/messages", icon: "💬" },
       ];
@@ -107,10 +90,7 @@ export default function Sidebar() {
         { name: "Attendance Register", path: "/teacher/attendance", icon: "📋" },
         { name: "Record Class Tests", path: "/teacher/class-tests", icon: "⚡" },
         { name: "Homework & Notes", path: "/teacher/homework", icon: "📚" },
-        { name: "Classes & Students", path: "/teacher/classes", icon: "👥" },
-        { name: "Timetable Schedule", path: "/admin/timetable", icon: "🗓️" },
         { name: "Timed Exams / CBT", path: "/teacher/exams", icon: "📝" },
-        { name: "Student Marks Vault", path: "/teacher/analytics", icon: "📊" },
         { name: "Academic Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Staff Leave Portal", path: "/teacher/leave", icon: "🏖️" },
         { name: "Staff Messenger", path: "/admin/messages", icon: "💬" },
@@ -118,9 +98,9 @@ export default function Sidebar() {
     } else if (roleType === "staff") {
       return [
         { name: "Operations Workspace", path: "/staff/dashboard", icon: "🛠️" },
-        { name: "Attendance Roll Call", path: "/teacher/attendance", icon: "📋" },
+        { name: "Maintenance & Requests", path: "/staff/dashboard?tab=maintenance", icon: "🔧" },
+        { name: "My Leaves", path: "/staff/leave", icon: "🏖️" },
         { name: "Academic Calendar", path: "/admin/calendar", icon: "📅" },
-        { name: "Leave Requests", path: "/staff/leave", icon: "🏖️" },
         { name: "Staff Broadcasts", path: "/admin/messages", icon: "💬" },
       ];
     } else if (roleType === "admin") {
@@ -150,32 +130,24 @@ export default function Sidebar() {
 
   const links = getLinks();
   const categoryTitle =
-    roleType === "principal" ? "Executive Control" :
-    roleType === "trustee" ? "Trustee Governance" :
+    roleType === "principal" || roleType === "trustee" ? "Executive Command" :
     roleType === "accountant" ? "Financial Vault" :
     roleType === "teacher" ? "Faculty Modules" :
     roleType === "staff" ? "Staff Operations" :
     roleType === "admin" ? "Master Node" : "Scholar Suite";
 
   const getBottomNavItems = () => {
-    if (roleType === "principal") {
+    if (roleType === "principal" || roleType === "trustee") {
       return [
         { name: "Command", path: "/principal/dashboard", icon: "🏛️" },
-        { name: "Trustee", path: "/trustee/dashboard", icon: "📈" },
-        { name: "Analytics", path: "/admin/analytics", icon: "📊" },
+        { name: "Tasks", path: "/principal/dashboard?tab=tasks", icon: "📋" },
+        { name: "Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Fees", path: "/accountant/dashboard", icon: "💰" },
-      ];
-    } else if (roleType === "trustee") {
-      return [
-        { name: "Command", path: "/trustee/dashboard", icon: "📈" },
-        { name: "Principal", path: "/principal/dashboard", icon: "🏛️" },
-        { name: "Analytics", path: "/admin/analytics", icon: "📊" },
-        { name: "Treasury", path: "/accountant/dashboard", icon: "💰" },
       ];
     } else if (roleType === "accountant") {
       return [
         { name: "Treasury", path: "/accountant/dashboard", icon: "💰" },
-        { name: "Reports", path: "/admin/reports", icon: "📑" },
+        { name: "Calendar", path: "/admin/calendar", icon: "📅" },
         { name: "Payroll", path: "/accountant/payroll", icon: "💵" },
         { name: "Expenses", path: "/accountant/expenses", icon: "🧾" },
       ];
@@ -189,8 +161,8 @@ export default function Sidebar() {
     } else if (roleType === "staff") {
       return [
         { name: "Workspace", path: "/staff/dashboard", icon: "🛠️" },
-        { name: "Attendance", path: "/teacher/attendance", icon: "📋" },
-        { name: "Leave", path: "/staff/leave", icon: "🏖️" },
+        { name: "Maintenance", path: "/staff/dashboard?tab=maintenance", icon: "🔧" },
+        { name: "My Leaves", path: "/staff/leave", icon: "🏖️" },
         { name: "Messages", path: "/admin/messages", icon: "💬" },
       ];
     } else if (roleType === "admin") {

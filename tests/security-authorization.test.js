@@ -291,8 +291,8 @@ test("Credentials: Standardized Email Pattern & Route Isolation", async (t) => {
   await t.test("Routes canonical roles strictly to isolated dashboards", () => {
     assert.strictEqual(dashboardFor("principal"), "/principal/dashboard");
     assert.strictEqual(dashboardFor("PRIN"), "/principal/dashboard");
-    assert.strictEqual(dashboardFor("trustee"), "/trustee/dashboard");
-    assert.strictEqual(dashboardFor("HOD"), "/trustee/dashboard");
+    assert.strictEqual(dashboardFor("trustee"), "/principal/dashboard");
+    assert.strictEqual(dashboardFor("HOD"), "/principal/dashboard");
     assert.strictEqual(dashboardFor("accountant"), "/accountant/dashboard");
     assert.strictEqual(dashboardFor("ACC"), "/accountant/dashboard");
     assert.strictEqual(dashboardFor("teacher"), "/teacher/dashboard");

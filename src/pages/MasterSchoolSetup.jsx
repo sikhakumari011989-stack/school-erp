@@ -227,7 +227,7 @@ export default function MasterSchoolSetup() {
 
       const resData = await resp.json().catch(() => ({}));
       if (!resp.ok || !resData.success) {
-        showToast(resData.error || "Failed to update status in Supabase PostgreSQL", "error");
+        showToast(resData.error || "Failed to update status in cloud database", "error");
         return;
       }
 
@@ -275,7 +275,7 @@ export default function MasterSchoolSetup() {
 
       const resData = await resp.json().catch(() => ({}));
       if (!resp.ok || !resData.success) {
-        showToast(resData.error || "Failed to update expiry in Supabase PostgreSQL", "error");
+        showToast(resData.error || "Failed to update expiry in cloud database", "error");
         return;
       }
 
@@ -426,7 +426,7 @@ export default function MasterSchoolSetup() {
         address: "Mahim Manohar Highway, Palghar 401404",
       });
 
-      showToast(`Institution "${cleanName}" (${cleanCode}) permanently provisioned in Supabase PostgreSQL!`, "success");
+      showToast(`Institution "${cleanName}" (${cleanCode}) permanently provisioned in cloud database!`, "success");
 
       // Instantly refresh the registered schools table
       await loadSchools();
@@ -854,7 +854,7 @@ export default function MasterSchoolSetup() {
                   </h2>
                 </div>
                 <p className="text-xs text-slate-400">
-                  Master kill-switch and custom license validity controls across all active institutional campus nodes.
+                  Master kill-switch and custom license validity controls across all active institutions.
                 </p>
               </div>
 
@@ -873,7 +873,7 @@ export default function MasterSchoolSetup() {
                   className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-xl text-slate-300 font-bold transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
                 >
                   <span>🔄</span>
-                  <span>{loadingSchools ? "Syncing..." : "Refresh Nodes"}</span>
+                  <span>{loadingSchools ? "Syncing..." : "Refresh Institutions"}</span>
                 </button>
               </div>
             </div>
@@ -883,7 +883,7 @@ export default function MasterSchoolSetup() {
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-slate-700/70 text-slate-400 uppercase tracking-wider bg-slate-900/50">
-                    <th className="p-4">Campus Node & Code</th>
+                    <th className="p-4">Institution & Code</th>
                     <th className="p-4 text-center">Architecture Mode</th>
                     <th className="p-4 text-center">Subscription Status (Kill-Switch)</th>
                     <th className="p-4 text-center">Custom License Expiry Date</th>
@@ -919,7 +919,7 @@ export default function MasterSchoolSetup() {
                               <div className="flex items-center gap-2">
                                 <p className="font-extrabold text-white text-sm">{school.name}</p>
                                 {school.isCloudPersisted && (
-                                  <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono font-bold" title="Persisted permanently in Supabase PostgreSQL">
+                                  <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono font-bold" title="Persisted permanently in cloud database">
                                     ☁️ Cloud DB
                                   </span>
                                 )}

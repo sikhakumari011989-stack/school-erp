@@ -54,6 +54,7 @@ export default function AcademicCalendar() {
     visibility: "All School",
     reason: "",
   });
+  const [formErrors, setFormErrors] = useState({});
 
   const fileInputRef = useRef(null);
 
@@ -70,10 +71,19 @@ export default function AcademicCalendar() {
       return;
     }
 
-    if (!formData.date || !formData.title.trim()) {
-      showToast("Please provide both Date and Title for the event.", "error");
+    const errors = {};
+    if (!formData.date) {
+      errors.date = "Please select a valid event date.";
+    }
+    if (!formData.title.trim()) {
+      errors.title = "Event title is required.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
+    setFormErrors({});
 
     const normalizedDate = normalizeDateString(formData.date);
     const newEvent = {
@@ -259,18 +269,25 @@ export default function AcademicCalendar() {
                 Schedule exams, holidays, functions, PTMs, and student activities. Normal working days don't need entry.
               </p>
 
-              <form onSubmit={handleManualAdd} className="space-y-4">
+              <form onSubmit={handleManualAdd} noValidate className="space-y-4">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Event Date (YYYY-MM-DD)
+                    Event Date (YYYY-MM-DD) *
                   </label>
                   <input
                     type="date"
-                    required
-                    className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-400 transition-all"
+                    className={`w-full bg-slate-950/60 border rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none transition-all ${
+                      formErrors.date ? "border-rose-500 focus:border-rose-400" : "border-white/10 focus:border-cyan-400"
+                    }`}
                     value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, date: e.target.value });
+                      if (formErrors.date) setFormErrors({ ...formErrors, date: null });
+                    }}
                   />
+                  {formErrors.date && (
+                    <p className="text-[11px] text-rose-400 mt-1 font-semibold">{formErrors.date}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -308,16 +325,23 @@ export default function AcademicCalendar() {
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Event Title
+                    Event Title *
                   </label>
                   <input
                     type="text"
-                    required
                     placeholder="e.g. Mid-Term Mathematics CBT / Annual Sports Meet"
-                    className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 transition-all"
+                    className={`w-full bg-slate-950/60 border rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none transition-all ${
+                      formErrors.title ? "border-rose-500 focus:border-rose-400" : "border-white/10 focus:border-cyan-400"
+                    }`}
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, title: e.target.value });
+                      if (formErrors.title) setFormErrors({ ...formErrors, title: null });
+                    }}
                   />
+                  {formErrors.title && (
+                    <p className="text-[11px] text-rose-400 mt-1 font-semibold">{formErrors.title}</p>
+                  )}
                 </div>
 
                 <div>

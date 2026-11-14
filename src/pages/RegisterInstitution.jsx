@@ -230,7 +230,7 @@ export default function RegisterInstitution() {
                 🎉
               </div>
               <div>
-                <h2 className="text-2xl font-black text-white">Your Campus Node is Live!</h2>
+                <h2 className="text-2xl font-black text-white">Your Institutional Workspace is Live!</h2>
                 <p className="text-slate-400 text-sm mt-1">
                   Institutional database partition successfully created. Save your credentials below:
                 </p>

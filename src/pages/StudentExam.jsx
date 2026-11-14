@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
 import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
+import { supabase } from "../supabaseClient";
 import {
   Award,
   Clock,
@@ -50,6 +51,7 @@ export default function StudentExam() {
   const [timeLeftSeconds, setTimeLeftSeconds] = useState(0);
   const [examFinished, setExamFinished] = useState(false);
   const [latestResult, setLatestResult] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const timerRef = useRef(null);
 
@@ -153,22 +155,13 @@ export default function StudentExam() {
     calculateAndSaveScore();
   };
 
-  // Manual Submit
+  // Manual Submit (replaces raw browser confirm with custom React modal - Item 19)
   const handleManualSubmit = () => {
-    const unattempted = activeExam.questions.length - Object.keys(selectedAnswers).length;
-    let confirmMsg = "Are you ready to submit your exam?";
-    if (unattempted > 0) {
-      confirmMsg += ` You have ${unattempted} unanswered question(s).`;
-    }
-
-    if (confirm(confirmMsg)) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      calculateAndSaveScore();
-    }
+    setShowConfirmModal(true);
   };
 
-  // Calculate score factoring in positive & negative marks
-  const calculateAndSaveScore = () => {
+  // Calculate score factoring in positive & negative marks (Item 18 - Supabase exam_submissions)
+  const calculateAndSaveScore = async () => {
     if (!activeExam) return;
 
     let score = 0;
@@ -256,7 +249,7 @@ export default function StudentExam() {
       submittedAt: new Date().toISOString(),
     };
 
-    // 1. Save to submissions
+    // 1. Save to submissions local cache
     try {
       const subsKey = `erp_exam_submissions_${schoolCode}`;
       const existingSubsRaw = localStorage.getItem(subsKey);
@@ -295,6 +288,34 @@ export default function StudentExam() {
       localStorage.setItem(marksKey, JSON.stringify(existingMarks));
     } catch (e) {
       console.warn("Marks ledger sync notice:", e);
+    }
+
+    // 3. Supabase exam_submissions permanent persistence (Batch 2 Item 18)
+    if (supabase) {
+      try {
+        await supabase.from("exam_submissions").insert([
+          {
+            id: submissionRecord.id,
+            school_id: schoolCode,
+            exam_id: activeExam.id,
+            student_id: studentRoll,
+            student_name: studentName,
+            score: finalScore,
+            total_marks: maxScore,
+            percentage,
+            answers: {
+              correctCount,
+              incorrectCount,
+              unattemptedCount,
+              totalQuestions: activeExam.questions.length,
+              selectedAnswers,
+            },
+            submitted_at: new Date().toISOString(),
+          },
+        ]);
+      } catch (sbErr) {
+        console.warn("Supabase exam_submissions insert notice:", sbErr);
+      }
     }
 
     try {
@@ -724,6 +745,94 @@ export default function StudentExam() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+      {/* PRE-SUBMISSION CONFIRMATION MODAL (ITEM 19) */}
+      {showConfirmModal && activeExam && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[#1E293B] border border-slate-700/80 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl shrink-0">
+                ⚠️
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-white">Submit Examination?</h3>
+                <p className="text-xs text-slate-400">
+                  {activeExam.title} &bull; {activeExam.subject}
+                </p>
+              </div>
+            </div>
+
+            {/* Questions summary badge */}
+            {(() => {
+              const unattempted = activeExam.questions.length - Object.keys(selectedAnswers).length;
+              const answered = Object.keys(selectedAnswers).length;
+              return (
+                <div className="space-y-3">
+                  {unattempted > 0 ? (
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-1">
+                      <p className="font-bold flex items-center gap-1.5 text-amber-200">
+                        <span>⚠️</span> Unanswered Questions Warning
+                      </p>
+                      <p>
+                        You have <span className="font-black text-white underline">{unattempted}</span> unanswered question(s) out of {activeExam.questions.length}.
+                      </p>
+                      <p className="text-[11px] text-amber-400/80">
+                        Unattempted questions will be awarded 0 marks. Negative marking will not apply to unanswered questions.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs">
+                      <p className="font-bold flex items-center gap-1.5 text-emerald-200">
+                        <span>✓</span> All Questions Answered!
+                      </p>
+                      <p className="text-[11px] text-emerald-300/80 mt-1">
+                        You have provided answers for all {activeExam.questions.length} questions.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 text-center text-xs">
+                    <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Answered</span>
+                      <span className="text-base font-black text-emerald-400">{answered}</span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Unanswered</span>
+                      <span className={`text-base font-black ${unattempted > 0 ? "text-amber-400" : "text-slate-400"}`}>
+                        {unattempted}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 text-center">
+                    Once submitted, your answers will be locked and graded immediately.
+                  </p>
+                </div>
+              );
+            })()}
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2.5 rounded-xl text-slate-300 hover:text-white font-bold text-xs hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Review Questions
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (timerRef.current) clearInterval(timerRef.current);
+                  setShowConfirmModal(false);
+                  calculateAndSaveScore();
+                }}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
+              >
+                Confirm & Submit
+              </button>
+            </div>
           </div>
         </div>
       )}

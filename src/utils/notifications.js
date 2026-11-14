@@ -4,7 +4,7 @@ import { supabase } from "../supabaseClient.js";
  * ENTERPRISE PARENT COMMUNICATION AUTOMATION ENGINE
  * Supports WhatsApp, SMS, and In-App alerts across 6 operational triggers:
  * 1. Absenteeism alerts
- * 2. Fee dues & payment reminders with Razorpay UPI links
+ * 2. Fee dues & payment reminders with direct UPI links
  * 3. Examination result publications
  * 4. Daily homework assignments
  * 5. Institutional announcements & advisories
@@ -31,7 +31,7 @@ export function getCommunicationGatewayStatus() {
   return {
     whatsappConfigured: false,
     smsConfigured: false,
-    whatsappGateway: "Server Gateway (Awaiting WATI Server Credentials)",
+    whatsappGateway: "Server Gateway (Awaiting Enterprise Gateway Credentials)",
     smsGateway: "Server Gateway (Awaiting Twilio Server Credentials)",
   };
 }

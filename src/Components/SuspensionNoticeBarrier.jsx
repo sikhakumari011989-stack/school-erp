@@ -3,12 +3,12 @@ import BrandLogo from "./BrandLogo";
 
 /**
  * Academic OS — Institutional Suspension & License Barrier
- * Rendered when a campus node subscription has expired or has been suspended by the platform administrator.
- * Guarantees 100% data preservation in PostgreSQL while strictly barring unauthorized dashboard execution.
+ * Rendered when an institutional subscription has expired or has been suspended by the platform administrator.
+ * Guarantees 100% data preservation while strictly barring unauthorized dashboard execution.
  */
 export default function SuspensionNoticeBarrier({ tenant, subscription, onLogout, onRetry }) {
   const schoolName = tenant?.name || "Institutional Campus";
-  const schoolCode = tenant?.code || "CAMPUS-01";
+  const schoolCode = tenant?.code || "INSTITUTION-01";
   const expiryDate = subscription?.expiryDate || "Expired";
   const isExpired = subscription?.isExpired;
 
@@ -28,7 +28,7 @@ export default function SuspensionNoticeBarrier({ tenant, subscription, onLogout
 
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-black uppercase tracking-widest mb-6">
             <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-            {isExpired ? "License Expired" : "Campus Node Suspended"}
+            {isExpired ? "License Expired" : "Institution Portal Suspended"}
           </div>
 
           {/* Primary Notice */}
@@ -37,7 +37,7 @@ export default function SuspensionNoticeBarrier({ tenant, subscription, onLogout
           </h1>
 
           <p className="text-slate-200 text-sm sm:text-base leading-relaxed mb-6 font-medium">
-            100% of data preserved in Supabase PostgreSQL — zero data loss. Reactivation restores full access.
+            100% of data preserved in secure cloud database — zero data loss. Reactivation restores full access.
           </p>
 
           {/* Data Preservation Reassurance Badge */}
@@ -48,8 +48,8 @@ export default function SuspensionNoticeBarrier({ tenant, subscription, onLogout
                 100% Data Preservation Guarantee (Zero Data Loss)
               </h2>
               <p className="text-xs text-slate-200 mt-1 leading-relaxed">
-                100% of data preserved in Supabase PostgreSQL — zero data loss. Reactivation restores full access. All student rosters, academic marks, financial ledgers, and attendance archives
-                remain fully intact and encrypted in Supabase PostgreSQL. No institutional records
+                100% of data preserved in secure cloud database — zero data loss. Reactivation restores full access. All student rosters, academic marks, financial ledgers, and attendance archives
+                remain fully intact and encrypted in cloud database. No institutional records
                 have been deleted.
               </p>
             </div>

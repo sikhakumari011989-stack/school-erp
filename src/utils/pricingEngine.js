@@ -19,7 +19,7 @@ export const CANONICAL_SUBSCRIPTION_TIERS = [
     features: [
       "Up to 250 Enrolled Students",
       "Teacher Daily Attendance Register",
-      "Automated WhatsApp & SMS Absent Alerts",
+      "Automated Emergency SMS & In-App Alerts",
       "Homework & Syllabus Task Manager",
       "Basic Role-Based Access Control",
       "Offline Progressive Web App (PWA)",
@@ -38,9 +38,9 @@ export const CANONICAL_SUBSCRIPTION_TIERS = [
     features: [
       "Up to 1,500 Enrolled Students",
       "Everything in Campus Starter",
-      "Real-Time Razorpay Fee Settlement Ledger",
+      "Real-Time Direct UPI & Fee Settlement Ledger",
       "Dynamic PDF Tax Invoices & Term Transcripts",
-      "Mobile Deep-Linking & WhatsApp Invite Hub",
+      "Mobile Deep-Linking & Secure Parent Notification Hub",
       "Server-Verified Webhook Payment Gateway",
       "HOD & Trustee Governance Command Center",
       "Cryptographic Security Audit Vault",

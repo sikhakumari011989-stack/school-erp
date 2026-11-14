@@ -486,7 +486,7 @@ export default function PrincipalAssistant({ schoolCode = "CAMPUS-01" }) {
             d.balance >= 35000 ? "CRITICAL" : "HIGH",
           ]),
         },
-        recommendation: "Action: Dispatch automated WhatsApp fee notices to registered parent contacts and hold Term Examination hall tickets pending reconciliation.",
+        recommendation: "Action: Dispatch automated fee notices to registered parent contacts and hold Term Examination hall tickets pending reconciliation.",
         timestamp: time,
       };
     }

@@ -10,6 +10,8 @@ export const AppContext = createContext({
   user: null,
   setUser: () => {},
   tenant: null,
+  schoolLogoUrl: null,
+  setSchoolLogoUrl: () => {},
   subscription: {
     isBlocked: false,
     isSuspended: false,
@@ -106,6 +108,41 @@ export const AppProvider = ({ children }) => {
     status: "active",
     tier: "enterprise",
   });
+
+  const [schoolLogoUrl, setSchoolLogoUrl] = useState(() => {
+    try {
+      const code = resolveTenantCode().toUpperCase();
+      return (
+        safeStorage.getItem(`erp_logo_${code}`) ||
+        safeStorage.getItem(`erp_school_logo_${code}`) ||
+        safeStorage.getItem("erp_school_logo_default") ||
+        null
+      );
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    const handleLogoUpdate = (e) => {
+      const code = (tenant?.code || resolveTenantCode()).toUpperCase();
+      const updatedUrl = e?.detail?.logoUrl !== undefined ? e.detail.logoUrl : (
+        safeStorage.getItem(`erp_logo_${code}`) ||
+        safeStorage.getItem(`erp_school_logo_${code}`) ||
+        safeStorage.getItem("erp_school_logo_default") ||
+        null
+      );
+      setSchoolLogoUrl(updatedUrl);
+      setTenant((prev) => (prev ? { ...prev, logoUrl: updatedUrl } : prev));
+    };
+
+    window.addEventListener("erp-logo-updated", handleLogoUpdate);
+    window.addEventListener("storage", handleLogoUpdate);
+    return () => {
+      window.removeEventListener("erp-logo-updated", handleLogoUpdate);
+      window.removeEventListener("storage", handleLogoUpdate);
+    };
+  }, [tenant?.code]);
 
   // Dynamic White-Labeling & Institutional Licensing Check
   const loadTenantDetails = async (tenantCode) => {
@@ -503,6 +540,8 @@ export const AppProvider = ({ children }) => {
         user,
         setUser,
         tenant,
+        schoolLogoUrl,
+        setSchoolLogoUrl,
         institution_type: effectiveInstitutionType,
         subscription,
         refreshTenant: loadTenantDetails,

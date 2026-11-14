@@ -83,6 +83,52 @@ export const DEFAULT_DEMO_QR_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://w
   <path d="M145 150l3 3l7 -7" stroke="%2310B981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>`;
 
+function compressImageCanvas(file, maxDimension = 512, quality = 0.85, maxBytes = 120 * 1024) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const raw = e.target?.result;
+      if (!raw) return reject(new Error("File read error"));
+      if (file.type && file.type.includes("svg")) return resolve(raw);
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        let w = img.width;
+        let h = img.height;
+
+        if (w > maxDimension || h > maxDimension) {
+          if (w > h) {
+            h = Math.round((h * maxDimension) / w);
+            w = maxDimension;
+          } else {
+            w = Math.round((w * maxDimension) / h);
+            h = maxDimension;
+          }
+        }
+
+        canvas.width = w;
+        canvas.height = h;
+        ctx.drawImage(img, 0, 0, w, h);
+
+        let dataUrl = canvas.toDataURL("image/png", quality);
+        if (dataUrl.length > maxBytes) {
+          dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        }
+        if (dataUrl.length > maxBytes) {
+          dataUrl = canvas.toDataURL("image/jpeg", 0.65);
+        }
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = raw;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function SchoolUpiQrConfig({ schoolId = "CAMPUS-01", institutionName = "Institutional Campus" }) {
   const { showToast } = useToast();
   const activeCode = (schoolId || "CAMPUS-01").trim().toUpperCase();
@@ -95,12 +141,12 @@ export default function SchoolUpiQrConfig({ schoolId = "CAMPUS-01", institutionN
   const [schoolLogo, setSchoolLogo] = useState(null);
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [config, setConfig] = useState({
-    upiId: `${activeCode.toLowerCase().replace(/[^a-z0-9]/g, "")}.edu@okaxis`,
-    merchantName: institutionName || "Institutional Campus",
+    upiId: "",
+    merchantName: institutionName || "",
     instructions: "Scan via Google Pay, PhonePe, Paytm, or BHIM. Enter student name in remarks, then input 12-digit UTR below.",
-    accountNumber: "910020084918234",
-    ifscCode: "UTIB0001245",
-    bankName: "Axis Bank Ltd (Institutional Branch)",
+    accountNumber: "",
+    ifscCode: "",
+    bankName: "",
     isVerified: true,
   });
 
@@ -130,8 +176,8 @@ export default function SchoolUpiQrConfig({ schoolId = "CAMPUS-01", institutionN
     }
   }, [activeCode, storageKeyQr, storageKeyMeta, storageKeyLogo]);
 
-  // Handle custom school logo / crest upload (.png, .jpg, .jpeg, .svg, .webp)
-  const handleLogoUpload = (e) => {
+  // Handle custom school logo / crest upload (.png, .jpg, .jpeg, .svg, .webp) with HTML5 canvas compression (<120KB)
+  const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -140,39 +186,27 @@ export default function SchoolUpiQrConfig({ schoolId = "CAMPUS-01", institutionN
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast("File size exceeds 5MB limit. Please choose a smaller image.", "error");
-      return;
-    }
+    try {
+      const compressedDataUrl = await compressImageCanvas(file, 512, 0.85, 120 * 1024);
+      setSchoolLogo(compressedDataUrl);
+      localStorage.setItem(storageKeyLogo, compressedDataUrl);
+      localStorage.setItem("erp_school_logo_default", compressedDataUrl);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result;
-      if (dataUrl) {
-        setSchoolLogo(dataUrl);
-        try {
-          localStorage.setItem(storageKeyLogo, dataUrl);
-          localStorage.setItem("erp_school_logo_default", dataUrl);
-          // Broadcast real-time update event so Sidebar and mobile header update instantly
-          window.dispatchEvent(
-            new CustomEvent("erp-logo-updated", {
-              detail: { logoUrl: dataUrl, schoolId: activeCode },
-            })
-          );
-          window.dispatchEvent(new Event("storage"));
-          showToast(
-            "Custom school crest updated! Live in Sidebar, Mobile Header & Invoices.",
-            "success"
-          );
-        } catch {
-          showToast("Logo updated in current session.", "info");
-        }
-      }
-    };
-    reader.onerror = () => {
-      showToast("Failed to read image file.", "error");
-    };
-    reader.readAsDataURL(file);
+      // Broadcast real-time update event so Sidebar, thumbnails & PDF headers update immediately
+      window.dispatchEvent(
+        new CustomEvent("erp-logo-updated", {
+          detail: { logoUrl: compressedDataUrl, schoolId: activeCode },
+        })
+      );
+      window.dispatchEvent(new Event("storage"));
+      showToast(
+        "Custom school crest updated! Live in Sidebar, Mobile Header & Invoices.",
+        "success"
+      );
+    } catch (err) {
+      console.warn("Logo compression error:", err);
+      showToast("Failed to process crest image.", "error");
+    }
   };
 
   const handleResetLogo = () => {
@@ -192,8 +226,8 @@ export default function SchoolUpiQrConfig({ schoolId = "CAMPUS-01", institutionN
     }
   };
 
-  // Handle QR image file upload (.png, .jpg, .jpeg, .webp)
-  const handleImageUpload = (e) => {
+  // Handle QR image file upload (.png, .jpg, .jpeg, .webp) with HTML5 canvas compression (<120KB)
+  const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -202,28 +236,15 @@ export default function SchoolUpiQrConfig({ schoolId = "CAMPUS-01", institutionN
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast("File size exceeds 5MB limit. Please choose a smaller image.", "error");
-      return;
+    try {
+      const compressedQr = await compressImageCanvas(file, 512, 0.85, 120 * 1024);
+      setQrImage(compressedQr);
+      localStorage.setItem(storageKeyQr, compressedQr);
+      showToast("School UPI QR code uploaded and activated for parent portal!", "success");
+    } catch (err) {
+      console.warn("QR compression error:", err);
+      showToast("Failed to process QR image.", "error");
     }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result;
-      if (dataUrl) {
-        setQrImage(dataUrl);
-        try {
-          localStorage.setItem(storageKeyQr, dataUrl);
-          showToast("School UPI QR code uploaded and activated for parent portal!", "success");
-        } catch {
-          showToast("Image uploaded to view. Local storage quota full; saving in memory.", "info");
-        }
-      }
-    };
-    reader.onerror = () => {
-      showToast("Failed to read image file. Please try again.", "error");
-    };
-    reader.readAsDataURL(file);
   };
 
   // Save textual config metadata
@@ -240,28 +261,6 @@ export default function SchoolUpiQrConfig({ schoolId = "CAMPUS-01", institutionN
     } catch (err) {
       console.error(err);
       showToast("Failed to save configuration.", "error");
-    }
-  };
-
-  // Load Sample Demo QR with instant 1-click fallback
-  const handleLoadDemoQr = () => {
-    setQrImage(DEFAULT_DEMO_QR_SVG);
-    const demoMeta = {
-      upiId: `${activeCode.toLowerCase().replace(/[^a-z0-9]/g, "")}.edu@okaxis`,
-      merchantName: institutionName || "Institutional Campus",
-      instructions: "Scan via Google Pay, PhonePe, Paytm, or BHIM. Enter student name in remarks, then input 12-digit UTR below.",
-      accountNumber: "910020084918234",
-      ifscCode: "UTIB0001245",
-      bankName: "Axis Bank Ltd (Institutional Branch)",
-      isVerified: true,
-    };
-    setConfig(demoMeta);
-    try {
-      localStorage.setItem(storageKeyQr, DEFAULT_DEMO_QR_SVG);
-      localStorage.setItem(storageKeyMeta, JSON.stringify(demoMeta));
-      showToast("Loaded official sample demo QR and verified merchant profile!", "success");
-    } catch (err) {
-      console.warn("Storage notice:", err);
     }
   };
 
@@ -295,17 +294,6 @@ export default function SchoolUpiQrConfig({ schoolId = "CAMPUS-01", institutionN
             <p className="text-slate-300 text-sm mt-1 max-w-2xl">
               Configure your institution's direct bank UPI QR code. Parents scan this official QR via PhonePe, GPay, or Paytm, and pay straight into your school bank account with zero intermediate escrow delay.
             </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleLoadDemoQr}
-              type="button"
-              className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold px-4 py-2.5 rounded-xl shadow-lg transition-all text-xs flex items-center gap-2 cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Load Sample Demo QR</span>
-            </button>
           </div>
         </div>
       </div>
@@ -535,7 +523,7 @@ export default function SchoolUpiQrConfig({ schoolId = "CAMPUS-01", institutionN
                 <img
                   src={qrImage}
                   alt="Official School UPI QR"
-                  className="w-48 h-48 md:w-52 md:h-52 object-contain mx-auto"
+                  className="w-48 h-48 md:w-52 md:h-52 aspect-square object-contain mx-auto"
                 />
               </div>
 

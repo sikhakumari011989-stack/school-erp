@@ -26,8 +26,8 @@ export default function PricingPolicy() {
       desc: "For established K-12 private schools, senior colleges, and multi-batch tuition institutes.",
       features: [
         "Up to 1,500 Active Students",
-        "Complete Razorpay Fee Collection Engine",
-        "Automated WhatsApp & SMS Alerts (Twilio/Wati)",
+        "Complete Direct UPI & Payment Gateway Engine",
+        "Automated Institutional SMS & In-App Alerts",
         "Official PDF Report Cards & Invoices (jsPDF)",
         "Accountant Financial Ledger & Defaulter Vault",
         "Priority 24/7 Technical Support SLA",
@@ -101,7 +101,7 @@ export default function PricingPolicy() {
           </p>
           <div className="mt-4 flex flex-wrap gap-2 items-center text-xs text-slate-300 bg-slate-900/60 border border-slate-800 rounded-xl p-3">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Razorpay Payment Gateway Integration &bull; 100% Tax Compliant GST Invoicing &bull; 7-Day Risk-Free Evaluation</span>
+            <span>Direct Bank UPI & Payment Gateway Integration &bull; 100% Tax Compliant GST Invoicing &bull; 7-Day Risk-Free Evaluation</span>
           </div>
         </div>
 
@@ -166,9 +166,9 @@ export default function PricingPolicy() {
               <span className="text-emerald-400">2.</span> Student Fee Collections (Zero Platform Commission)
             </h2>
             <p>
-              When students or guardians settle tuition fees via EduSaaS ERP, funds are routed directly through Razorpay to the
+              When students or guardians settle tuition fees via EduSaaS ERP, funds are routed directly through secure banking gateways to the
               institution&apos;s verified bank account. <strong>EduSaaS ERP charges 0% platform commission on student tuition collections.</strong>{" "}
-              Standard banking network processing fees (MDR) mandated by Razorpay apply (typically 0% on UPI transactions and standard
+              Standard banking network processing fees (MDR) mandated by partner banks apply (typically 0% on UPI transactions and standard
               interchange rates for commercial cards).
             </p>
           </section>
@@ -177,7 +177,7 @@ export default function PricingPolicy() {
             <h2 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
               <span className="text-emerald-400">3.</span> Accepted Modes of Payment
             </h2>
-            <p className="mb-2">Through our Razorpay merchant integration, we accept the following payment channels:</p>
+            <p className="mb-2">Through our secure merchant integration, we accept the following payment channels:</p>
             <ul className="list-disc pl-5 space-y-1 text-slate-400 text-sm">
               <li><strong>Unified Payments Interface (UPI):</strong> Google Pay, PhonePe, Paytm, BHIM, and all major UPI apps.</li>
               <li><strong>Debit & Credit Cards:</strong> RuPay, Visa, MasterCard, and American Express.</li>

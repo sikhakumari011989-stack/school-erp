@@ -65,7 +65,7 @@ export default function OnlineExams() {
   ).toUpperCase();
 
   const [exams, setExams] = useState([]);
-  const [activeTab, setActiveTab] = useState("cbt"); // 'cbt' | 'formal_sessions' | 'marks_ledger'
+  const [activeTab, setActiveTab] = useState("cbt"); // 'cbt' | 'formal_sessions'
   const [examSessions, setExamSessions] = useState(() => {
     try {
       const saved = localStorage.getItem(`erp_exam_sessions_${schoolCode}`);
@@ -158,7 +158,7 @@ export default function OnlineExams() {
     loadExamsAndSubmissions();
   }, [schoolCode]);
 
-  const loadExamsAndSubmissions = () => {
+  const loadExamsAndSubmissions = async () => {
     try {
       const examsRaw = localStorage.getItem(`erp_online_exams_${schoolCode}`);
       if (examsRaw) {
@@ -203,6 +203,40 @@ export default function OnlineExams() {
         };
         setExams([sampleExam]);
         localStorage.setItem(`erp_online_exams_${schoolCode}`, JSON.stringify([sampleExam]));
+      }
+
+      // Query Supabase for real student submissions first
+      if (supabase) {
+        try {
+          const { data, error } = await supabase
+            .from("exam_submissions")
+            .select("*")
+            .eq("school_id", schoolCode)
+            .order("submitted_at", { ascending: false });
+
+          if (!error && data && data.length > 0) {
+            const mapped = data.map((d) => ({
+              id: d.id,
+              examId: d.exam_id || d.examId,
+              studentId: d.student_id || d.studentId,
+              studentName: d.student_name || d.studentName,
+              rollNumber: d.student_id || d.studentId,
+              score: Number(d.score),
+              maxScore: Number(d.total_marks || d.totalMarks || 100),
+              totalMarks: Number(d.total_marks || d.totalMarks || 100),
+              percentage: Number(d.percentage),
+              submittedAt: d.submitted_at || d.submittedAt,
+              answers: d.answers,
+              correctCount: d.answers?.correctCount ?? "-",
+              totalQuestions: d.answers?.totalQuestions ?? "-",
+            }));
+            setSubmissions(mapped);
+            localStorage.setItem(`erp_exam_submissions_${schoolCode}`, JSON.stringify(mapped));
+            return;
+          }
+        } catch (sbErr) {
+          console.warn("Supabase exam_submissions sync notice:", sbErr);
+        }
       }
 
       const subsRaw = localStorage.getItem(`erp_exam_submissions_${schoolCode}`);
@@ -278,6 +312,11 @@ export default function OnlineExams() {
     e.preventDefault();
     if (!examForm.title.trim()) {
       showToast("Please enter an Exam Title.", "error");
+      return;
+    }
+
+    if (Number(examForm.durationMinutes) < 5) {
+      showToast("Duration must be at least 5 minutes.", "error");
       return;
     }
 
@@ -400,19 +439,6 @@ export default function OnlineExams() {
           <Calendar className="w-4 h-4" />
           Formal Exam Sessions & Hall Seating
         </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("marks_ledger")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === "marks_ledger"
-              ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
-              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800/60"
-          }`}
-        >
-          <Award className="w-4 h-4" />
-          Marks Entry & CBSE 9-Point Grading
-        </button>
       </div>
 
       {/* FORMAL EXAM SESSIONS VIEW */}
@@ -485,86 +511,6 @@ export default function OnlineExams() {
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* MARKS ENTRY & MODERATION VIEW */}
-      {activeTab === "marks_ledger" && (
-        <div className="bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-xl space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Award className="w-5 h-5 text-emerald-500" />
-                Marks Moderation & CBSE 9-Point Scale Grading
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Validated marks entry preventing negative or out-of-bounds scores. Auto-generates letter grades.
-              </p>
-            </div>
-            <button
-              onClick={() => window.print()}
-              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              Print Bulk Marksheets
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 font-bold">
-                  <th className="py-3 px-4">Scholar Name</th>
-                  <th className="py-3 px-4">Roll Number</th>
-                  <th className="py-3 px-4">Class</th>
-                  <th className="py-3 px-4">Subject</th>
-                  <th className="py-3 px-4">Raw Marks (/100)</th>
-                  <th className="py-3 px-4">Moderation (+/-)</th>
-                  <th className="py-3 px-4">Final Grade</th>
-                  <th className="py-3 px-4">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-                {examResults.map((r) => (
-                  <tr key={r.id}>
-                    <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{r.student_name}</td>
-                    <td className="py-3 px-4 font-mono">{r.student_id}</td>
-                    <td className="py-3 px-4">{r.class_name}</td>
-                    <td className="py-3 px-4">{r.subject}</td>
-                    <td className="py-3 px-4">
-                      {r.is_finalized ? (
-                        <span className="font-bold">{r.marks_obtained}</span>
-                      ) : (
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          defaultValue={r.marks_obtained}
-                          onBlur={(e) => handleUpdateMarks(r.id, e.target.value, 100)}
-                          className="w-20 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-slate-900 dark:text-white"
-                        />
-                      )}
-                    </td>
-                    <td className="py-3 px-4 font-mono">{r.moderation_marks ? `+${r.moderation_marks}` : "0.00"}</td>
-                    <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded-md font-bold text-xs bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30">
-                        {r.grade}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      {r.is_finalized ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-500 font-bold">
-                          <Lock className="w-3 h-3" /> Finalized
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-amber-500 font-bold">Draft / Editable</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
 
@@ -735,7 +681,7 @@ export default function OnlineExams() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateExam} className="space-y-6">
+            <form onSubmit={handleCreateExam} noValidate className="space-y-6">
               {/* Basic Meta Details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-slate-800/40 p-4 rounded-xl border border-slate-800">
                 <div className="sm:col-span-2">
@@ -784,12 +730,19 @@ export default function OnlineExams() {
                   </label>
                   <input
                     type="number"
-                    min="5"
-                    max="180"
                     value={examForm.durationMinutes}
                     onChange={(e) => setExamForm({ ...examForm, durationMinutes: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                    className={`w-full bg-slate-800 border rounded-lg px-3 py-2 text-xs text-white focus:outline-none transition-colors ${
+                      Number(examForm.durationMinutes) < 5
+                        ? "border-rose-500 focus:border-rose-500"
+                        : "border-slate-700 focus:border-purple-500"
+                    }`}
                   />
+                  {Number(examForm.durationMinutes) < 5 && (
+                    <p className="text-[11px] text-rose-400 font-semibold mt-1">
+                      Duration must be at least 5 minutes.
+                    </p>
+                  )}
                 </div>
 
                 <div>

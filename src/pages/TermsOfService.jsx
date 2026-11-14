@@ -84,7 +84,7 @@ export default function TermsOfService() {
               <li>Teacher roll-call attendance logging and curriculum planning</li>
               <li>Student and parent fee invoicing, payment collection, and digital ledger reconciliation</li>
               <li>Academic homework dispatch, report card generation, and compliance certificate issuance</li>
-              <li>Third-party payment gateway integration via Razorpay for digital transactions</li>
+              <li>Direct bank UPI and third-party payment gateway integration for digital transactions</li>
             </ul>
           </section>
 
@@ -102,15 +102,15 @@ export default function TermsOfService() {
 
           <section>
             <h2 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-              <span className="text-blue-400">4.</span> Fee Settlements & Razorpay Payment Processing
+              <span className="text-blue-400">4.</span> Fee Settlements & Secure Payment Processing
             </h2>
             <p>
               Tuition payments, examination fees, and institutional charges made via the Platform are securely processed through our
-              certified payment aggregator partner, <strong>Razorpay Software Pvt. Ltd.</strong> By making or receiving payments:
+              certified payment aggregator partners. By making or receiving payments:
             </p>
             <ul className="list-disc pl-5 space-y-1 text-slate-400 text-sm mt-2">
               <li>
-                You authorize Razorpay to tokenize and process transactions across credit/debit cards, UPI, and internet banking rails.
+                You authorize accredited payment gateways to tokenize and process transactions across credit/debit cards, UPI, and internet banking rails.
               </li>
               <li>EduSaaS ERP does not store unencrypted cardholder numbers or bank PINs on our servers.</li>
               <li>

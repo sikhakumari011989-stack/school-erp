@@ -345,7 +345,6 @@ export default function Login({ isDirectPortal = false }) {
                 <Building2 className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Institution Access Code</span>
               </label>
-              <span className="text-[10px] text-slate-400">e.g. CAMPUS-01</span>
             </div>
             <div className="relative">
               <Building2 className="absolute left-4 top-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
@@ -356,7 +355,7 @@ export default function Login({ isDirectPortal = false }) {
                 type="text"
                 autoComplete="organization"
                 required
-                placeholder="e.g. PALGHAR-01"
+                placeholder="Enter Institution Code"
                 className="w-full bg-slate-950/80 border border-slate-800 text-white placeholder-slate-600 rounded-xl pl-11 pr-4 py-3.5 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/40 focus:ring-offset-2 focus:ring-offset-slate-950 transition-all font-mono uppercase tracking-wider text-sm font-semibold"
                 value={formData.institutionCode}
                 onChange={(e) => setFormData({ ...formData, institutionCode: e.target.value })}
@@ -372,7 +371,6 @@ export default function Login({ isDirectPortal = false }) {
                 <User className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Personal ID or Institutional Email</span>
               </label>
-              <span className="text-[10px] text-slate-400">PRIN-01, HOD-01, TCH-01</span>
             </div>
             <div className="relative">
               <User className="absolute left-4 top-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
@@ -460,21 +458,6 @@ export default function Login({ isDirectPortal = false }) {
             </a>{" "}
             &bull; <span className="font-mono text-slate-300">+91 9518388499</span>
           </p>
-          <div>
-            <button
-              type="button"
-              onClick={() => {
-                try {
-                  safeStorage.clear();
-                } catch {}
-                window.location.href = "/login?reset=true";
-              }}
-              className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors inline-flex items-center gap-1.5 cursor-pointer font-medium pt-1"
-            >
-              <RefreshCw className="w-3 h-3" />
-              <span>Clear Session Cache & Reset</span>
-            </button>
-          </div>
           <p className="text-[10px] text-slate-400 pt-1">
             &copy; 2026 ASTINEX. All rights reserved. One Platform. Every School Operation.
           </p>
@@ -498,11 +481,11 @@ export default function Login({ isDirectPortal = false }) {
               <p className="text-slate-300 text-xs mt-2 leading-relaxed">
                 {suspendedNotice.isSuspended ? (
                   <>
-                    Access to campus node <strong className="text-white font-mono">{suspendedNotice.schoolCode}</strong> has been suspended by the platform administrator via the master subscription kill-switch.
+                    Access to institution <strong className="text-white font-mono">{suspendedNotice.schoolCode}</strong> has been suspended by the platform administrator via the master subscription kill-switch.
                   </>
                 ) : (
                   <>
-                    The enterprise software license for campus node <strong className="text-white font-mono">{suspendedNotice.schoolCode}</strong> expired on <strong className="text-rose-400 font-mono">{suspendedNotice.expiryDate}</strong>.
+                    The enterprise software license for institution <strong className="text-white font-mono">{suspendedNotice.schoolCode}</strong> expired on <strong className="text-rose-400 font-mono">{suspendedNotice.expiryDate}</strong>.
                   </>
                 )}
               </p>

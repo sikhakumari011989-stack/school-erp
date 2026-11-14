@@ -156,6 +156,38 @@ export default function InstitutionalDirectory() {
     };
   }, [activeSchoolId]);
 
+  const handleArchiveMember = async (d) => {
+    try {
+      if (supabase) {
+        const { error: profileErr } = await supabase
+          .from("profiles")
+          .update({ status: "ARCHIVED" })
+          .eq("school_id", activeSchoolId)
+          .or(`role_code.eq.${d.id},id.eq.${d.id}`);
+
+        if (profileErr) throw profileErr;
+      }
+
+      // Real-time UI removal
+      setDirectory((prev) => prev.filter((item) => item.id !== d.id));
+
+      // Also clean from safeStorage
+      const dirKey = `erp_directory_${activeSchoolId}`;
+      const raw = localStorage.getItem(dirKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const updated = parsed.filter((item) => (item.role_code || item.id) !== d.id && item.id !== d.id);
+        localStorage.setItem(dirKey, JSON.stringify(updated));
+        window.dispatchEvent(new Event("erp-directory-updated"));
+      }
+
+      showToast(`Safely archived ${d.name || d.id}. Historical audit and fee records preserved.`, "success");
+    } catch (err) {
+      console.error("Archive error:", err);
+      showToast(err.message || "Failed to archive member in cloud database.", "error");
+    }
+  };
+
   const filteredDirectory = directory.filter((d) => {
     if (filterType === "ALL") return true;
     if (filterType === "TEACHING") return d.category === "Teaching & Admin";
@@ -276,13 +308,23 @@ export default function InstitutionalDirectory() {
                         <p className="text-xs text-slate-400 mt-0.5">{d.email}</p>
                       </td>
                       <td className="p-5 text-center">
-                        <a
-                          href={`tel:${d.phone.replace(/[^0-9+]/g, "")}`}
-                          onClick={() => showToast(`Calling ${d.name}...`, "info")}
-                          className="inline-flex items-center gap-1 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-600 hover:border-emerald-500 transition-all cursor-pointer"
-                        >
-                          <span>📞</span> Call Direct
-                        </a>
+                        <div className="flex items-center justify-center gap-2">
+                          <a
+                            href={`tel:${d.phone.replace(/[^0-9+]/g, "")}`}
+                            onClick={() => showToast(`Calling ${d.name}...`, "info")}
+                            className="inline-flex items-center gap-1 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-600 hover:border-emerald-500 transition-all cursor-pointer"
+                          >
+                            <span>📞</span> Call
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handleArchiveMember(d)}
+                            className="inline-flex items-center gap-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold px-3 py-1.5 rounded-lg text-xs border border-rose-500/40 transition-all cursor-pointer"
+                            title="Safely deactivate and archive member"
+                          >
+                            Archive
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

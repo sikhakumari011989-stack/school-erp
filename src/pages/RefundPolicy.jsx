@@ -47,7 +47,7 @@ export default function RefundPolicy() {
             Refund & Cancellation Policy
           </h1>
           <p className="text-slate-400 text-sm">
-            Standard SaaS 7-Day Money-Back Guarantee &bull; Direct Razorpay Reversals
+            Standard SaaS 7-Day Money-Back Guarantee &bull; Direct Payment Reversals
           </p>
           <div className="mt-4 flex flex-wrap gap-2 items-center text-xs text-slate-300 bg-slate-900/60 border border-slate-800 rounded-xl p-3">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -139,7 +139,7 @@ export default function RefundPolicy() {
                 <strong>Bank Settlement Timeline:</strong> 5 to 7 working days to appear in your bank account or card statement.
               </div>
               <p className="text-slate-400 text-xs pt-1">
-                All refunds are initiated directly through our Razorpay merchant gateway back to the <strong>original source of payment</strong> (UPI ID, source credit card, or issuing bank account). Cash or third-party bank transfers are prohibited under anti-money laundering (AML) guidelines.
+                All refunds are initiated directly through our verified merchant gateway back to the <strong>original source of payment</strong> (UPI ID, source credit card, or issuing bank account). Cash or third-party bank transfers are prohibited under anti-money laundering (AML) guidelines.
               </p>
             </div>
           </section>
@@ -155,7 +155,7 @@ export default function RefundPolicy() {
             <p className="text-slate-400 text-xs mt-2">
               Therefore, all student tuition refund requests are strictly governed by the specific academic institution&apos;s admission
               and fee withdrawal policies. In cases of disputed transactions, chargebacks, or duplicate fee debits, EduSaaS ERP will
-              furnish digital receipts, Razorpay Payment IDs, and audit timestamps to assist resolution.
+              furnish digital receipts, Payment Reference IDs, and audit timestamps to assist resolution.
             </p>
           </section>
 
@@ -166,7 +166,7 @@ export default function RefundPolicy() {
             <p className="mb-2">To submit a refund request, provide the following details to our support desk:</p>
             <ol className="list-decimal pl-5 space-y-1 text-slate-400 text-sm">
               <li>Institution Name and Unique Institution Code</li>
-              <li>Razorpay Payment Reference ID (e.g. <code>pay_PxY123...</code>)</li>
+              <li>Payment Gateway Reference ID / UTR (e.g. <code>TXN_123...</code>)</li>
               <li>Official invoice or payment receipt timestamp</li>
               <li>Reason for cancellation (for quality enhancement)</li>
             </ol>

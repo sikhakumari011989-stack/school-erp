@@ -18,7 +18,6 @@ import {
 } from "recharts";
 import NoticeBanner from "../Components/NoticeBanner";
 import CampusPulseCard from "../Components/CampusPulseCard";
-import CertificateManagementCard from "../Components/CertificateManagementCard";
 import QRScannerModule from "../Components/QRScannerModule";
 import SchoolCalendar from "../Components/SchoolCalendar";
 import ClassTestEntry from "../Components/ClassTestEntry";
@@ -418,93 +417,6 @@ export default function TeacherDashboard() {
           )}
         </div>
 
-        {/* TEACHER DATA VISUALIZATIONS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10 animate-fade-in-up stagger-3">
-          {/* CHART 1: ATTENDANCE TREND */}
-          <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/10 dark:border-cyan-400/30 dark:text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-1">
-                  <span>📅</span> Roll Call Telemetry
-                </div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white">Class Attendance Pacing</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Daily class attendance percentage across the last 7 sessions</p>
-              </div>
-            </div>
-
-            {classAttendanceTrend.length === 0 ? (
-              <div className="h-56 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-6 space-y-2 bg-slate-50/50 dark:bg-tech-grid rounded-2xl">
-                <span className="text-2xl opacity-60">📅</span>
-                <p className="text-xs font-bold text-slate-900 dark:text-white">No Roll Call Submitted Yet</p>
-                <p className="text-[11px] text-slate-500 max-w-xs">Mark attendance for assigned batches to view attendance trends.</p>
-              </div>
-            ) : (
-              <div className="h-56 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={classAttendanceTrend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
-                    <XAxis dataKey="date" stroke="#94A3B8" fontSize={10} tickLine={false} />
-                    <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#0F172A",
-                        borderColor: "rgba(255,255,255,0.15)",
-                        borderRadius: "1rem",
-                        fontSize: "12px",
-                        color: "#FFFFFF",
-                      }}
-                      formatter={(v) => [`${v}% Attendance`, "Rate"]}
-                    />
-                    <Line type="monotone" dataKey="rate" stroke="#06B6D4" strokeWidth={3} dot={{ r: 4, fill: "#06B6D4" }} activeDot={{ r: 6 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-
-          {/* CHART 2: RECENT CLASS TEST PERFORMANCE */}
-          <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/50 hover:border-purple-400 dark:hover:border-purple-500/30 transition-all duration-300 hover:-translate-y-0.5 rounded-3xl p-6 shadow-sm dark:shadow-2xl">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-500/10 dark:border-purple-500/30 dark:text-purple-300 text-[10px] font-bold uppercase tracking-wider mb-1">
-                  <span>📝</span> Evaluation Marks
-                </div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white">Class Examination Performance</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Average score percentage across recent tests</p>
-              </div>
-            </div>
-
-            {examPerformanceData.length === 0 ? (
-              <div className="h-56 flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 p-6 space-y-2 bg-slate-50/50 dark:bg-tech-grid rounded-2xl">
-                <span className="text-2xl opacity-60">📝</span>
-                <p className="text-xs font-bold text-slate-900 dark:text-white">No Test Records Logged</p>
-                <p className="text-[11px] text-slate-500 max-w-xs">Record class tests to monitor score averages across terms.</p>
-              </div>
-            ) : (
-              <div className="h-56 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={examPerformanceData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
-                    <XAxis dataKey="testName" stroke="#94A3B8" fontSize={10} tickLine={false} />
-                    <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#0F172A",
-                        borderColor: "rgba(255,255,255,0.15)",
-                        borderRadius: "1rem",
-                        fontSize: "12px",
-                        color: "#FFFFFF",
-                      }}
-                      formatter={(v) => [`${v}% Average`, "Score"]}
-                    />
-                    <Bar dataKey="classAvg" name="Average %" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* QUICK ACTIONS */}
         <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight mb-6">Classroom & Academic Controls</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10 animate-fade-in-up stagger-3">
@@ -550,9 +462,6 @@ export default function TeacherDashboard() {
           </div>
           <SchoolCalendar viewMode="teacher" assignedClass={user?.class_name || "Class 10-A"} />
         </div>
-
-        {/* STUDENT CERTIFICATE REQUESTS APPROVAL WORKFLOW */}
-        <CertificateManagementCard mode="teacher" />
 
         {/* RAPID-ENTRY CLASS TEST EVALUATION MODAL */}
         <ClassTestEntry

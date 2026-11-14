@@ -23,22 +23,14 @@ test("MVP Regression: Provider hierarchy, AppContext loading, and AppLayout hook
     "AppLayout must not have stale localStorage auto-router effect"
   );
 
-  // 3. Reports & Analytics are lazy-loaded and registered
+  // 3. Reports & Analytics are deleted from App.jsx per Phase 1 specification
   assert.ok(
-    appSrc.includes('const Reports = React.lazy(() => import("./pages/Reports"));'),
-    "App.jsx must lazy load Reports"
+    !appSrc.includes('path="/admin/reports"'),
+    "App.jsx must not register /admin/reports route"
   );
   assert.ok(
-    appSrc.includes('const Analytics = React.lazy(() => import("./pages/Analytics"));'),
-    "App.jsx must lazy load Analytics"
-  );
-  assert.ok(
-    appSrc.includes('path="/admin/reports"'),
-    "App.jsx must register /admin/reports route"
-  );
-  assert.ok(
-    appSrc.includes('path="/admin/analytics"'),
-    "App.jsx must register /admin/analytics route"
+    !appSrc.includes('path="/admin/analytics"'),
+    "App.jsx must not register /admin/analytics route"
   );
 
   // 4. ProtectedRoute shows loading spinner and checks context user
@@ -52,61 +44,17 @@ test("MVP Regression: Provider hierarchy, AppContext loading, and AppLayout hook
   );
 });
 
-test("MVP Regression: Reports and Analytics real query wiring", async (t) => {
-  const reportsSrc = fs.readFileSync("src/pages/Reports.jsx", "utf8").replace(/\r\n/g, "\n");
-  const analyticsSrc = fs.readFileSync("src/pages/Analytics.jsx", "utf8").replace(/\r\n/g, "\n");
-
-  // Reports does not call undefined context functions
-  assert.ok(
-    !reportsSrc.includes("getFeeReport("),
-    "Reports must not call non-existent getFeeReport"
-  );
-  assert.ok(
-    !reportsSrc.includes("getAttendanceReport("),
-    "Reports must not call non-existent getAttendanceReport"
-  );
-  assert.ok(
-    !reportsSrc.includes("getMarksReport("),
-    "Reports must not call non-existent getMarksReport"
-  );
-  assert.ok(
-    reportsSrc.includes('from("fee_ledger")'),
-    "Reports must query fee_ledger table directly"
-  );
-  assert.ok(
-    reportsSrc.includes('from("attendance")'),
-    "Reports must query attendance table directly"
-  );
-  assert.ok(
-    reportsSrc.includes('from("class_tests")'),
-    "Reports must query class_tests table directly"
-  );
-
-  // Analytics does not call undefined getSchoolAnalytics
-  assert.ok(
-    !analyticsSrc.includes("getSchoolAnalytics()"),
-    "Analytics must not call non-existent getSchoolAnalytics"
-  );
-  assert.ok(
-    analyticsSrc.includes('from("students")'),
-    "Analytics must query students table count"
-  );
-  assert.ok(
-    analyticsSrc.includes('from("teachers")'),
-    "Analytics must query teachers table count"
-  );
-  assert.ok(
-    analyticsSrc.includes('from("fee_ledger")'),
-    "Analytics must query fee_ledger table sum"
-  );
+test("MVP Regression: Reports and Analytics removed in Phase 1 cleanup", async (t) => {
+  assert.strictEqual(fs.existsSync("src/pages/Reports.jsx"), false, "Reports.jsx must be deleted");
+  assert.strictEqual(fs.existsSync("src/pages/Analytics.jsx"), false, "Analytics.jsx must be deleted");
 });
 
-test("MVP Regression: Sidebar navigation for executive reports and analytics", async (t) => {
+test("MVP Regression: Sidebar navigation cleansed of legacy reports and analytics", async (t) => {
   const sidebarSrc = fs.readFileSync("src/Components/Sidebar.jsx", "utf8").replace(/\r\n/g, "\n");
 
   assert.ok(
-    sidebarSrc.includes('/admin/reports') && sidebarSrc.includes('/admin/analytics'),
-    "Sidebar must include /admin/reports and /admin/analytics links"
+    !sidebarSrc.includes('/admin/reports') && !sidebarSrc.includes('/admin/analytics'),
+    "Sidebar must not include /admin/reports and /admin/analytics links"
   );
 });
 

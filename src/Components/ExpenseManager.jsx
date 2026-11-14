@@ -459,11 +459,17 @@ export default function ExpenseManager({ schoolId }) {
                     value={expenseForm.amountRemaining}
                     className="w-full bg-slate-950/60 border border-rose-500/40 rounded-xl px-4 py-3.5 text-rose-400 font-mono font-black text-base cursor-not-allowed select-none"
                   />
-                  <span className="absolute right-3 top-3.5 text-xs text-rose-400/80 font-bold uppercase">
-                    {expenseForm.amountRemaining === 0 ? "PAID IN FULL" : "PAYABLE"}
+                  <span className="absolute right-3 top-3.5 text-xs font-bold uppercase">
+                    {Number(expenseForm.amountRemaining) === 0 && Number(expenseForm.totalBill) > 0 ? (
+                      <span className="text-emerald-400">PAID IN FULL</span>
+                    ) : (
+                      <span className="text-rose-400">BALANCE PAYABLE</span>
+                    )}
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-400 mt-1 block">Auto-calculated: (Total Bill − Paid Now)</span>
+                <span className="text-[11px] text-slate-400 mt-1 block">
+                  Auto-calculated: (Total Bill − Paid Now) &bull; {Number(expenseForm.amountRemaining) > 0 ? "Settlement pending" : "Settled"}
+                </span>
               </div>
             </div>
           </div>
@@ -594,12 +600,13 @@ export default function ExpenseManager({ schoolId }) {
                   <th className="p-4 text-right">Amount Paid</th>
                   <th className="p-4 text-right">Remaining</th>
                   <th className="p-4 text-center">Status</th>
-                  <th className="p-4 text-right pr-6">Action</th>
+                  <th className="p-4 text-right pr-6">Audit Integrity</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50 text-sm">
                 {filteredExpenses.map((ex) => {
-                  const isPaidFull = (parseFloat(ex.amountRemaining) || 0) === 0;
+                  const rem = Number(ex.amountRemaining) || 0;
+                  const isPaidFull = rem === 0 && Number(ex.totalBill) > 0;
                   return (
                     <tr key={ex.id} className="hover:bg-slate-800/30 transition-colors">
                       <td className="p-4 pl-6">
@@ -632,13 +639,9 @@ export default function ExpenseManager({ schoolId }) {
                         </span>
                       </td>
                       <td className="p-4 text-right pr-6">
-                        <button
-                          onClick={() => handleDeleteExpense(ex.id)}
-                          className="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all cursor-pointer"
-                          title="Remove expense record"
-                        >
-                          Delete
-                        </button>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
+                          🔒 Locked
+                        </span>
                       </td>
                     </tr>
                   );

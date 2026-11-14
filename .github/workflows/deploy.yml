@@ -32,8 +32,8 @@ jobs:
 
       - name: Production Build Compilation
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://demo-school.supabase.co' }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'demo-anon-key' }}
+          VITE_SUPABASE_URL: ${{ secrets['VITE_SUPABASE_URL'] || 'https://demo-school.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets['VITE_SUPABASE_ANON_KEY'] || 'demo-anon-key' }}
         run: npm run build
 
       - name: Archive Production Build Artifacts
@@ -67,8 +67,8 @@ jobs:
       - name: Execute Core Institutional E2E Tests
         env:
           CI: true
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://demo-school.supabase.co' }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'demo-anon-key' }}
+          VITE_SUPABASE_URL: ${{ secrets['VITE_SUPABASE_URL'] || 'https://demo-school.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets['VITE_SUPABASE_ANON_KEY'] || 'demo-anon-key' }}
         run: npm run test:e2e
 
       - name: Upload Test Report
@@ -98,9 +98,9 @@ jobs:
       - name: Deploy to Vercel Production
         uses: amondnet/vercel-action@v25
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-token: ${{ secrets['VERCEL_TOKEN'] }}
+          vercel-org-id: ${{ secrets['VERCEL_ORG_ID'] }}
+          vercel-project-id: ${{ secrets['VERCEL_PROJECT_ID'] }}
           vercel-args: "--prod"
         continue-on-error: true
 

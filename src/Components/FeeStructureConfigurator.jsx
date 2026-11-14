@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import { AppContext } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../supabaseClient";
 import { logSecurityAction } from "../utils/auditLogger";
@@ -7,6 +8,10 @@ import { Plus, Trash2, CheckCircle2, ShieldCheck, IndianRupee, Layers } from "lu
 
 export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", institutionName = "Institutional Campus" }) {
   const { showToast } = useToast();
+  const { institution_type } = useContext(AppContext) || {};
+  const isTuitionMode = (institution_type || "").toLowerCase() === "tuition";
+  const termSuffix = isTuitionMode ? "Tuition" : "Fee";
+
   const activeCode = (schoolId || "CAMPUS-01").trim().toUpperCase();
   const storageKey = `erp_fee_structure_${activeCode}`;
 
@@ -258,9 +263,9 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
               onChange={(e) => setForm({ ...form, term: e.target.value })}
               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
             >
-              <option value="Term 1">Term 1 Tuition</option>
-              <option value="Term 2">Term 2 Tuition</option>
-              <option value="Term 3">Term 3 Tuition</option>
+              <option value="Term 1">{`Term 1 ${termSuffix}`}</option>
+              <option value="Term 2">{`Term 2 ${termSuffix}`}</option>
+              <option value="Term 3">{`Term 3 ${termSuffix}`}</option>
               <option value="Annual">Annual General Fee</option>
               <option value="Quarterly">Quarterly Installment</option>
               <option value="Laboratory">Laboratory & Library</option>
@@ -352,7 +357,7 @@ export default function FeeStructureConfigurator({ schoolId = "CAMPUS-01", insti
             <span className="text-4xl block opacity-60">📑</span>
             <h4 className="text-base font-bold text-white">No active fee structures published by school administration yet.</h4>
             <p className="text-xs text-slate-400 max-w-md mx-auto">
-              Define your school's tuition, laboratory, and campus fee heads above. Once published, students will be able to select and settle them via UPI QR or Razorpay.
+              Define your school's tuition, laboratory, and campus fee heads above. Once published, students will be able to select and settle them via UPI QR or Online Gateway.
             </p>
           </div>
         ) : (

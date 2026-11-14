@@ -253,6 +253,12 @@ export default function SchoolCalendar({
   for (let d = 1; d <= daysInCurrentMonth; d++) {
     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     const dayInfo = attendanceMap[dateStr] || {};
+    const dayEvents = events.filter((ev) => {
+      const s = normalizeDateString(ev.start_date || ev.date);
+      const e = normalizeDateString(ev.end_date || ev.date || ev.start_date);
+      return s <= dateStr && dateStr <= e;
+    });
+
     calendarGrid.push({
       day: d,
       isCurrentMonth: true,
@@ -264,6 +270,7 @@ export default function SchoolCalendar({
       hasAttendance: dayInfo.hasAttendance,
       studentStatus: dayInfo.studentStatus,
       isUnmarked: unmarkedDates.includes(dateStr),
+      dayEvents,
     });
   }
 
@@ -297,8 +304,16 @@ export default function SchoolCalendar({
             <span className="text-[11px] font-extrabold uppercase tracking-widest text-cyan-600 dark:text-cyan-400">
               ASTINEX Calendar
             </span>
-            <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-              {activeMode === "teacher" ? `Faculty View (${resolvedClass})` : "Student Scholar View"}
+            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+              {resolvedRole.includes("prin") || resolvedRole.includes("trustee") || resolvedRole.includes("hod") || resolvedRole.includes("admin")
+                ? "Executive View"
+                : resolvedRole.includes("acc")
+                ? "Accounts View"
+                : resolvedRole.includes("teach") || activeMode === "teacher"
+                ? `Faculty View (${resolvedClass})`
+                : resolvedRole.includes("staff") || resolvedRole.includes("nts")
+                ? "Staff View"
+                : "Student Scholar View"}
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
@@ -363,26 +378,28 @@ export default function SchoolCalendar({
         </div>
       )}
 
-      {/* STUDENT ATTENDANCE LEGEND (STUDENT VIEW) */}
-      {activeMode === "student" && (
-        <div className="mb-4 flex items-center justify-between flex-wrap gap-2 text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-2xl border border-slate-200/80 dark:border-white/5">
-          <span className="font-bold text-slate-700 dark:text-slate-200">Attendance Key:</span>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-              <span>Present</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-              <span>Absent</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-              <span>Holiday / Weekend</span>
-            </span>
-          </div>
+      {/* INSTITUTIONAL EVENT LEGEND */}
+      <div className="mb-4 flex items-center justify-between flex-wrap gap-2 text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-2xl border border-slate-200/80 dark:border-white/5">
+        <span className="font-bold text-slate-700 dark:text-slate-200">Institutional Event Legend:</span>
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+            <span>Holiday</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+            <span>Exam</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+            <span>Event / Function</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span>Academic Working Day</span>
+          </span>
         </div>
-      )}
+      </div>
 
       {/* CALENDAR DAYS OF WEEK HEADER */}
       <div className="grid grid-cols-7 gap-2 mb-2 text-center">
@@ -539,6 +556,41 @@ export default function SchoolCalendar({
                 </div>
               )}
 
+              {/* Day Events Section */}
+              {selectedDayDetails.dayEvents && selectedDayDetails.dayEvents.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Scheduled Institutional Events ({selectedDayDetails.dayEvents.length})
+                  </p>
+                  {selectedDayDetails.dayEvents.map((ev, i) => (
+                    <div
+                      key={ev.id || i}
+                      className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-cyan-800 dark:text-cyan-300">
+                          {ev.title}
+                        </span>
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400">
+                          {ev.event_type || ev.category || "Event"}
+                        </span>
+                      </div>
+                      {ev.time && (
+                        <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                          ⏰ {ev.time}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 text-center">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                    Regular academic schedule active. No special exams or functions scheduled.
+                  </p>
+                </div>
+              )}
+
               {activeMode === "teacher" && (
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex justify-between items-center text-xs">
@@ -581,7 +633,8 @@ export default function SchoolCalendar({
                 </div>
               )}
 
-              {activeMode === "student" && (
+              {/* Only show student personal attendance if user is a student */}
+              {resolvedRole === "student" && (
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-500 dark:text-slate-400">Student Scholar:</span>

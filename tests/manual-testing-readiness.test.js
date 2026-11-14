@@ -20,7 +20,7 @@ globalThis.window = {
 test("Role Access: All six school roles resolve to their intended dashboards", () => {
   const roles = [
     { name: "Principal", code: "PRIN-01", expectedRole: "PRIN", expectedRoute: "/principal/dashboard" },
-    { name: "Trustee/HOD", code: "HOD-01", expectedRole: "HOD", expectedRoute: "/trustee/dashboard" },
+    { name: "Trustee/HOD", code: "HOD-01", expectedRole: "HOD", expectedRoute: "/principal/dashboard" },
     { name: "Accountant", code: "ACC-01", expectedRole: "ACC", expectedRoute: "/accountant/dashboard" },
     { name: "Teacher", code: "TCH-01", expectedRole: "TCH", expectedRoute: "/teacher/dashboard" },
     { name: "Student", code: "STU-01", expectedRole: "STU", expectedRoute: "/student/dashboard" },
@@ -40,18 +40,12 @@ test("Screen Access: Routes in App.jsx protect and permit all 6 intended school 
 
   // Core administrative and operational routes
   assert.ok(appSrc.includes('path="/principal/dashboard"'), "Must have Principal dashboard");
-  assert.ok(appSrc.includes('path="/trustee/dashboard"'), "Must have Trustee dashboard");
   assert.ok(appSrc.includes('path="/accountant/dashboard"'), "Must have Accountant dashboard");
   assert.ok(appSrc.includes('path="/teacher/dashboard"'), "Must have Teacher dashboard");
   assert.ok(appSrc.includes('path="/student/dashboard"'), "Must have Student dashboard");
   assert.ok(appSrc.includes('path="/staff/dashboard"'), "Must have Staff dashboard");
 
-  // Modules
-  assert.ok(appSrc.includes('path="/admin/admissions"'), "Must have Admissions CRM");
-  assert.ok(appSrc.includes('path="/admin/classes"'), "Must have Classes Management");
-  assert.ok(appSrc.includes('path="/admin/timetable"'), "Must have Timetable Management");
-  assert.ok(appSrc.includes('path="/admin/reports"'), "Must have Reports");
-  assert.ok(appSrc.includes('path="/admin/analytics"'), "Must have Analytics");
+  // Operational active routes
   assert.ok(appSrc.includes('path="/teacher/attendance"'), "Must have Teacher Attendance");
   assert.ok(appSrc.includes('path="/teacher/class-tests"'), "Must have Class Tests");
   assert.ok(appSrc.includes('path="/accountant/payroll"'), "Must have Payroll");

@@ -128,24 +128,18 @@ export default function CampusPulseCard({ schoolCode, compact = false, className
         </div>
       </div>
 
-      {/* Upcoming 7-Day Event Radar */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-200">
-            7-Day Campus Radar
-          </span>
-          <span className="text-[11px] font-mono text-slate-400 dark:text-slate-400">
-            {upcomingEvents.length} special date{upcomingEvents.length === 1 ? "" : "s"} ahead
-          </span>
-        </div>
-
-        {upcomingEvents.length === 0 ? (
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-white/5 text-center">
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              ✨ No special holidays or exams in the next 7 days. Regular academic schedule active.
-            </p>
+      {/* Upcoming 7-Day Event Radar (conditionally hidden if empty) */}
+      {upcomingEvents.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-200">
+              7-Day Campus Radar
+            </span>
+            <span className="text-[11px] font-mono text-slate-400 dark:text-slate-400">
+              {upcomingEvents.length} special date{upcomingEvents.length === 1 ? "" : "s"} ahead
+            </span>
           </div>
-        ) : (
+
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {upcomingEvents.map((ev) => {
               const evCategoryColor =
@@ -182,8 +176,8 @@ export default function CampusPulseCard({ schoolCode, compact = false, className
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

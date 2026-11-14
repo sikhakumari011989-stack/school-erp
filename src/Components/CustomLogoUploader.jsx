@@ -40,59 +40,73 @@ export default function CustomLogoUploader({ schoolCode, onLogoUpdated }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
+    if (!file.type.match(/^image\/(png|jpe?g|webp|svg\+xml)$/i)) {
       showToast("Please select a valid image file (PNG, JPG, SVG, or WEBP).", "error");
       return;
     }
 
-    if (file.size > 3 * 1024 * 1024) {
-      showToast("Image size must be less than 3 MB.", "error");
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Image size must be less than 5 MB.", "error");
       return;
     }
 
     setLoading(true);
     const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result;
-      if (!base64) {
+    reader.onload = (event) => {
+      const rawResult = event.target?.result;
+      if (!rawResult) {
         showToast("Failed to process image.", "error");
         setLoading(false);
         return;
       }
 
-      try {
-        // Persist to both required keys
-        localStorage.setItem(`erp_logo_${activeCode}`, base64);
-        localStorage.setItem(`erp_school_logo_${activeCode}`, base64);
-        setPreview(base64);
+      // If SVG, can store directly or render
+      if (file.type.includes("svg")) {
+        saveLogo(rawResult);
+        return;
+      }
 
-        // Try Supabase cloud sync
-        try {
-          if (supabase) {
-            await supabase
-              .from("schools")
-              .update({ logo_url: base64 })
-              .eq("code", activeCode);
+      // HTML5 Canvas Compression (max 512x512, quality 0.85, <120KB)
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const maxDimension = 512;
+        let w = img.width;
+        let h = img.height;
+
+        if (w > maxDimension || h > maxDimension) {
+          if (w > h) {
+            h = Math.round((h * maxDimension) / w);
+            w = maxDimension;
+          } else {
+            w = Math.round((w * maxDimension) / h);
+            h = maxDimension;
           }
-        } catch (dbErr) {
-          console.warn("Supabase logo sync notice:", dbErr);
         }
 
-        // Dispatch real-time event
-        window.dispatchEvent(
-          new CustomEvent("erp-logo-updated", {
-            detail: { logoUrl: base64, schoolCode: activeCode },
-          })
-        );
+        canvas.width = w;
+        canvas.height = h;
+        ctx.drawImage(img, 0, 0, w, h);
 
-        showToast("Institution logo uploaded & applied across portal!", "success");
-        if (onLogoUpdated) onLogoUpdated(base64);
-      } catch (err) {
-        console.error("Logo save error:", err);
-        showToast("Failed to save logo.", "error");
-      } finally {
+        let quality = 0.85;
+        let compressed = canvas.toDataURL("image/png", quality);
+
+        // If compressed exceeds 120KB, compress as JPEG with reduced quality
+        if (compressed.length > 120 * 1024) {
+          compressed = canvas.toDataURL("image/jpeg", 0.8);
+        }
+        if (compressed.length > 120 * 1024) {
+          compressed = canvas.toDataURL("image/jpeg", 0.65);
+        }
+
+        saveLogo(compressed);
+      };
+      img.onerror = () => {
+        showToast("Failed to process image dimensions.", "error");
         setLoading(false);
-      }
+      };
+      img.src = rawResult;
     };
 
     reader.onerror = () => {
@@ -101,6 +115,44 @@ export default function CustomLogoUploader({ schoolCode, onLogoUpdated }) {
     };
 
     reader.readAsDataURL(file);
+  };
+
+  const saveLogo = async (base64) => {
+    try {
+      // Persist to both required keys
+      localStorage.setItem(`erp_logo_${activeCode}`, base64);
+      localStorage.setItem(`erp_school_logo_${activeCode}`, base64);
+      localStorage.setItem("erp_school_logo_default", base64);
+      setPreview(base64);
+
+      // Try Supabase cloud sync
+      try {
+        if (supabase) {
+          await supabase
+            .from("schools")
+            .update({ logo_url: base64 })
+            .eq("code", activeCode);
+        }
+      } catch (dbErr) {
+        console.warn("Supabase logo sync notice:", dbErr);
+      }
+
+      // Dispatch real-time event
+      window.dispatchEvent(
+        new CustomEvent("erp-logo-updated", {
+          detail: { logoUrl: base64, schoolCode: activeCode },
+        })
+      );
+      window.dispatchEvent(new Event("storage"));
+
+      showToast("Institution logo uploaded & applied across portal!", "success");
+      if (onLogoUpdated) onLogoUpdated(base64);
+    } catch (err) {
+      console.error("Logo save error:", err);
+      showToast("Failed to save logo.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResetDefault = async () => {
@@ -139,7 +191,7 @@ export default function CustomLogoUploader({ schoolCode, onLogoUpdated }) {
             <span>🎨</span> Custom Institutional Branding & Crest
           </h3>
           <p className="text-xs text-slate-400">
-            Active Node: <span className="font-mono text-emerald-400 font-bold">{activeCode}</span> &bull; Replaces default logos across headers, login & ID cards
+            Institution Code: <span className="font-mono text-emerald-400 font-bold">{activeCode}</span> &bull; Replaces default logos across headers, login & ID cards
           </p>
         </div>
         {preview && (
@@ -180,7 +232,7 @@ export default function CustomLogoUploader({ schoolCode, onLogoUpdated }) {
               <span>{loading ? "Processing..." : "Upload New Crest"}</span>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/png, image/jpeg, image/jpg, image/webp, image/svg+xml"
                 className="hidden"
                 disabled={loading}
                 onChange={handleFileChange}

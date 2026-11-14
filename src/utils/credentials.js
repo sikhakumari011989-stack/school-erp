@@ -130,8 +130,7 @@ export function dashboardFor(role) {
   const canonical = normalizeRole(role);
   if (canonical === "MASTER_OWNER") return "/master-setup";
   if (canonical === "ACC") return "/accountant/dashboard";
-  if (canonical === "PRIN") return "/principal/dashboard";
-  if (canonical === "HOD") return "/trustee/dashboard";
+  if (canonical === "PRIN" || canonical === "HOD") return "/principal/dashboard";
   if (canonical === "TCH") return "/teacher/dashboard";
   if (canonical === "NTS") return "/staff/dashboard";
   return "/student/dashboard";

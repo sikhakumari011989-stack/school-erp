@@ -12,7 +12,6 @@ import Login, { dashboardFor, inferRoleFromCode, normalizeRole } from "./pages/L
 const SuperAdminDashboard = React.lazy(() => import("./pages/SuperAdminDashboard"));
 const PrincipalDashboard = React.lazy(() => import("./pages/PrincipalDashboard"));
 const AccountantDashboard = React.lazy(() => import("./pages/AccountantDashboard"));
-const TrusteeDashboard = React.lazy(() => import("./pages/TrusteeDashboard"));
 const StaffDashboard = React.lazy(() => import("./pages/StaffDashboard"));
 const AcademicCalendar = React.lazy(() => import("./pages/AcademicCalendar"));
 
@@ -20,7 +19,6 @@ const TeacherDashboard = React.lazy(() => import("./pages/TeacherDashboard"));
 const TeacherHomework = React.lazy(() => import("./pages/TeacherHomework"));
 const TeacherAttendance = React.lazy(() => import("./pages/TeacherAttendance"));
 const TeacherClasses = React.lazy(() => import("./pages/TeacherClasses"));
-const TeacherAnalytics = React.lazy(() => import("./pages/TeacherAnalytics"));
 const TeacherPlanner = React.lazy(() => import("./pages/TeacherPlanner"));
 const TeacherClassTests = React.lazy(() => import("./pages/TeacherClassTests"));
 
@@ -42,7 +40,6 @@ const ContactUs = React.lazy(() => import("./pages/ContactUs"));
 const SystemDiagnosticPage = React.lazy(() => import("./pages/SystemDiagnosticPage"));
 const MasterSchoolSetup = React.lazy(() => import("./pages/MasterSchoolSetup"));
 
-const AdmissionsCRM = React.lazy(() => import("./pages/AdmissionsCRM"));
 const DocumentIntelligence = React.lazy(() => import("./pages/DocumentIntelligence"));
 const TransportManager = React.lazy(() => import("./pages/TransportManager"));
 const AccreditationCenter = React.lazy(() => import("./pages/AccreditationCenter"));
@@ -55,12 +52,9 @@ const PayrollManager = React.lazy(() => import("./pages/PayrollManager"));
 const BroadcastManager = React.lazy(() => import("./pages/BroadcastManager"));
 const StaffMessenger = React.lazy(() => import("./pages/StaffMessenger"));
 const ExpenseManagerPage = React.lazy(() => import("./pages/ExpenseManager"));
-const Reports = React.lazy(() => import("./pages/Reports"));
-const Analytics = React.lazy(() => import("./pages/Analytics"));
-const Classes = React.lazy(() => import("./pages/Classes"));
-const TimeTable = React.lazy(() => import("./pages/TimeTable"));
 const QaWorkbench = React.lazy(() => import("./pages/QaWorkbench"));
 const LeaveManagement = React.lazy(() => import("./pages/LeaveManagement"));
+const StaffLeaves = React.lazy(() => import("./pages/StaffLeaves"));
 import OfflineBanner from "./Components/OfflineBanner";
 import ErrorBoundary from "./Components/ErrorBoundary";
 import CommandPalette from "./Components/CommandPalette";
@@ -268,14 +262,6 @@ export default function App() {
               }
             />
             <Route
-              path="/admin/admissions"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant", "staff"]}>
-                  <AdmissionsCRM />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/admin/documents"
               element={
                 <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant", "staff", "teacher"]}>
@@ -323,52 +309,8 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/admin/reports"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "accountant"]}>
-                  <Reports />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/analytics"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "trustee", "principal"]}>
-                  <Analytics />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/reports" element={<Navigate to="/admin/reports" replace />} />
-            <Route path="/analytics" element={<Navigate to="/admin/analytics" replace />} />
-            <Route
-              path="/admin/classes"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "teacher"]}>
-                  <Classes />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/timetable"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "trustee", "principal", "teacher"]}>
-                  <TimeTable />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/classes" element={<Navigate to="/admin/classes" replace />} />
-            <Route path="/timetable" element={<Navigate to="/admin/timetable" replace />} />
-
-            {/* HOD & PRINCIPAL / TRUSTEE SUITE */}
-            <Route
-              path="/trustee/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={["trustee", "principal", "admin"]}>
-                  <TrusteeDashboard />
-                </ProtectedRoute>
-              }
-            />
+            {/* HOD & PRINCIPAL / TRUSTEE SUITE - UNIFIED EXECUTIVE COMMAND */}
+            <Route path="/trustee/dashboard" element={<Navigate to="/principal/dashboard" replace />} />
             <Route
               path="/principal/dashboard"
               element={
@@ -378,10 +320,10 @@ export default function App() {
               }
             />
             {/* Direct Dashboard Aliases for Compatibility */}
-            <Route path="/hod/dashboard" element={<Navigate to="/trustee/dashboard" replace />} />
-            <Route path="/hod-dashboard" element={<Navigate to="/trustee/dashboard" replace />} />
+            <Route path="/hod/dashboard" element={<Navigate to="/principal/dashboard" replace />} />
+            <Route path="/hod-dashboard" element={<Navigate to="/principal/dashboard" replace />} />
             <Route path="/principal-dashboard" element={<Navigate to="/principal/dashboard" replace />} />
-            <Route path="/trustee-dashboard" element={<Navigate to="/trustee/dashboard" replace />} />
+            <Route path="/trustee-dashboard" element={<Navigate to="/principal/dashboard" replace />} />
             <Route path="/accountant-dashboard" element={<Navigate to="/accountant/dashboard" replace />} />
             <Route path="/teacher-dashboard" element={<Navigate to="/teacher/dashboard" replace />} />
             <Route path="/student-dashboard" element={<Navigate to="/student/dashboard" replace />} />
@@ -444,7 +386,7 @@ export default function App() {
             <Route
               path="/teacher/attendance"
               element={
-                <ProtectedRoute allowedRoles={["teacher", "admin", "principal", "trustee", "staff"]}>
+                <ProtectedRoute allowedRoles={["teacher", "admin", "principal", "trustee"]}>
                   <TeacherAttendance />
                 </ProtectedRoute>
               }
@@ -452,16 +394,8 @@ export default function App() {
             <Route
               path="/teacher/classes"
               element={
-                <ProtectedRoute allowedRoles={["teacher", "admin", "principal", "trustee"]}>
+                <ProtectedRoute allowedRoles={["admin", "principal", "trustee"]}>
                   <TeacherClasses />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/teacher/analytics"
-              element={
-                <ProtectedRoute allowedRoles={["teacher", "admin", "principal", "trustee"]}>
-                  <TeacherAnalytics />
                 </ProtectedRoute>
               }
             />
@@ -509,7 +443,7 @@ export default function App() {
               path="/staff/leave"
               element={
                 <ProtectedRoute allowedRoles={["staff", "admin", "teacher", "trustee", "principal"]}>
-                  <LeaveManagement />
+                  <StaffLeaves />
                 </ProtectedRoute>
               }
             />

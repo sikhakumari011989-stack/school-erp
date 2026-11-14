@@ -51,7 +51,7 @@ export default function PrivacyPolicy() {
           </p>
           <div className="mt-4 flex flex-wrap gap-2 items-center text-xs text-slate-300 bg-slate-900/60 border border-slate-800 rounded-xl p-3">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>256-Bit SSL Encryption &bull; PCI-DSS Level 1 Razorpay Security &bull; PostgreSQL RLS Vault</span>
+            <span>256-Bit SSL Encryption &bull; PCI-DSS Level 1 Banking Security &bull; PostgreSQL RLS Vault</span>
           </div>
         </div>
 
@@ -88,7 +88,7 @@ export default function PrivacyPolicy() {
                   <EyeOff className="w-4 h-4 text-emerald-400" /> Financial & Transaction Metadata
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Razorpay payment order IDs, transaction timestamps, payment modes (UPI / Card), fee ledger amounts, and digital
+                  Banking payment order IDs, transaction timestamps, payment modes (UPI / Card), fee ledger amounts, and digital
                   invoice numbers. We <strong>never</strong> store sensitive credit card CVVs, PINs, or net banking passwords.
                 </p>
               </div>
@@ -97,12 +97,12 @@ export default function PrivacyPolicy() {
 
           <section>
             <h2 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-              <span className="text-purple-400">3.</span> How We Process Payment Data (Razorpay PCI-DSS)
+              <span className="text-purple-400">3.</span> How We Process Payment Data (PCI-DSS Level 1)
             </h2>
             <p>
               All online fee checkouts and institutional SaaS subscription billings are mediated directly by{" "}
-              <strong>Razorpay</strong>, which holds <strong>PCI-DSS Level 1 Certification</strong> (the highest international
-              security standard for payment processors). Payment data is submitted directly to Razorpay through secure tokenized
+              <strong>PCI-DSS Certified Payment Partners</strong>, which hold <strong>PCI-DSS Level 1 Certification</strong> (the highest international
+              security standard for payment processors). Payment data is submitted directly to accredited banking aggregators through secure tokenized
               iframes and encrypted API endpoints.
             </p>
           </section>
@@ -120,11 +120,11 @@ export default function PrivacyPolicy() {
 
           <section>
             <h2 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-              <span className="text-purple-400">5.</span> Automated Notifications (SMS & WhatsApp)
+              <span className="text-purple-400">5.</span> Automated Notifications (SMS & In-App Alerts)
             </h2>
             <p>
               Institutional administrators and teachers may trigger automated notifications (e.g. &quot;Student Absent Alert&quot; or &quot;Fee Payment Receipt&quot;)
-              dispatched via enterprise communication providers (such as Twilio and Wati). These dispatches occur strictly to guardian phone
+              dispatched via enterprise communication providers and internal notification relays. These dispatches occur strictly to guardian phone
               numbers pre-registered by the institution and solely for legitimate institutional communication.
             </p>
           </section>

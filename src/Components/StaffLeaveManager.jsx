@@ -357,7 +357,7 @@ export default function StaffLeaveManager({ schoolId: propSchoolId }) {
         <div className="p-6 border-b border-slate-700/60 bg-slate-800/40 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h3 className="text-lg font-bold text-white">Pending & Verified Leave Applications</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Campus Node: {schoolId}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Institution Code: {schoolId}</p>
           </div>
 
           <div className="flex items-center gap-2">

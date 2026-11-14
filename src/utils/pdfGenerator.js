@@ -131,9 +131,13 @@ export function generateFeeInvoicePDF({
   const invoiceNo = payment.invoiceNo || `INV-${Date.now().toString().slice(-6)}`;
   const dateStr = payment.date || new Date().toLocaleDateString("en-IN");
   const amount = Number(payment.amount || 15000);
-  const paymentMethod = payment.payment_mode || "Online (Razorpay 256-Bit SSL)";
-  const transactionId = payment.transactionId || `RZP_${Date.now().toString(36).toUpperCase()}`;
+  const paymentMethod = payment.payment_mode || "Online (UPI / NetBanking)";
+  const transactionId = payment.transactionId || `TXN_${Date.now().toString(36).toUpperCase()}`;
   const feeTitle = payment.title || "Tuition & Academic Development Fee";
+
+  const formattedAmount = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+  const formatted85 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount * 0.85);
+  const formatted15 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount * 0.15);
 
   // --- BRANDED HEADER BACKGROUND ---
   doc.setFillColor(15, 23, 42); // Slate 900
@@ -220,14 +224,14 @@ export function generateFeeInvoicePDF({
       feeTitle,
       "SAC 999293",
       "Term II",
-      `Rs. ${(amount * 0.85).toFixed(2)}`,
+      `Rs. ${formatted85}`,
     ],
     [
       "2",
       "Laboratory, Library & Infrastructure Fund",
       "SAC 999294",
       "Annual",
-      `Rs. ${(amount * 0.15).toFixed(2)}`,
+      `Rs. ${formatted15}`,
     ],
   ];
 
@@ -273,7 +277,7 @@ export function generateFeeInvoicePDF({
   doc.text("Total Paid:", 125, finalY + 14);
   doc.setFontSize(13);
   doc.setTextColor(16, 185, 129); // Emerald 500
-  doc.text(`Rs. ${amount.toLocaleString("en-IN")}.00`, 190, finalY + 15, { align: "right" });
+  doc.text(`Rs. ${formattedAmount}`, 190, finalY + 15, { align: "right" });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
@@ -290,15 +294,46 @@ export function generateFeeInvoicePDF({
     size: 24,
   });
 
-  // CONTROLLER SIGNATURE
+  // OFFICIAL INSTITUTIONAL SEAL (DASHED BOX FOR PHYSICAL STAMPING)
+  doc.setDrawColor(148, 163, 184);
+  doc.setLineDashPattern([2, 2], 0);
+  doc.roundedRect(65, finalY + 36, 48, 28, 2, 2);
+  doc.setLineDashPattern([], 0);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(148, 163, 184);
+  doc.text("OFFICIAL INSTITUTIONAL SEAL", 89, finalY + 48, { align: "center" });
+  doc.setFontSize(6);
+  doc.setFont("helvetica", "normal");
+  doc.text("(Affix Physical Stamp Here)", 89, finalY + 53, { align: "center" });
+
+  // CONTROLLER SIGNATURE & DIGITAL SIGNATURE
+  const digitalSig =
+    payment.digitalSignature ||
+    safeStorage.getItem(`erp_digital_signature_${institutionCode}`) ||
+    safeStorage.getItem("erp_digital_signature_default") ||
+    null;
+
+  if (digitalSig && typeof digitalSig === "string" && digitalSig.startsWith("data:image")) {
+    try {
+      doc.addImage(digitalSig, "PNG", 145, finalY + 40, 36, 14);
+    } catch {}
+  }
+
+  // Physical Signature Line
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(148, 163, 184);
+  doc.text("___________________________", 145, finalY + 58);
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(15, 23, 42);
-  doc.text("Authorized Finance Officer", 155, finalY + 62);
+  doc.text("Authorized Finance Officer", 155, finalY + 63);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text("Bursar & Accounts Office", 155, finalY + 67);
+  doc.text("Bursar & Accounts Office", 155, finalY + 68);
 
   // FOOTER
   doc.setFontSize(6.5);
@@ -310,13 +345,14 @@ export function generateFeeInvoicePDF({
     { align: "center" }
   );
   doc.text(
-    "This is a computer-generated tax invoice and legal receipt. No manual signature required.",
+    "This is a computer-generated tax invoice and legal receipt. Official Institutional Record.",
     105,
     286,
     { align: "center" }
   );
 
-  doc.save(`${institutionCode}_Invoice_${invoiceNo}.pdf`);
+  const shortHash = Math.random().toString(36).substring(2, 6).toUpperCase();
+  doc.save(`${institutionCode}_FeeReceipt_${studentRoll}_${shortHash}.pdf`);
   return doc;
 }
 
@@ -412,26 +448,49 @@ export function generateReportCardPDF({
     ["5", "English Literature", "100", "89", "A", "Thoughtful Literary Analysis"],
   ];
 
+  let totalMarks = 0;
+  let totalMax = 0;
+
   const bodyData = grades && grades.length > 0
     ? grades.map((g, idx) => {
-        if (Array.isArray(g)) return g;
+        if (Array.isArray(g)) {
+          const max = Number(g[2]) || 100;
+          const obt = Number(g[3]) || 0;
+          totalMax += max;
+          totalMarks += obt;
+          return g;
+        }
+        let maxVal = 100;
+        let obtVal = 0;
+        if (typeof g.marks === "string" && g.marks.includes("/")) {
+          const parts = g.marks.split("/");
+          obtVal = Number(parts[0]) || 0;
+          maxVal = Number(parts[1]) || 100;
+        } else {
+          obtVal = Number(g.marksObtained ?? g.marks ?? 0) || 0;
+          maxVal = Number(g.maxMarks || 100) || 100;
+        }
+        totalMax += maxVal;
+        totalMarks += obtVal;
+
         return [
           String(idx + 1),
           g.subject || `Curriculum Unit ${idx + 1}`,
-          String(g.maxMarks || 100),
-          String(g.marksObtained ?? g.marks ?? 0),
-          g.grade || "A",
-          g.remarks || (Number(g.marksObtained ?? g.marks ?? 0) >= 80 ? "Exemplary Analytical Capability" : "Satisfactory Concept Evaluation"),
+          String(maxVal),
+          String(obtVal),
+          g.grade || (obtVal >= 90 ? "A+" : obtVal >= 80 ? "A" : obtVal >= 70 ? "B" : "C"),
+          g.remarks || (obtVal >= 80 ? "Exemplary Analytical Capability" : "Satisfactory Concept Evaluation"),
         ];
       })
     : defaultGrades;
 
-  let totalMarks = 0;
-  let totalMax = 0;
-  bodyData.forEach((row) => {
-    totalMax += Number(row[2]) || 100;
-    totalMarks += Number(row[3]) || 0;
-  });
+  if (bodyData === defaultGrades) {
+    defaultGrades.forEach((row) => {
+      totalMax += Number(row[2]) || 100;
+      totalMarks += Number(row[3]) || 0;
+    });
+  }
+
   const computedPct = totalMax > 0 ? ((totalMarks / totalMax) * 100).toFixed(1) : "92.4";
   const computedCgpa = (Number(computedPct) / 10).toFixed(1);
 
@@ -453,11 +512,11 @@ export function generateReportCardPDF({
     },
     columnStyles: {
       0: { cellWidth: 10, halign: "center" },
-      1: { cellWidth: 55 },
+      1: { cellWidth: 50 },
       2: { cellWidth: 18, halign: "center" },
-      3: { cellWidth: 20, halign: "center" },
+      3: { cellWidth: 26, halign: "center" }, // Guaranteed single-line 'Obtained' header
       4: { cellWidth: 18, halign: "center" },
-      5: { cellWidth: 61 },
+      5: { cellWidth: 60 },
     },
   });
 
@@ -482,6 +541,19 @@ export function generateReportCardPDF({
     size: 22,
   });
 
+  // OFFICIAL INSTITUTIONAL SEAL (DASHED BOX FOR PHYSICAL STAMPING)
+  doc.setDrawColor(148, 163, 184);
+  doc.setLineDashPattern([2, 2], 0);
+  doc.roundedRect(68, finalY + 32, 48, 28, 2, 2);
+  doc.setLineDashPattern([], 0);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(148, 163, 184);
+  doc.text("OFFICIAL INSTITUTIONAL SEAL", 92, finalY + 44, { align: "center" });
+  doc.setFontSize(6);
+  doc.setFont("helvetica", "normal");
+  doc.text("(Affix Physical Stamp Here)", 92, finalY + 49, { align: "center" });
+
   // DIGITAL AUTHENTICATION STAMP
   doc.setDrawColor(168, 85, 247); // Purple 500
   doc.setFillColor(250, 245, 255);
@@ -496,26 +568,44 @@ export function generateReportCardPDF({
   doc.text("Digitally Certified Academic Record", 164, finalY + 45, { align: "center" });
   doc.text(`Seal: ${institutionCode}-ACAD-VERIFIED`, 164, finalY + 51, { align: "center" });
 
-  // SIGNATURES
-  doc.setTextColor(15, 23, 42);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text("Head of Department / Teacher", 20, finalY + 68);
+  // SIGNATURES (PHYSICAL LINES & DIGITAL SIGNATURES)
+  const reportDigitalSig =
+    safeStorage.getItem(`erp_digital_signature_${institutionCode}`) ||
+    safeStorage.getItem("erp_digital_signature_default") ||
+    null;
+
+  if (reportDigitalSig && typeof reportDigitalSig === "string" && reportDigitalSig.startsWith("data:image")) {
+    try {
+      doc.addImage(reportDigitalSig, "PNG", 135, finalY + 52, 36, 12);
+    } catch {}
+  }
+
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
-  doc.text("Faculty Academic Board", 20, finalY + 73);
+  doc.setFontSize(9);
+  doc.setTextColor(148, 163, 184);
+  doc.text("___________________________", 20, finalY + 64);
+  doc.text("___________________________", 135, finalY + 64);
 
   doc.setTextColor(15, 23, 42);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("Principal / Controller of Exams", 135, finalY + 68);
+  doc.text("Head of Department / Teacher", 20, finalY + 70);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text("Institutional Academic Council", 135, finalY + 73);
+  doc.text("Faculty Academic Board", 20, finalY + 75);
 
-  doc.save(`${institutionCode}_ReportCard_${studentRoll}.pdf`);
+  doc.setTextColor(15, 23, 42);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("Principal / Controller of Exams", 135, finalY + 70);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text("Institutional Academic Council", 135, finalY + 75);
+
+  const reportHash = Math.random().toString(36).substring(2, 6).toUpperCase();
+  doc.save(`${institutionCode}_ReportCard_${studentRoll}_${reportHash}.pdf`);
   return doc;
 }
 
@@ -745,9 +835,9 @@ export function generatePayslipPDF({
     staff.id ||
     "EMP-01"
   ).toUpperCase();
-  const staffRole = (staff.role || "Faculty / Staff").toUpperCase();
+  const staffRole = (staff.role || "Staff Member").toUpperCase();
   const staffDept = staff.department || (staffRole === "TEACHER" ? "Academics" : "Administration & Operations");
-  const staffPhone = staff.phone || "+91 95183 88499";
+  const staffPhone = staff.phone || "N/A";
   const bankAccount = staff.bankAccount || `HDFC Bank - •••• ${(Math.abs(staffId.split("").reduce((acc, c) => acc + c.charCodeAt(0), 1000)) % 9000 + 1000)}`;
   const pfNumber = staff.pfNumber || `MH/PUN/00${institutionCode.slice(-4)}/${staffId}`;
   const panNumber = staff.pan || `ABCDE${Math.abs(staffId.split("").reduce((acc, c) => acc * 31 + c.charCodeAt(0), 1234)) % 9000 + 1000}F`;

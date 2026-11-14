@@ -183,7 +183,7 @@ export default function RiskRadarWidget({ className = "" }) {
     setSendingId(student.id);
 
     try {
-      // Simulate WhatsApp / SMS gateway dispatch
+      // Simulate notification gateway dispatch
       await new Promise((resolve) => setTimeout(resolve, 600));
 
       setNotifiedStudents((prev) => ({
@@ -192,7 +192,7 @@ export default function RiskRadarWidget({ className = "" }) {
       }));
 
       showToast(
-        `Smart Advisory dispatched to ${student.name}'s guardian via school WhatsApp Gateway!`,
+        `Smart Advisory dispatched to ${student.name}'s guardian via school Notification Gateway!`,
         "success"
       );
     } catch {

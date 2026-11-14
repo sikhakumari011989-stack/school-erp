@@ -62,14 +62,14 @@ export default function TeacherAttendance() {
       });
     });
     showToast(
-      `Dispatched ${absentList.length} official absentee notices via school WhatsApp gateway!`,
+      `Dispatched ${absentList.length} official absentee notices via school notification gateway!`,
       "success"
     );
   };
 
   const handleUndoAbsenteeDispatch = () => {
     setAbsenteeQueue(null);
-    showToast("Absentee WhatsApp dispatch aborted! Attendance marks remain recorded in register.", "info");
+    showToast("Absentee notice dispatch aborted! Attendance marks remain recorded in register.", "info");
   };
 
   const handleForceSendAbsentee = () => {
@@ -527,7 +527,7 @@ export default function TeacherAttendance() {
                   </span>
                 </p>
                 <p className="text-xs text-rose-200/90 mt-1">
-                  Official WhatsApp & SMS alert will automatically dispatch in{" "}
+                  Official SMS & parent notification alert will automatically dispatch in{" "}
                   <span className="font-mono font-black text-white text-sm bg-black/60 px-2.5 py-0.5 rounded-lg border border-rose-400/80 inline-block">
                     {countdown}s
                   </span>

@@ -164,19 +164,24 @@ export default function PayrollManager() {
   };
 
   // Helper to get staff salary package
-  const getStaffSalaryPackage = (staffId) => {
+  const getStaffSalaryPackage = (staffId, staffMember = null) => {
     if (salaryStructures[staffId]) {
       return salaryStructures[staffId];
     }
-    // Default package
+    const target = staffMember || staffList.find((s) => (s.role_code || s.roll_number || s.id) === staffId);
+    let base = 35000;
+    if (target?.salary) {
+      const parsed = parseInt(String(target.salary).replace(/[^0-9]/g, ""), 10);
+      if (!isNaN(parsed) && parsed > 0) base = parsed;
+    }
     return {
-      basic: 35000,
-      hra: 10500,
-      da: 3500,
+      basic: base,
+      hra: Math.round(base * 0.3),
+      da: Math.round(base * 0.1),
       special: 3000,
-      pf: 1800,
+      pf: Math.round(base * 0.05),
       professionalTax: 200,
-      tds: 1500,
+      tds: Math.round(base * 0.04),
       leaveDeduction: 0,
     };
   };
@@ -278,11 +283,13 @@ export default function PayrollManager() {
     }, 600);
   };
 
-  // Download PDF Payslip
+  // Download PDF Payslip (Batch 2 Item 23 - Exact staff credentials without hardcoded dummy fallbacks)
   const handleDownloadPayslip = (staff, payrollRecord) => {
     try {
-      const id = staff.role_code || staff.roll_number || staff.id;
-      const salary = payrollRecord || getStaffSalaryPackage(id);
+      const id = staff.role_code || staff.roll_number || staff.personal_code || staff.id;
+      const salary = payrollRecord || getStaffSalaryPackage(id, staff);
+      const exactName = staff.name || staff.full_name || staff.fullName || "Staff Member";
+      const exactRole = staff.role || staff.category || (staff.department ? `${staff.department} Personnel` : "Staff");
 
       generatePayslipPDF({
         tenant: {
@@ -294,6 +301,10 @@ export default function PayrollManager() {
         },
         staff: {
           ...staff,
+          name: exactName,
+          role: exactRole,
+          department: staff.department || staff.category || (exactRole === "TEACHER" ? "Academics" : "Campus Operations"),
+          phone: staff.phone || "",
           id,
         },
         payroll: {
@@ -304,7 +315,7 @@ export default function PayrollManager() {
         monthYear: currentPayPeriod,
       });
 
-      showToast(`📄 Downloaded official payslip for ${staff.name || id}`, "success");
+      showToast(`📄 Downloaded official payslip for ${exactName} (${id})`, "success");
     } catch (e) {
       console.error("Payslip PDF error:", e);
       showToast("Could not generate payslip PDF. Please check data.", "error");

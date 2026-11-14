@@ -1251,7 +1251,7 @@ export default function ComprehensiveMemberModal({
               <div>
                 <div className="flex justify-between items-center mb-1.5 ml-1">
                   <label className="text-[11px] font-extrabold text-slate-300 uppercase tracking-wider">
-                    Custom Roll ID / Code *
+                    Student Roll / Admission ID
                   </label>
                   <button
                     type="button"

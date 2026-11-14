@@ -193,10 +193,12 @@ export default function TeacherHomework() {
     try {
       const schoolUuid = await resolveSchoolUuid(activeSchool);
 
+      const validTeacherId = user?.id && user.id.length === 36 ? user.id : null;
+
       const payload = {
         school_id: schoolUuid,
         class_id: formData.class_id,
-        teacher_id: user?.id && user.id.length === 36 ? user.id : null,
+        teacher_id: validTeacherId,
         title: formData.title.trim(),
         subject: formData.subject.trim(),
         description: formData.description.trim(),
@@ -206,7 +208,6 @@ export default function TeacherHomework() {
       if (supabase) {
         const { error: hwErr } = await supabase.from("homework").insert([payload]);
         if (hwErr) {
-          console.error("DB homework insert error:", hwErr);
           throw hwErr;
         }
       }

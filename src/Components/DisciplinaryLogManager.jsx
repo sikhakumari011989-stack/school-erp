@@ -132,7 +132,7 @@ export default function DisciplinaryLogManager({ schoolId: propSchoolId }) {
         <div className="p-6 border-b border-slate-700/60 bg-slate-800/40 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h3 className="text-lg font-bold text-white">Student Behavioral Record Dossier</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Campus Node: {schoolId}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Institution Code: {schoolId}</p>
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-1">

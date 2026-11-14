@@ -120,7 +120,7 @@ export default function StaffEvaluationManager({ schoolId: propSchoolId }) {
         <div className="p-6 border-b border-slate-700/60 bg-slate-800/40 flex justify-between items-center">
           <div>
             <h3 className="text-lg font-bold text-white">Faculty Syllabus Progress Roster</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Campus Node: {schoolId}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Institution Code: {schoolId}</p>
           </div>
           <span className="text-xs bg-slate-900 border border-slate-700 text-violet-300 font-bold px-3 py-1 rounded-full">
             {evaluations.length} Evaluations

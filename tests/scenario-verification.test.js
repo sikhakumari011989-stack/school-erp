@@ -14,7 +14,7 @@ test("Scenario 1: Login as HOD of active school -> lands on HOD dashboard with r
   const role = normalizeRole(personalCode, personalCode);
   assert.strictEqual(role, "HOD", "HOD-01 must normalize to canonical HOD");
   const targetDashboard = dashboardFor(role);
-  assert.strictEqual(targetDashboard, "/trustee/dashboard", "HOD target dashboard must be /trustee/dashboard");
+  assert.strictEqual(targetDashboard, "/principal/dashboard", "HOD target dashboard must be /principal/dashboard");
 
   // 2. Active school subscription evaluation from live Supabase
   const subStatus = await checkSchoolSubscriptionStatus(schoolCode);
@@ -33,9 +33,8 @@ test("Scenario 1: Login as HOD of active school -> lands on HOD dashboard with r
 
   // 4. Verify alias routes in App.jsx
   const appSrc = fs.readFileSync("src/App.jsx", "utf8");
-  assert.ok(appSrc.includes('path="/hod/dashboard" element={<Navigate to="/trustee/dashboard" replace />}'), "Must have /hod/dashboard alias");
-  assert.ok(appSrc.includes('path="/hod-dashboard" element={<Navigate to="/trustee/dashboard" replace />}'), "Must have /hod-dashboard alias");
-  assert.ok(appSrc.includes('path="/trustee/dashboard"'), "Must have /trustee/dashboard route");
+  assert.ok(appSrc.includes('path="/hod/dashboard" element={<Navigate to="/principal/dashboard" replace />}'), "Must have /hod/dashboard alias");
+  assert.ok(appSrc.includes('path="/trustee/dashboard" element={<Navigate to="/principal/dashboard" replace />}'), "Must redirect /trustee/dashboard to /principal/dashboard");
 });
 
 test("Scenario 2: Login as any role of suspended school -> sees full-screen suspension notice with exact text, zero console errors, data safe", async (t) => {
@@ -54,7 +53,7 @@ test("Scenario 2: Login as any role of suspended school -> sees full-screen susp
     "Must include exact primary notice text"
   );
   assert.ok(
-    barrierSrc.includes("100% of data preserved in Supabase PostgreSQL — zero data loss. Reactivation restores full access."),
+    barrierSrc.includes("100% of data preserved in secure cloud database — zero data loss. Reactivation restores full access."),
     "Must include exact data preservation reassurance text"
   );
   assert.ok(

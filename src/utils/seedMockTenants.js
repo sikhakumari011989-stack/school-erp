@@ -341,7 +341,7 @@ export const SCHOOL_A_FEES = [
     amount: 25000.0,
     status: "pending",
     date: "2026-03-04",
-    payment_mode: "Razorpay Netbanking",
+    payment_mode: "Bank Netbanking",
     invoice_no: "INV-SCHA-004",
   },
   // STU-05: ₹25,000.00 Paid
@@ -387,7 +387,7 @@ export const SCHOOL_A_FEES = [
     amount: 1200.0,
     status: "paid",
     date: "2026-03-07",
-    payment_mode: "Razorpay Card",
+    payment_mode: "Online Card",
     invoice_no: "INV-SCHA-007",
     utr: "PAY_NW1200CARD",
   },

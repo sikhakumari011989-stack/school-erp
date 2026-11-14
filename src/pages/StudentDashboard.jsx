@@ -70,13 +70,6 @@ export default function StudentDashboard() {
     percentile: "N/A",
   });
 
-  // Pomodoro Timer State
-  const [pomoMode, setPomoMode] = useState("focus"); // 'focus' | 'break'
-  const [pomoTimeLeft, setPomoTimeLeft] = useState(25 * 60);
-  const [pomoIsRunning, setPomoIsRunning] = useState(false);
-  const [pomoSessionsCompleted, setPomoSessionsCompleted] = useState(0);
-  const timerRef = useRef(null);
-
   // Live data sync
   useEffect(() => {
     let isMounted = true;
@@ -246,53 +239,6 @@ export default function StudentDashboard() {
       window.removeEventListener("erp-fee-structure-updated", fetchLiveStudentData);
     };
   }, [schoolId]);
-
-  // Pomodoro Interval Effect
-  useEffect(() => {
-    if (pomoIsRunning) {
-      timerRef.current = setInterval(() => {
-        setPomoTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            setPomoIsRunning(false);
-            if (pomoMode === "focus") {
-              setPomoSessionsCompleted((s) => s + 1);
-              showToast("🎯 Deep Focus session complete! Take a 5-minute breather.", "success");
-              setPomoMode("break");
-              return 5 * 60;
-            } else {
-              showToast("⚡ Rest period concluded! Ready to focus again?", "info");
-              setPomoMode("focus");
-              return 25 * 60;
-            }
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [pomoIsRunning, pomoMode, showToast]);
-
-  const handleToggleTimer = () => {
-    setPomoIsRunning(!pomoIsRunning);
-  };
-
-  const handleResetTimer = (mode = pomoMode) => {
-    setPomoIsRunning(false);
-    setPomoMode(mode);
-    setPomoTimeLeft(mode === "focus" ? 25 * 60 : 5 * 60);
-  };
-
-  const formatPomoTime = (secs) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  };
 
   // Official PDF Transcript Download
   const handleDownloadTranscript = () => {
@@ -714,83 +660,13 @@ export default function StudentDashboard() {
             </button>
           </div>
 
-          {/* BENTO CARD 5: DEEP FOCUS POMODORO TIMER */}
-          <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 hover:border-cyan-500/40 transition-all duration-200 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-xl">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl">⏱️</span>
-                <div>
-                  <h3 className="text-sm font-black text-slate-100 uppercase tracking-wider">Deep Focus Pomodoro</h3>
-                  <p className="text-[11px] text-slate-400">Cognitive Study Rhythm</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-[10px] font-bold">
-                <button
-                  onClick={() => handleResetTimer("focus")}
-                  className={`px-2 py-0.5 rounded-lg transition-all cursor-pointer ${
-                    pomoMode === "focus" ? "bg-cyan-500 text-slate-950 font-black" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  25m Focus
-                </button>
-                <button
-                  onClick={() => handleResetTimer("break")}
-                  className={`px-2 py-0.5 rounded-lg transition-all cursor-pointer ${
-                    pomoMode === "break" ? "bg-purple-500 text-white font-black" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  5m Break
-                </button>
-              </div>
-            </div>
-
-            <div className="text-center py-3">
-              <div className="inline-block p-4 rounded-2xl bg-slate-950/80 border border-cyan-500/30 shadow-xl">
-                <span className="font-mono text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-white to-blue-300 tracking-wider">
-                  {formatPomoTime(pomoTimeLeft)}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-2">
-                {pomoIsRunning
-                  ? pomoMode === "focus"
-                    ? "🧠 Neural lock in progress... stay focused!"
-                    : "☕ Neural cool-down in progress..."
-                  : "Ready for your next study sprint."}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleToggleTimer}
-                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all duration-200 shadow-lg cursor-pointer flex items-center justify-center gap-2 ${
-                  pomoIsRunning
-                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
-                    : "bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500"
-                }`}
-              >
-                <span>{pomoIsRunning ? "⏸ Pause" : "▶ Start Sprint"}</span>
-              </button>
-              <button
-                onClick={() => handleResetTimer(pomoMode)}
-                className="px-3.5 py-2.5 rounded-xl bg-slate-950/80 text-slate-400 hover:text-white border border-slate-800 text-xs font-bold transition-all duration-200 cursor-pointer"
-                title="Reset timer"
-              >
-                ↺
-              </button>
-              <div className="bg-slate-950/60 border border-slate-800 px-3 py-2 rounded-xl text-center">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">Sessions</span>
-                <span className="text-xs font-mono font-black text-cyan-400">{pomoSessionsCompleted}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* BENTO CARD 6: TUITION TREASURY & FEE VAULT (RAZORPAY ERADICATED) */}
+          {/* BENTO CARD 5: FEE ACCOUNT & FINANCIAL VAULT */}
           <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 hover:border-emerald-500/40 transition-all duration-200 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between shadow-xl">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
                 <span className="text-xl">💳</span>
                 <div>
-                  <h3 className="text-sm font-black text-slate-100 uppercase tracking-wider">Tuition Treasury</h3>
+                  <h3 className="text-sm font-black text-slate-100 uppercase tracking-wider">Fee Account</h3>
                   <p className="text-[11px] text-slate-400">Institutional Ledger & Receipts</p>
                 </div>
               </div>
